@@ -1,0 +1,29 @@
+[package]
+name = "vectora"
+version = "0.1.0"
+authors = ["Chris Simpkins <chris@sourcefoundry.org>"]
+license = "Apache-2.0"
+edition = "2021"
+keywords = ["vector", "math", "algebra", "computation", "algorithm"]
+repository = "https://github.com/chrissimpkins/vectora"
+description = "A vector computation library"
+readme = "README.md"
+
+exclude = [
+    "/testdata/*"
+]
+
+[dependencies]
+approx = "0.5.0"
+num = "0.4.0"
+
+
+[dev-dependencies]
+criterion = "0.3"
+pretty_assertions = "1.0.0"
+tempdir = "0.3.7"
+
+
+# [[bench]]
+# name = "vectora_benchmark"
+# harness = false
