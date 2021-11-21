@@ -768,6 +768,96 @@ where
     }
 }
 
+// ================================
+//
+// From trait impl
+//
+// ================================
+/// Lossless [`Vector`] scalar component numeric type conversion support with the
+/// [`From`] trait.
+macro_rules! impl_vector_from_vector {
+    ($Small: ty, $Large: ty, $doc: expr) => {
+        impl<const N: usize> From<Vector<$Small, N>> for Vector<$Large, N> {
+            #[doc = $doc]
+            #[inline]
+            fn from(small: Vector<$Small, N>) -> Vector<$Large, N> {
+                let mut new_components: [$Large; N] = [0 as $Large; N];
+                let mut i = 0;
+                for c in &small.components {
+                    new_components[i] = *c as $Large;
+                    i += 1;
+                }
+                Vector { components: new_components }
+            }
+        }
+    };
+    ($Small: ty, $Large: ty) => {
+        impl_vector_from_vector!(
+            $Small,
+            $Large,
+            concat!(
+                "Converts [`",
+                stringify!($Small),
+                "`] scalar components to [`",
+                stringify!($Large),
+                "`] losslessly."
+            )
+        );
+    };
+}
+
+// Unsigned to Unsigned
+impl_vector_from_vector!(u8, u16);
+impl_vector_from_vector!(u8, u32);
+impl_vector_from_vector!(u8, u64);
+impl_vector_from_vector!(u8, u128);
+impl_vector_from_vector!(u8, usize);
+impl_vector_from_vector!(u16, u32);
+impl_vector_from_vector!(u16, u64);
+impl_vector_from_vector!(u16, u128);
+impl_vector_from_vector!(u32, u64);
+impl_vector_from_vector!(u32, u128);
+impl_vector_from_vector!(u64, u128);
+
+// Signed to Signed
+impl_vector_from_vector!(i8, i16);
+impl_vector_from_vector!(i8, i32);
+impl_vector_from_vector!(i8, i64);
+impl_vector_from_vector!(i8, i128);
+impl_vector_from_vector!(i8, isize);
+impl_vector_from_vector!(i16, i32);
+impl_vector_from_vector!(i16, i64);
+impl_vector_from_vector!(i16, i128);
+impl_vector_from_vector!(i32, i64);
+impl_vector_from_vector!(i32, i128);
+impl_vector_from_vector!(i64, i128);
+
+// Unsigned to Signed
+impl_vector_from_vector!(u8, i16);
+impl_vector_from_vector!(u8, i32);
+impl_vector_from_vector!(u8, i64);
+impl_vector_from_vector!(u8, i128);
+impl_vector_from_vector!(u16, i32);
+impl_vector_from_vector!(u16, i64);
+impl_vector_from_vector!(u16, i128);
+impl_vector_from_vector!(u32, i64);
+impl_vector_from_vector!(u32, i128);
+impl_vector_from_vector!(u64, i128);
+
+// Signed to Float
+impl_vector_from_vector!(i8, f32);
+impl_vector_from_vector!(i8, f64);
+impl_vector_from_vector!(i16, f32);
+impl_vector_from_vector!(i16, f64);
+impl_vector_from_vector!(i32, f64);
+
+// Unsigned to Float
+impl_vector_from_vector!(u8, f32);
+impl_vector_from_vector!(u8, f64);
+impl_vector_from_vector!(u16, f32);
+impl_vector_from_vector!(u16, f64);
+impl_vector_from_vector!(u32, f64);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1893,5 +1983,191 @@ mod tests {
         let test_slice: &mut [u32] = &mut v;
 
         assert_eq!(test_slice, [1, 2, 3]);
+    }
+
+    // ================================
+    //
+    // From trait tests
+    //
+    // ================================
+    #[test]
+    fn vector_trait_from_into_uint_to_uint() {
+        let v_u8 = Vector::<u8, 3>::from_array([1, 2, 3]);
+        let v_u16 = Vector::<u16, 3>::new();
+        let v_u32 = Vector::<u32, 3>::new();
+        let v_u64 = Vector::<u64, 3>::new();
+
+        let v_new_16: Vector<u16, 3> = Vector::<u16, 3>::from(v_u8);
+        let _: Vector<u16, 3> = v_u8.into();
+        assert_eq!(v_new_16.components.len(), 3);
+        assert_eq!(v_new_16[0], 1 as u16);
+        assert_eq!(v_new_16[1], 2 as u16);
+        assert_eq!(v_new_16[2], 3 as u16);
+
+        let _: Vector<u32, 3> = Vector::<u32, 3>::from(v_u8);
+        let _: Vector<u32, 3> = v_u8.into();
+
+        let _: Vector<u64, 3> = Vector::<u64, 3>::from(v_u8);
+        let _: Vector<u64, 3> = v_u8.into();
+
+        let _: Vector<u128, 3> = Vector::<u128, 3>::from(v_u8);
+        let _: Vector<u128, 3> = v_u8.into();
+
+        let _: Vector<u32, 3> = Vector::<u32, 3>::from(v_u16);
+        let _: Vector<u32, 3> = v_u16.into();
+
+        let _: Vector<u64, 3> = Vector::<u64, 3>::from(v_u16);
+        let _: Vector<u64, 3> = v_u16.into();
+
+        let _: Vector<u128, 3> = Vector::<u128, 3>::from(v_u16);
+        let _: Vector<u128, 3> = v_u16.into();
+
+        let _: Vector<u64, 3> = Vector::<u64, 3>::from(v_u32);
+        let _: Vector<u64, 3> = v_u32.into();
+
+        let _: Vector<u128, 3> = Vector::<u128, 3>::from(v_u32);
+        let _: Vector<u128, 3> = v_u32.into();
+
+        let _: Vector<u128, 3> = Vector::<u128, 3>::from(v_u64);
+        let _: Vector<u128, 3> = v_u64.into();
+    }
+
+    #[test]
+    fn vector_trait_from_into_iint_to_iint() {
+        let v_i8 = Vector::<i8, 3>::from_array([1, 2, 3]);
+        let v_i16 = Vector::<i16, 3>::new();
+        let v_i32 = Vector::<i32, 3>::new();
+        let v_i64 = Vector::<i64, 3>::new();
+
+        let v_new_16: Vector<i16, 3> = Vector::<i16, 3>::from(v_i8);
+        let _: Vector<i16, 3> = v_i8.into();
+        assert_eq!(v_new_16.components.len(), 3);
+        assert_eq!(v_new_16[0], 1 as i16);
+        assert_eq!(v_new_16[1], 2 as i16);
+        assert_eq!(v_new_16[2], 3 as i16);
+
+        let _: Vector<i32, 3> = Vector::<i32, 3>::from(v_i8);
+        let _: Vector<i32, 3> = v_i8.into();
+
+        let _: Vector<i64, 3> = Vector::<i64, 3>::from(v_i8);
+        let _: Vector<i64, 3> = v_i8.into();
+
+        let _: Vector<i128, 3> = Vector::<i128, 3>::from(v_i8);
+        let _: Vector<i128, 3> = v_i8.into();
+
+        let _: Vector<i32, 3> = Vector::<i32, 3>::from(v_i16);
+        let _: Vector<i32, 3> = v_i16.into();
+
+        let _: Vector<i64, 3> = Vector::<i64, 3>::from(v_i16);
+        let _: Vector<i64, 3> = v_i16.into();
+
+        let _: Vector<i128, 3> = Vector::<i128, 3>::from(v_i16);
+        let _: Vector<i128, 3> = v_i16.into();
+
+        let _: Vector<i64, 3> = Vector::<i64, 3>::from(v_i32);
+        let _: Vector<i64, 3> = v_i32.into();
+
+        let _: Vector<i128, 3> = Vector::<i128, 3>::from(v_i32);
+        let _: Vector<i128, 3> = v_i32.into();
+
+        let _: Vector<i128, 3> = Vector::<i128, 3>::from(v_i64);
+        let _: Vector<i128, 3> = v_i64.into();
+    }
+
+    #[test]
+    fn vector_trait_from_into_uint_to_iint() {
+        let v_u8 = Vector::<u8, 3>::from_array([1, 2, 3]);
+        let v_u16 = Vector::<u16, 3>::new();
+        let v_u32 = Vector::<u32, 3>::new();
+        let v_u64 = Vector::<u64, 3>::new();
+
+        let v_new_16: Vector<i16, 3> = Vector::<i16, 3>::from(v_u8);
+        let _: Vector<i16, 3> = v_u8.into();
+        assert_eq!(v_new_16.components.len(), 3);
+        assert_eq!(v_new_16[0], 1 as i16);
+        assert_eq!(v_new_16[1], 2 as i16);
+        assert_eq!(v_new_16[2], 3 as i16);
+
+        let _: Vector<i32, 3> = Vector::<i32, 3>::from(v_u8);
+        let _: Vector<i32, 3> = v_u8.into();
+
+        let _: Vector<i64, 3> = Vector::<i64, 3>::from(v_u8);
+        let _: Vector<i64, 3> = v_u8.into();
+
+        let _: Vector<i64, 3> = Vector::<i64, 3>::from(v_u8);
+        let _: Vector<i64, 3> = v_u8.into();
+
+        let _: Vector<i128, 3> = Vector::<i128, 3>::from(v_u8);
+        let _: Vector<i128, 3> = v_u8.into();
+
+        let _: Vector<i32, 3> = Vector::<i32, 3>::from(v_u16);
+        let _: Vector<i32, 3> = v_u16.into();
+
+        let _: Vector<i64, 3> = Vector::<i64, 3>::from(v_u16);
+        let _: Vector<i64, 3> = v_u16.into();
+
+        let _: Vector<i128, 3> = Vector::<i128, 3>::from(v_u16);
+        let _: Vector<i128, 3> = v_u16.into();
+
+        let _: Vector<i64, 3> = Vector::<i64, 3>::from(v_u32);
+        let _: Vector<i64, 3> = v_u32.into();
+
+        let _: Vector<i128, 3> = Vector::<i128, 3>::from(v_u32);
+        let _: Vector<i128, 3> = v_u32.into();
+
+        let _: Vector<i128, 3> = Vector::<i128, 3>::from(v_u64);
+        let _: Vector<i128, 3> = v_u64.into();
+    }
+
+    #[test]
+    fn vector_trait_from_into_uint_to_float() {
+        let v_u8 = Vector::<u8, 3>::from_array([1, 2, 3]);
+        let v_u16 = Vector::<u16, 3>::new();
+        let v_u32 = Vector::<u32, 3>::new();
+
+        let v_new_32: Vector<f32, 3> = Vector::<f32, 3>::from(v_u8);
+        let _: Vector<f32, 3> = v_u8.into();
+        assert_eq!(v_new_32.components.len(), 3);
+        assert_relative_eq!(v_new_32[0], 1.0 as f32);
+        assert_relative_eq!(v_new_32[1], 2.0 as f32);
+        assert_relative_eq!(v_new_32[2], 3.0 as f32);
+
+        let _: Vector<f64, 3> = Vector::<f64, 3>::from(v_u8);
+        let _: Vector<f64, 3> = v_u8.into();
+
+        let _: Vector<f32, 3> = Vector::<f32, 3>::from(v_u16);
+        let _: Vector<f32, 3> = v_u16.into();
+
+        let _: Vector<f64, 3> = Vector::<f64, 3>::from(v_u16);
+        let _: Vector<f64, 3> = v_u16.into();
+
+        let _: Vector<f64, 3> = Vector::<f64, 3>::from(v_u32);
+        let _: Vector<f64, 3> = v_u32.into();
+    }
+
+    #[test]
+    fn vector_trait_from_into_iint_to_float() {
+        let v_i8 = Vector::<i8, 3>::from_array([1, 2, 3]);
+        let v_i16 = Vector::<i16, 3>::new();
+        let v_i32 = Vector::<i32, 3>::new();
+
+        let v_new_32: Vector<f32, 3> = Vector::<f32, 3>::from(v_i8);
+        let _: Vector<f32, 3> = v_i8.into();
+        assert_eq!(v_new_32.components.len(), 3);
+        assert_relative_eq!(v_new_32[0], 1.0 as f32);
+        assert_relative_eq!(v_new_32[1], 2.0 as f32);
+        assert_relative_eq!(v_new_32[2], 3.0 as f32);
+
+        let _: Vector<f64, 3> = Vector::<f64, 3>::from(v_i8);
+        let _: Vector<f64, 3> = v_i8.into();
+
+        let _: Vector<f32, 3> = Vector::<f32, 3>::from(v_i16);
+        let _: Vector<f32, 3> = v_i16.into();
+
+        let _: Vector<f64, 3> = Vector::<f64, 3>::from(v_i16);
+        let _: Vector<f64, 3> = v_i16.into();
+
+        let _: Vector<f64, 3> = Vector::<f64, 3>::from(v_i32);
+        let _: Vector<f64, 3> = v_i32.into();
     }
 }
