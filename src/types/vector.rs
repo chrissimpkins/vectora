@@ -3,6 +3,7 @@
 // use std::cmp::PartialOrd;
 // use std::convert::From;
 use std::{
+    borrow::{Borrow, BorrowMut},
     iter::IntoIterator,
     ops::{Index, IndexMut},
     slice::SliceIndex,
@@ -527,11 +528,11 @@ where
     }
 }
 
-impl<T, const N: usize> AsRef<[T; N]> for Vector<T, N>
+impl<T, const N: usize> AsRef<[T]> for Vector<T, N>
 where
     T: Num + Copy,
 {
-    fn as_ref(&self) -> &[T; N] {
+    fn as_ref(&self) -> &[T] {
         &self.coord
     }
 }
@@ -545,12 +546,35 @@ where
     }
 }
 
-impl<T, const N: usize> AsMut<[T; N]> for Vector<T, N>
+impl<T, const N: usize> AsMut<[T]> for Vector<T, N>
 where
     T: Num + Copy,
 {
-    fn as_mut(&mut self) -> &mut [T; N] {
+    fn as_mut(&mut self) -> &mut [T] {
         &mut self.coord
+    }
+}
+
+// ================================
+//
+// Borrow trait impl
+//
+// ================================
+impl<T, const N: usize> Borrow<[T]> for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    fn borrow(&self) -> &[T] {
+        &self.coord[..]
+    }
+}
+
+impl<T, const N: usize> BorrowMut<[T]> for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    fn borrow_mut(&mut self) -> &mut [T] {
+        &mut self.coord[..]
     }
 }
 
