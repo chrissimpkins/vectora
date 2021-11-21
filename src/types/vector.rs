@@ -89,7 +89,7 @@ pub type Vector3dIsize = Vector<isize, 3>;
 pub type Vector3dUsize = Vector<usize, 3>;
 
 /// A generic vector type that holds N-dimensional `coord` data.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Hash)]
 pub struct Vector<T, const N: usize>
 where
     T: Num + Copy,
@@ -1265,7 +1265,7 @@ mod tests {
     // ================================
 
     #[test]
-    fn vector_partial_eq_i8() {
+    fn vector_trait_partial_eq_i8() {
         let v1 = Vector::<i8, 3>::from_array([-1, 2, 3]);
         let v2 = Vector::<i8, 3>::from_array([-1, 2, 3]);
         let v_eq = Vector::<i8, 3>::from_array([-1, 2, 3]);
@@ -1283,7 +1283,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_i16() {
+    fn vector_trait_partial_eq_i16() {
         let v1 = Vector::<i16, 3>::from_array([-1, 2, 3]);
         let v2 = Vector::<i16, 3>::from_array([-1, 2, 3]);
         let v_eq = Vector::<i16, 3>::from_array([-1, 2, 3]);
@@ -1297,7 +1297,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_i32() {
+    fn vector_trait_partial_eq_i32() {
         let v1 = Vector::<i32, 3>::from_array([-1, 2, 3]);
         let v2 = Vector::<i32, 3>::from_array([-1, 2, 3]);
         let v_eq = Vector::<i32, 3>::from_array([-1, 2, 3]);
@@ -1311,7 +1311,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_i64() {
+    fn vector_trait_partial_eq_i64() {
         let v1 = Vector::<i64, 3>::from_array([-1, 2, 3]);
         let v2 = Vector::<i64, 3>::from_array([-1, 2, 3]);
         let v_eq = Vector::<i64, 3>::from_array([-1, 2, 3]);
@@ -1325,7 +1325,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_i128() {
+    fn vector_trait_partial_eq_i128() {
         let v1 = Vector::<i128, 3>::from_array([-1, 2, 3]);
         let v2 = Vector::<i128, 3>::from_array([-1, 2, 3]);
         let v_eq = Vector::<i128, 3>::from_array([-1, 2, 3]);
@@ -1339,7 +1339,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_u8() {
+    fn vector_trait_partial_eq_u8() {
         let v1 = Vector::<u8, 3>::from_array([1, 2, 3]);
         let v2 = Vector::<u8, 3>::from_array([1, 2, 3]);
         let v_eq = Vector::<u8, 3>::from_array([1, 2, 3]);
@@ -1353,7 +1353,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_u16() {
+    fn vector_trait_partial_eq_u16() {
         let v1 = Vector::<u16, 3>::from_array([1, 2, 3]);
         let v2 = Vector::<u16, 3>::from_array([1, 2, 3]);
         let v_eq = Vector::<u16, 3>::from_array([1, 2, 3]);
@@ -1367,7 +1367,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_u32() {
+    fn vector_trait_partial_eq_u32() {
         let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
         let v2 = Vector::<u32, 3>::from_array([1, 2, 3]);
         let v_eq = Vector::<u32, 3>::from_array([1, 2, 3]);
@@ -1381,7 +1381,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_u64() {
+    fn vector_trait_partial_eq_u64() {
         let v1 = Vector::<u64, 3>::from_array([1, 2, 3]);
         let v2 = Vector::<u64, 3>::from_array([1, 2, 3]);
         let v_eq = Vector::<u64, 3>::from_array([1, 2, 3]);
@@ -1395,7 +1395,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_u128() {
+    fn vector_trait_partial_eq_u128() {
         let v1 = Vector::<u128, 3>::from_array([1, 2, 3]);
         let v2 = Vector::<u128, 3>::from_array([1, 2, 3]);
         let v_eq = Vector::<u128, 3>::from_array([1, 2, 3]);
@@ -1409,7 +1409,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_isize() {
+    fn vector_trait_partial_eq_isize() {
         let v1 = Vector::<isize, 3>::from_array([1, 2, 3]);
         let v2 = Vector::<isize, 3>::from_array([1, 2, 3]);
         let v_eq = Vector::<isize, 3>::from_array([1, 2, 3]);
@@ -1423,7 +1423,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_usize() {
+    fn vector_trait_partial_eq_usize() {
         let v1 = Vector::<usize, 3>::from_array([1, 2, 3]);
         let v2 = Vector::<usize, 3>::from_array([1, 2, 3]);
         let v_eq = Vector::<usize, 3>::from_array([1, 2, 3]);
@@ -1437,7 +1437,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_f32() {
+    fn vector_trait_partial_eq_f32() {
         let v1 = Vector::<f32, 3>::from_array([-1.1, 2.2, 3.3]);
         let v2 = Vector::<f32, 3>::from_array([-1.1, 2.2, 3.3]);
         let v_eq = Vector::<f32, 3>::from_array([-1.1, 2.2, 3.3]);
@@ -1470,7 +1470,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_partial_eq_f64() {
+    fn vector_trait_partial_eq_f64() {
         let v1 = Vector::<f64, 3>::from_array([-1.1, 2.2, 3.3]);
         let v2 = Vector::<f64, 3>::from_array([-1.1, 2.2, 3.3]);
         let v_eq = Vector::<f64, 3>::from_array([-1.1, 2.2, 3.3]);
