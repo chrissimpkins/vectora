@@ -302,6 +302,170 @@ where
         self.coord.iter_mut()
     }
 
+    /// Returns a [`slice`] representation of the [`Vector`] coordinates.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let x: &[u32] = v.as_slice();
+    /// assert_eq!(x, &[1, 2, 3]);
+    /// ```
+    #[inline]
+    pub fn as_slice(&self) -> &[T] {
+        &self.coord[..]
+    }
+
+    /// Returns a mutable [`slice`] representation of the [`Vector`] coordinates.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let mut x: &mut [u32] = v.as_mut_slice();
+    /// assert_eq!(x, &[1, 2, 3]);
+    /// x[0] = 10;
+    /// assert_eq!(x, &[10,2,3]);
+    /// # assert_eq!(v[0], 10);
+    /// ```
+    ///
+    /// Note: The edit above **changes** the [`Vector`] data:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// # let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// # let mut x: &mut [u32] = v.as_mut_slice();
+    /// # assert_eq!(x, &[1, 2, 3]);
+    /// # x[0] = 10;
+    /// # assert_eq!(x, &[10,2,3]);
+    /// assert_eq!(v[0], 10);
+    /// ```
+    #[inline]
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        &mut self.coord[..]
+    }
+
+    /// Returns an [`array`] reference representation of the [`Vector`] coordinates.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let x: &[u32;3] = v.as_array();
+    /// assert_eq!(x, &[1, 2, 3]);
+    /// ```
+    #[inline]
+    pub fn as_array(&self) -> &[T; N] {
+        &self.coord
+    }
+
+    /// Returns a mutable [`array`] reference representation of the [`Vector`] coordinates.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let mut x: &mut [u32;3] = v.as_mut_array();
+    /// assert_eq!(x, &[1, 2, 3]);
+    /// x[0] = 10;
+    /// assert_eq!(x, &[10,2,3]);
+    /// # assert_eq!(v[0], 10);
+    /// ```
+    ///
+    /// Note: The edit above **changes** the [`Vector`] data:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// # let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// # let mut x: &mut [u32;3] = v.as_mut_array();
+    /// # assert_eq!(x, &[1, 2, 3]);
+    /// # x[0] = 10;
+    /// # assert_eq!(x, &[10,2,3]);
+    /// assert_eq!(v[0], 10);
+    /// ```
+    #[inline]
+    pub fn as_mut_array(&mut self) -> &mut [T; N] {
+        &mut self.coord
+    }
+
+    /// Returns a new, allocated [`array`] representation of the [`Vector`] coordinates.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let mut x: [u32; 3] = v.to_array();
+    /// assert_eq!(x, [1,2,3]);
+    /// x[0] = 10;
+    /// assert_eq!(x, [10, 2, 3]);
+    /// # assert_eq!(v[0], 1);
+    /// ```
+    ///
+    /// Note: The edit above returns a new, owned array and
+    /// **does not change** the [`Vector`] data:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// # let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// # let mut x: [u32; 3] = v.to_array();
+    /// # assert_eq!(x, [1,2,3]);
+    /// # x[0] = 10;
+    /// # assert_eq!(x, [10, 2, 3]);
+    /// assert_eq!(v[0], 1);
+    /// ```
+    #[inline]
+    pub fn to_array(&self) -> [T; N] {
+        self.coord
+    }
+
+    /// Returns a new, allocated [`Vec`] representation of the [`Vector`] coordinates.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let mut x: Vec<u32> = v.to_vec();
+    /// assert_eq!(x, Vec::from([1,2,3]));
+    /// x[0] = 10;
+    /// assert_eq!(x, Vec::from([10, 2, 3]));
+    /// # assert_eq!(v[0], 1);
+    /// ```
+    ///
+    /// Note: The edit above returns a new, owned [`Vec`] and
+    /// **does not change** the [`Vector`] data:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// # let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// # let mut x: Vec<u32> = v.to_vec();
+    /// # assert_eq!(x, Vec::from([1,2,3]));
+    /// # x[0] = 10;
+    /// # assert_eq!(x, Vec::from([10, 2, 3]));
+    /// assert_eq!(v[0], 1);
+    /// ```
+    #[inline]
+    pub fn to_vec(&self) -> Vec<T> {
+        Vec::from(self.coord)
+    }
+
     // ================================
     //
     // Private methods
@@ -329,7 +493,7 @@ where
 
 // ================================
 //
-// Index trait impl
+// Index / IndexMut trait impl
 //
 // ================================
 impl<T, const N: usize> Index<usize> for Vector<T, N>
@@ -611,11 +775,11 @@ mod tests {
     #[allow(unused_imports)]
     use pretty_assertions::{assert_eq, assert_ne};
 
-    // ================================
+    // =======================================
     //
-    // Instantiation tests
+    // Instantiation associated function tests
     //
-    // ================================
+    // =======================================
 
     #[test]
     fn vector_instantiation_new_i8() {
@@ -1126,43 +1290,7 @@ mod tests {
 
     // ================================
     //
-    // Indexing tests
-    //
-    // ================================
-    #[test]
-    fn vector_index_access() {
-        let v1 = Vector::<u32, 2>::from_array([1, 2]);
-        let v2 = Vector::<f64, 2>::from_array([1.0, 2.0]);
-        assert_eq!(v1[0], 1);
-        assert_eq!(v1[1], 2);
-        assert_relative_eq!(v2[0], 1.0);
-        assert_relative_eq!(v2[1], 2.0);
-    }
-
-    #[test]
-    #[should_panic(expected = "index out of bounds")]
-    fn vector_index_access_out_of_bounds() {
-        let v = Vector::<u32, 10>::new();
-        v[10];
-    }
-
-    #[test]
-    fn vector_index_assignment() {
-        let mut v1 = Vector::<u32, 2>::from_array([1, 2]);
-        let mut v2 = Vector::<f64, 2>::from_array([1.0, 2.0]);
-        v1[0] = 5;
-        v1[1] = 6;
-        v2[0] = 5.0;
-        v2[1] = 6.0;
-        assert_eq!(v1[0], 5);
-        assert_eq!(v1[1], 6);
-        assert_relative_eq!(v2[0], 5.0);
-        assert_relative_eq!(v2[1], 6.0);
-    }
-
-    // ================================
-    //
-    // get method
+    // get method tests
     //
     // ================================
     #[test]
@@ -1243,9 +1371,103 @@ mod tests {
 
     // ================================
     //
-    // iterator traits and method impl
+    // as_* method tests
     //
     // ================================
+    #[test]
+    fn vector_method_as_slice() {
+        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let _: &[u32] = v1.as_slice();
+        let _: &[f64] = v2.as_slice();
+    }
+
+    #[test]
+    fn vector_method_as_mut_slice() {
+        let mut v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let mut v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let _: &mut [u32] = v1.as_mut_slice();
+        let _: &mut [f64] = v2.as_mut_slice();
+    }
+
+    #[test]
+    fn vector_method_as_array() {
+        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let _: &[u32; 3] = v1.as_array();
+        let _: &[f64; 3] = v2.as_array();
+    }
+
+    #[test]
+    fn vector_method_as_mut_array() {
+        let mut v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let mut v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let _: &mut [u32; 3] = v1.as_mut_array();
+        let _: &mut [f64; 3] = v2.as_mut_array();
+    }
+
+    // ================================
+    //
+    // to_* method tests
+    //
+    // ================================
+    #[test]
+    fn vector_method_to_array() {
+        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let _: [u32; 3] = v1.to_array();
+        let _: [f64; 3] = v2.to_array();
+    }
+
+    #[test]
+    fn vector_method_to_vec() {
+        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let _: Vec<u32> = v1.to_vec();
+        let _: Vec<f64> = v2.to_vec();
+    }
+
+    // ================================
+    //
+    // Index / IndexMut trait tests
+    //
+    // ================================
+    #[test]
+    fn vector_trait_index_access() {
+        let v1 = Vector::<u32, 2>::from_array([1, 2]);
+        let v2 = Vector::<f64, 2>::from_array([1.0, 2.0]);
+        assert_eq!(v1[0], 1);
+        assert_eq!(v1[1], 2);
+        assert_relative_eq!(v2[0], 1.0);
+        assert_relative_eq!(v2[1], 2.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "index out of bounds")]
+    fn vector_trait_index_access_out_of_bounds() {
+        let v = Vector::<u32, 10>::new();
+        v[10];
+    }
+
+    #[test]
+    fn vector_trait_index_assignment() {
+        let mut v1 = Vector::<u32, 2>::from_array([1, 2]);
+        let mut v2 = Vector::<f64, 2>::from_array([1.0, 2.0]);
+        v1[0] = 5;
+        v1[1] = 6;
+        v2[0] = 5.0;
+        v2[1] = 6.0;
+        assert_eq!(v1[0], 5);
+        assert_eq!(v1[1], 6);
+        assert_relative_eq!(v2[0], 5.0);
+        assert_relative_eq!(v2[1], 6.0);
+    }
+
+    // ===================================
+    //
+    // IntoIterator traits tests
+    //
+    // ===================================
     #[test]
     fn vector_trait_intoiterator_ref() {
         let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
@@ -1350,7 +1572,7 @@ mod tests {
 
     // ================================
     //
-    // PartialEq trait impl
+    // PartialEq trait tests
     //
     // ================================
 
@@ -1594,7 +1816,7 @@ mod tests {
 
     // ================================
     //
-    // AsRef / AsMutRef trait impl
+    // AsRef / AsMutRef trait tests
     //
     // ================================
     #[test]
@@ -1630,7 +1852,7 @@ mod tests {
 
     // ================================
     //
-    // Borrow / BorrowMut trait impl
+    // Borrow / BorrowMut trait tests
     //
     // ================================
     #[test]
@@ -1653,7 +1875,7 @@ mod tests {
 
     // ================================
     //
-    // Deref / DerefMut trait impl
+    // Deref / DerefMut trait tests
     //
     // ================================
     #[test]
