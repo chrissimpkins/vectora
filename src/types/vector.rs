@@ -513,6 +513,47 @@ macro_rules! impl_vector_float_partialeq_from {
 impl_vector_float_partialeq_from!(f32);
 impl_vector_float_partialeq_from!(f64);
 
+// ================================
+//
+// AsRef / AsMut trait impl
+//
+// ================================
+impl<T, const N: usize> AsRef<Vector<T, N>> for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    fn as_ref(&self) -> &Vector<T, N> {
+        self
+    }
+}
+
+impl<T, const N: usize> AsRef<[T; N]> for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    fn as_ref(&self) -> &[T; N] {
+        &self.coord
+    }
+}
+
+impl<T, const N: usize> AsMut<Vector<T, N>> for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    fn as_mut(&mut self) -> &mut Vector<T, N> {
+        self
+    }
+}
+
+impl<T, const N: usize> AsMut<[T; N]> for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    fn as_mut(&mut self) -> &mut [T; N] {
+        &mut self.coord
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
