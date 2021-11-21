@@ -5,7 +5,7 @@
 use std::{
     borrow::{Borrow, BorrowMut},
     iter::IntoIterator,
-    ops::{Index, IndexMut},
+    ops::{Deref, DerefMut, Index, IndexMut},
     slice::SliceIndex,
 };
 
@@ -565,7 +565,7 @@ where
     T: Num + Copy,
 {
     fn borrow(&self) -> &[T] {
-        &self.coord[..]
+        &self.coord
     }
 }
 
@@ -574,7 +574,32 @@ where
     T: Num + Copy,
 {
     fn borrow_mut(&mut self) -> &mut [T] {
-        &mut self.coord[..]
+        &mut self.coord
+    }
+}
+
+// ================================
+//
+// Deref / DerefMut trait impl
+//
+// ================================
+impl<T, const N: usize> Deref for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    type Target = [T];
+
+    fn deref(&self) -> &[T] {
+        &self.coord
+    }
+}
+
+impl<T, const N: usize> DerefMut for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    fn deref_mut(&mut self) -> &mut [T] {
+        &mut self.coord
     }
 }
 
@@ -1565,5 +1590,85 @@ mod tests {
         assert!(v_nan != v_nan_diff); // NaN comparisons are defined as different
         assert!(v_inf_pos == v_inf_pos_eq); // postive infinity comparisons are defined as equivalent
         assert!(v_inf_neg == v_inf_neg_eq); // negative infinity comparisons are defined as equivalent
+    }
+
+    // ================================
+    //
+    // AsRef / AsMutRef trait impl
+    //
+    // ================================
+    #[test]
+    fn vector_trait_as_ref() {
+        let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let test_vector: &Vector<u32, 3> = v.as_ref();
+        let test_slice: &[u32] = v.as_ref();
+
+        assert_eq!(test_vector[0], 1);
+        assert_eq!(test_vector[1], 2);
+        assert_eq!(test_vector[2], 3);
+
+        assert_eq!(test_slice[0], 1);
+        assert_eq!(test_slice[1], 2);
+        assert_eq!(test_slice[2], 3);
+    }
+
+    #[test]
+    fn vector_trait_as_mut() {
+        let mut v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let mut v2 = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let test_vector: &mut Vector<u32, 3> = v1.as_mut();
+        let test_slice: &mut [u32] = v2.as_mut();
+
+        test_vector[0] = 10;
+        test_slice[0] = 10;
+
+        assert_eq!(test_vector.coord.len(), 3);
+        assert_eq!(test_vector[0], 10);
+        assert_eq!(test_vector[1], 2);
+        assert_eq!(test_vector[2], 3);
+    }
+
+    // ================================
+    //
+    // Borrow / BorrowMut trait impl
+    //
+    // ================================
+    #[test]
+    fn vector_trait_borrow() {
+        let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let test_slice: &[u32] = v.borrow();
+
+        assert_eq!(test_slice, [1, 2, 3]);
+    }
+
+    #[test]
+    fn vector_trait_borrow_mut() {
+        let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let test_slice: &mut [u32] = v.borrow_mut();
+
+        test_slice[0] = 10;
+
+        assert_eq!(test_slice, [10, 2, 3]);
+    }
+
+    // ================================
+    //
+    // Deref / DerefMut trait impl
+    //
+    // ================================
+    #[test]
+    fn vector_trait_deref() {
+        let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let test_slice: &[u32] = &v;
+
+        assert_eq!(test_slice, [1, 2, 3]);
+    }
+
+    #[test]
+    fn vector_trait_deref_mut() {
+        let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let test_slice: &mut [u32] = &mut v;
+
+        assert_eq!(test_slice, [1, 2, 3]);
     }
 }
