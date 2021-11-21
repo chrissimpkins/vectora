@@ -89,14 +89,14 @@ pub type Vector3dIsize = Vector<isize, 3>;
 /// Type alias for a 3D usize integer vector.
 pub type Vector3dUsize = Vector<usize, 3>;
 
-/// A generic vector type that holds N-dimensional `coord` data.
+/// A generic vector type that holds N-dimensional `components` data.
 #[derive(Copy, Clone, Debug)]
 pub struct Vector<T, const N: usize>
 where
     T: Num + Copy,
 {
-    /// N-dimensional vector coordinate values.
-    pub coord: [T; N],
+    /// N-dimensional vector component values.
+    pub components: [T; N],
 }
 
 // ================================
@@ -108,14 +108,14 @@ impl<T, const N: usize> Vector<T, N>
 where
     T: Num + Copy + Default,
 {
-    /// Returns a new [`Vector`] filled with default values.
+    /// Returns a new [`Vector`] filled with default scalar component values.
     ///
     /// # Examples
     ///
     /// ## Turbofish syntax
     ///
     /// Use turbofish syntax to define the numeric type of the vector
-    /// coordinate values and number of vector dimensions:
+    /// component scalar values and number of vector dimensions:
     ///
     /// ```
     /// # use vectora::types::vector::*;
@@ -136,7 +136,7 @@ where
     /// let vec_3d_f64_2 = Vector3dF64::new();
     /// ```
     pub fn new() -> Self {
-        Self { coord: [T::default(); N] }
+        Self { components: [T::default(); N] }
     }
 }
 
@@ -144,7 +144,7 @@ impl<T, const N: usize> Default for Vector<T, N>
 where
     T: Num + Copy + Default,
 {
-    /// Returns a new [`Vector`] filled with default values.
+    /// Returns a new [`Vector`] filled with default component scalar values.
     ///
     /// # Examples
     ///
@@ -164,7 +164,8 @@ impl<T, const N: usize> Vector<T, N>
 where
     T: Num + Copy,
 {
-    /// Returns a new [`Vector`] defined with values in `array`.
+    /// Returns a new [`Vector`] defined with component scalar values provided
+    /// in `array`.
     ///
     /// # Examples
     ///
@@ -176,13 +177,13 @@ where
     /// let v2 = Vector::<f64, 3>::from_array([3.0, 4.0, 5.0]);
     /// ```
     pub fn from_array(array: [T; N]) -> Self {
-        Self { coord: array }
+        Self { components: array }
     }
 
     /// Returns a reference to a [`Vector`] index value or range,
     /// or `None` if the index is out of bounds.
     ///
-    /// This method provides safe, bounds checked immutable access to coordinate
+    /// This method provides safe, bounds checked immutable access to scalar component
     /// values.
     ///
     /// # Examples
@@ -213,14 +214,14 @@ where
     where
         I: SliceIndex<[T]>,
     {
-        self.coord.get(index)
+        self.components.get(index)
     }
 
     /// Returns a mutable reference to a [`Vector`] index value or range,
     /// or `None` if the index is out of bounds.
     ///
-    /// This method provides safe, bounds checked mutable access to coordinate
-    /// values.
+    /// This method provides safe, bounds checked mutable access to scalar
+    /// component values.
     ///
     /// # Examples
     ///
@@ -257,10 +258,10 @@ where
     where
         I: SliceIndex<[T]>,
     {
-        self.coord.get_mut(index)
+        self.components.get_mut(index)
     }
 
-    /// Returns an iterator over immutable [`Vector`] coordinate references.
+    /// Returns an iterator over immutable [`Vector`] scalar component references.
     ///
     /// # Examples
     ///
@@ -277,10 +278,10 @@ where
     /// ```
     #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.coord.iter()
+        self.components.iter()
     }
 
-    /// Returns an iterator over mutable [`Vector`] coordinate references.
+    /// Returns an iterator over mutable [`Vector`] scalar component references.
     ///
     /// # Examples
     ///
@@ -299,10 +300,10 @@ where
     /// ```
     #[inline]
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
-        self.coord.iter_mut()
+        self.components.iter_mut()
     }
 
-    /// Returns a [`slice`] representation of the [`Vector`] coordinates.
+    /// Returns a [`slice`] representation of the [`Vector`] scalar components.
     ///
     /// # Examples
     ///
@@ -316,10 +317,10 @@ where
     /// ```
     #[inline]
     pub fn as_slice(&self) -> &[T] {
-        &self.coord[..]
+        &self.components[..]
     }
 
-    /// Returns a mutable [`slice`] representation of the [`Vector`] coordinates.
+    /// Returns a mutable [`slice`] representation of the [`Vector`] scalar components.
     ///
     /// # Examples
     ///
@@ -348,10 +349,10 @@ where
     /// ```
     #[inline]
     pub fn as_mut_slice(&mut self) -> &mut [T] {
-        &mut self.coord[..]
+        &mut self.components[..]
     }
 
-    /// Returns an [`array`] reference representation of the [`Vector`] coordinates.
+    /// Returns an [`array`] reference representation of the [`Vector`] scalar components.
     ///
     /// # Examples
     ///
@@ -365,10 +366,10 @@ where
     /// ```
     #[inline]
     pub fn as_array(&self) -> &[T; N] {
-        &self.coord
+        &self.components
     }
 
-    /// Returns a mutable [`array`] reference representation of the [`Vector`] coordinates.
+    /// Returns a mutable [`array`] reference representation of the [`Vector`] scalar components.
     ///
     /// # Examples
     ///
@@ -397,10 +398,10 @@ where
     /// ```
     #[inline]
     pub fn as_mut_array(&mut self) -> &mut [T; N] {
-        &mut self.coord
+        &mut self.components
     }
 
-    /// Returns a new, allocated [`array`] representation of the [`Vector`] coordinates.
+    /// Returns a new, allocated [`array`] representation of the [`Vector`] scalar components
     ///
     /// # Examples
     ///
@@ -430,10 +431,10 @@ where
     /// ```
     #[inline]
     pub fn to_array(&self) -> [T; N] {
-        self.coord
+        self.components
     }
 
-    /// Returns a new, allocated [`Vec`] representation of the [`Vector`] coordinates.
+    /// Returns a new, allocated [`Vec`] representation of the [`Vector`] scalar components.
     ///
     /// # Examples
     ///
@@ -463,7 +464,7 @@ where
     /// ```
     #[inline]
     pub fn to_vec(&self) -> Vec<T> {
-        Vec::from(self.coord)
+        Vec::from(self.components)
     }
 
     // ================================
@@ -473,7 +474,7 @@ where
     // ================================
     #[inline]
     fn partial_eq_int(&self, other: &Self) -> bool {
-        self.coord == other.coord
+        self.components == other.components
     }
 
     #[inline]
@@ -481,7 +482,7 @@ where
     where
         T: Num + Copy + RelativeEq<T>,
     {
-        for (i, item) in self.coord.iter().enumerate() {
+        for (i, item) in self.components.iter().enumerate() {
             if !relative_eq!(*item, other[i]) {
                 return false;
             }
@@ -501,7 +502,7 @@ where
     T: Num + Copy,
 {
     type Output = T;
-    /// Returns [`Vector`] values by zero-based index.
+    /// Returns [`Vector`] scalar component values by zero-based index.
     ///
     /// # Examples
     ///
@@ -517,7 +518,7 @@ where
     ///
     #[inline]
     fn index(&self, i: usize) -> &T {
-        &self.coord[i]
+        &self.components[i]
     }
 }
 
@@ -525,9 +526,9 @@ impl<T, const N: usize> IndexMut<usize> for Vector<T, N>
 where
     T: Num + Copy,
 {
-    /// Returns mutable [`Vector`] values by zero-based index.
+    /// Returns mutable [`Vector`] scalar component values by zero-based index.
     ///
-    /// Supports coordinate value assignment by index.
+    /// Supports scalar component value assignment by index.
     ///
     /// # Examples
     ///
@@ -547,7 +548,7 @@ where
     /// ```
     #[inline]
     fn index_mut(&mut self, i: usize) -> &mut T {
-        &mut self.coord[i]
+        &mut self.components[i]
     }
 }
 
@@ -564,9 +565,9 @@ where
     type Item = T;
     type IntoIter = std::array::IntoIter<Self::Item, N>;
 
-    /// Creates a consuming iterator that iterates over coordinates by value.
+    /// Creates a consuming iterator that iterates over scalar components by value.
     fn into_iter(self) -> Self::IntoIter {
-        self.coord.into_iter()
+        self.components.into_iter()
     }
 }
 
@@ -577,9 +578,9 @@ where
     type Item = &'a T;
     type IntoIter = std::slice::Iter<'a, T>;
 
-    /// Creates an iterator over immutable coordinate references.
+    /// Creates an iterator over immutable scalar component references.
     fn into_iter(self) -> Self::IntoIter {
-        self.coord.iter()
+        self.components.iter()
     }
 }
 
@@ -590,9 +591,9 @@ where
     type Item = &'a mut T;
     type IntoIter = std::slice::IterMut<'a, T>;
 
-    /// Creates an iterator over mutable coordinate references.
+    /// Creates an iterator over mutable scalar component references.
     fn into_iter(self) -> Self::IntoIter {
-        self.coord.iter_mut()
+        self.components.iter_mut()
     }
 }
 
@@ -602,7 +603,7 @@ where
 //
 // ================================
 
-/// PartialEq trait implementation for [`Vector`] with integer coordinate types.
+/// PartialEq trait implementation for [`Vector`] with integer component types.
 ///
 /// These comparisons establish the symmetry and transitivity relationships
 /// required for the partial equivalence relation definition.
@@ -641,7 +642,7 @@ impl_vector_int_partialeq_from!(i32);
 impl_vector_int_partialeq_from!(i64);
 impl_vector_int_partialeq_from!(i128);
 
-/// PartialEq trait implementation for [`Vector`] with float coordinate types.
+/// PartialEq trait implementation for [`Vector`] with float component types.
 ///
 /// These comparisons establish the symmetry and transitivity relationships
 /// required for the partial equivalence relation definition for floating point
@@ -697,7 +698,7 @@ where
     T: Num + Copy,
 {
     fn as_ref(&self) -> &[T] {
-        &self.coord
+        &self.components
     }
 }
 
@@ -715,7 +716,7 @@ where
     T: Num + Copy,
 {
     fn as_mut(&mut self) -> &mut [T] {
-        &mut self.coord
+        &mut self.components
     }
 }
 
@@ -729,7 +730,7 @@ where
     T: Num + Copy,
 {
     fn borrow(&self) -> &[T] {
-        &self.coord
+        &self.components
     }
 }
 
@@ -738,7 +739,7 @@ where
     T: Num + Copy,
 {
     fn borrow_mut(&mut self) -> &mut [T] {
-        &mut self.coord
+        &mut self.components
     }
 }
 
@@ -754,7 +755,7 @@ where
     type Target = [T];
 
     fn deref(&self) -> &[T] {
-        &self.coord
+        &self.components
     }
 }
 
@@ -763,7 +764,7 @@ where
     T: Num + Copy,
 {
     fn deref_mut(&mut self) -> &mut [T] {
-        &mut self.coord
+        &mut self.components
     }
 }
 
@@ -794,7 +795,7 @@ mod tests {
         for v in tests {
             assert_eq!(v[0], 0 as i8);
             assert_eq!(v[1], 0 as i8);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -809,7 +810,7 @@ mod tests {
             assert_eq!(v[0], 0 as i8);
             assert_eq!(v[1], 0 as i8);
             assert_eq!(v[2], 0 as i8);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -826,7 +827,7 @@ mod tests {
         for v in tests {
             assert_eq!(v[0], 0 as i16);
             assert_eq!(v[1], 0 as i16);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -841,7 +842,7 @@ mod tests {
             assert_eq!(v[0], 0 as i16);
             assert_eq!(v[1], 0 as i16);
             assert_eq!(v[2], 0 as i16);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -858,7 +859,7 @@ mod tests {
         for v in tests {
             assert_eq!(v[0], 0 as i32);
             assert_eq!(v[1], 0 as i32);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -873,7 +874,7 @@ mod tests {
             assert_eq!(v[0], 0 as i32);
             assert_eq!(v[1], 0 as i32);
             assert_eq!(v[2], 0 as i32);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -890,7 +891,7 @@ mod tests {
         for v in tests {
             assert_eq!(v[0], 0 as i64);
             assert_eq!(v[1], 0 as i64);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -905,7 +906,7 @@ mod tests {
             assert_eq!(v[0], 0 as i64);
             assert_eq!(v[1], 0 as i64);
             assert_eq!(v[2], 0 as i64);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -922,7 +923,7 @@ mod tests {
         for v in tests {
             assert_eq!(v[0], 0 as i128);
             assert_eq!(v[1], 0 as i128);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -937,7 +938,7 @@ mod tests {
             assert_eq!(v[0], 0 as i128);
             assert_eq!(v[1], 0 as i128);
             assert_eq!(v[2], 0 as i128);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -954,7 +955,7 @@ mod tests {
         for v in tests {
             assert_eq!(v[0], 0 as u8);
             assert_eq!(v[1], 0 as u8);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -969,7 +970,7 @@ mod tests {
             assert_eq!(v[0], 0 as u8);
             assert_eq!(v[1], 0 as u8);
             assert_eq!(v[2], 0 as u8);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -986,7 +987,7 @@ mod tests {
         for v in tests {
             assert_eq!(v[0], 0 as u16);
             assert_eq!(v[1], 0 as u16);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -1001,7 +1002,7 @@ mod tests {
             assert_eq!(v[0], 0 as u16);
             assert_eq!(v[1], 0 as u16);
             assert_eq!(v[2], 0 as u16);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -1018,7 +1019,7 @@ mod tests {
         for v in tests {
             assert_eq!(v[0], 0 as u32);
             assert_eq!(v[1], 0 as u32);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -1033,7 +1034,7 @@ mod tests {
             assert_eq!(v[0], 0 as u32);
             assert_eq!(v[1], 0 as u32);
             assert_eq!(v[2], 0 as u32);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -1050,7 +1051,7 @@ mod tests {
         for v in tests {
             assert_eq!(v[0], 0 as u64);
             assert_eq!(v[1], 0 as u64);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -1065,7 +1066,7 @@ mod tests {
             assert_eq!(v[0], 0 as u64);
             assert_eq!(v[1], 0 as u64);
             assert_eq!(v[2], 0 as u64);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -1082,7 +1083,7 @@ mod tests {
         for v in tests {
             assert_eq!(v[0], 0 as u128);
             assert_eq!(v[1], 0 as u128);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -1097,7 +1098,7 @@ mod tests {
             assert_eq!(v[0], 0 as u128);
             assert_eq!(v[1], 0 as u128);
             assert_eq!(v[2], 0 as u128);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -1114,7 +1115,7 @@ mod tests {
         for v in tests {
             assert_relative_eq!(v[0], 0.0 as f32);
             assert_relative_eq!(v[1], 0.0 as f32);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -1129,7 +1130,7 @@ mod tests {
             assert_relative_eq!(v[0], 0.0 as f32);
             assert_relative_eq!(v[1], 0.0 as f32);
             assert_relative_eq!(v[2], 0.0 as f32);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -1146,7 +1147,7 @@ mod tests {
         for v in tests {
             assert_relative_eq!(v[0], 0.0 as f64);
             assert_relative_eq!(v[1], 0.0 as f64);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -1161,7 +1162,7 @@ mod tests {
             assert_relative_eq!(v[0], 0.0 as f64);
             assert_relative_eq!(v[1], 0.0 as f64);
             assert_relative_eq!(v[2], 0.0 as f64);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -1178,7 +1179,7 @@ mod tests {
         for v in tests {
             assert_eq!(v[0], 0 as usize);
             assert_eq!(v[1], 0 as usize);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -1193,7 +1194,7 @@ mod tests {
             assert_eq!(v[0], 0 as usize);
             assert_eq!(v[1], 0 as usize);
             assert_eq!(v[2], 0 as usize);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -1210,7 +1211,7 @@ mod tests {
         for v in tests {
             assert_eq!(v[0], 0 as isize);
             assert_eq!(v[1], 0 as isize);
-            assert_eq!(v.coord.len(), 2);
+            assert_eq!(v.components.len(), 2);
         }
 
         // Three dimension
@@ -1225,7 +1226,7 @@ mod tests {
             assert_eq!(v[0], 0 as isize);
             assert_eq!(v[1], 0 as isize);
             assert_eq!(v[2], 0 as isize);
-            assert_eq!(v.coord.len(), 3);
+            assert_eq!(v.components.len(), 3);
         }
     }
 
@@ -1235,14 +1236,14 @@ mod tests {
         let v = Vector::<u32, 2>::default();
         assert_eq!(v[0], 0 as u32);
         assert_eq!(v[1], 0 as u32);
-        assert_eq!(v.coord.len(), 2);
+        assert_eq!(v.components.len(), 2);
 
         // Three dimension
         let v = Vector::<u32, 3>::default();
         assert_eq!(v[0], 0 as u32);
         assert_eq!(v[1], 0 as u32);
         assert_eq!(v[2], 0 as u32);
-        assert_eq!(v.coord.len(), 3);
+        assert_eq!(v.components.len(), 3);
     }
 
     #[test]
@@ -1251,14 +1252,14 @@ mod tests {
         let v = Vector::<f64, 2>::default();
         assert_relative_eq!(v[0], 0.0 as f64);
         assert_relative_eq!(v[1], 0.0 as f64);
-        assert_eq!(v.coord.len(), 2);
+        assert_eq!(v.components.len(), 2);
 
         // Three dimension
         let v = Vector::<f64, 3>::default();
         assert_relative_eq!(v[0], 0.0 as f64);
         assert_relative_eq!(v[1], 0.0 as f64);
         assert_relative_eq!(v[2], 0.0 as f64);
-        assert_eq!(v.coord.len(), 3);
+        assert_eq!(v.components.len(), 3);
     }
 
     #[test]
@@ -1268,11 +1269,11 @@ mod tests {
         let v2 = Vector::<f64, 2>::from_array([1.0, 2.0]);
         assert_eq!(v1[0], 1);
         assert_eq!(v1[1], 2);
-        assert_eq!(v1.coord.len(), 2);
+        assert_eq!(v1.components.len(), 2);
 
         assert_relative_eq!(v2[0], 1.0 as f64);
         assert_relative_eq!(v2[1], 2.0 as f64);
-        assert_eq!(v2.coord.len(), 2);
+        assert_eq!(v2.components.len(), 2);
 
         // Three dimension
         let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
@@ -1280,12 +1281,12 @@ mod tests {
         assert_eq!(v1[0], 1);
         assert_eq!(v1[1], 2);
         assert_eq!(v1[2], 3);
-        assert_eq!(v1.coord.len(), 3);
+        assert_eq!(v1.components.len(), 3);
 
         assert_relative_eq!(v2[0], 1.0 as f64);
         assert_relative_eq!(v2[1], 2.0 as f64);
         assert_relative_eq!(v2[2], 3.0 as f64);
-        assert_eq!(v2.coord.len(), 3);
+        assert_eq!(v2.components.len(), 3);
     }
 
     // ================================
@@ -1331,14 +1332,14 @@ mod tests {
         let x1 = v1.get_mut(0).unwrap();
         assert_eq!(*x1, 1);
         *x1 = 10;
-        assert_eq!(v1.coord[0], 10);
-        assert_eq!(v1.coord[1], 2);
+        assert_eq!(v1.components[0], 10);
+        assert_eq!(v1.components[1], 2);
 
         let x2 = v2.get_mut(0).unwrap();
         assert_relative_eq!(*x2, 1.0);
         *x2 = 10.0;
-        assert_relative_eq!(v2.coord[0], 10.0);
-        assert_relative_eq!(v2.coord[1], 2.0);
+        assert_relative_eq!(v2.components[0], 10.0);
+        assert_relative_eq!(v2.components[1], 2.0);
 
         let mut v3 = Vector::<u32, 1>::default();
         let mut v4 = Vector::<f64, 1>::default();
@@ -1355,7 +1356,7 @@ mod tests {
         assert_eq!(*r1, [1, 2]);
         r1[0] = 5;
         r1[1] = 6;
-        assert_eq!(v1.coord, [5, 6, 3]);
+        assert_eq!(v1.components, [5, 6, 3]);
 
         let r2 = v2.get_mut(0..2).unwrap();
         assert_eq!(r2.len(), 2);
@@ -1363,10 +1364,10 @@ mod tests {
         assert_relative_eq!(r2[1], 2.0);
         r2[0] = 5.0;
         r2[1] = 6.0;
-        assert_eq!(v2.coord.len(), 3);
-        assert_relative_eq!(v2.coord[0], 5.0);
-        assert_relative_eq!(v2.coord[1], 6.0);
-        assert_relative_eq!(v2.coord[2], 3.0);
+        assert_eq!(v2.components.len(), 3);
+        assert_relative_eq!(v2.components[0], 5.0);
+        assert_relative_eq!(v2.components[1], 6.0);
+        assert_relative_eq!(v2.components[2], 3.0);
     }
 
     // ================================
@@ -1844,7 +1845,7 @@ mod tests {
         test_vector[0] = 10;
         test_slice[0] = 10;
 
-        assert_eq!(test_vector.coord.len(), 3);
+        assert_eq!(test_vector.components.len(), 3);
         assert_eq!(test_vector[0], 10);
         assert_eq!(test_vector[1], 2);
         assert_eq!(test_vector[2], 3);
