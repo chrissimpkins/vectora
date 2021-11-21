@@ -8,7 +8,7 @@ use std::{
     slice::SliceIndex,
 };
 
-// use approx::{relative_eq, RelativeEq};
+use approx::{relative_eq, RelativeEq};
 use num::Num;
 
 // ================================
@@ -300,6 +300,30 @@ where
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.coord.iter_mut()
     }
+
+    // ================================
+    //
+    // Private methods
+    //
+    // ================================
+    #[inline]
+    fn partial_eq_int(&self, other: &Self) -> bool {
+        self.coord == other.coord
+    }
+
+    #[inline]
+    fn partial_eq_float(&self, other: &Self) -> bool
+    where
+        T: Num + Copy + RelativeEq<T>,
+    {
+        for (i, item) in self.coord.iter().enumerate() {
+            if !relative_eq!(*item, other[i]) {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 // ================================
@@ -406,6 +430,88 @@ where
         self.coord.iter_mut()
     }
 }
+
+// ================================
+//
+// PartialEq trait impl
+//
+// ================================
+
+/// PartialEq trait implementation for [`Vector`] with integer coordinate types.
+///
+/// These comparisons establish the symmetry and transitivity relationships
+/// required for the partial equivalence relation definition.
+///
+/// /// Note:
+///
+/// - Negative zero to positive zero comparisons are considered equal.
+macro_rules! impl_vector_int_partialeq_from {
+    ($IntTyp: ty, $doc: expr) => {
+        impl<const N: usize> PartialEq<Vector<$IntTyp, N>> for Vector<$IntTyp, N> {
+            #[doc = $doc]
+            #[inline]
+            fn eq(&self, other: &Self) -> bool {
+                self.partial_eq_int(other)
+            }
+        }
+    };
+    ($IntTyp: ty) => {
+        impl_vector_int_partialeq_from!(
+            $IntTyp,
+            concat!("PartialEq trait implementation for `Vector<", stringify!($IntTyp), ",N>`")
+        );
+    };
+}
+
+impl_vector_int_partialeq_from!(usize);
+impl_vector_int_partialeq_from!(u8);
+impl_vector_int_partialeq_from!(u16);
+impl_vector_int_partialeq_from!(u32);
+impl_vector_int_partialeq_from!(u64);
+impl_vector_int_partialeq_from!(u128);
+impl_vector_int_partialeq_from!(isize);
+impl_vector_int_partialeq_from!(i8);
+impl_vector_int_partialeq_from!(i16);
+impl_vector_int_partialeq_from!(i32);
+impl_vector_int_partialeq_from!(i64);
+impl_vector_int_partialeq_from!(i128);
+
+/// PartialEq trait implementation for [`Vector`] with float coordinate types.
+///
+/// These comparisons establish the symmetry and transitivity relationships
+/// required for the partial equivalence relation definition for floating point
+/// types.  
+///
+/// Note:
+///
+/// - Negative zero to positive zero comparisons are considered equal.
+/// - Positive infinity to positive infinity comparisons are considered equal.
+/// - Negative infinity to negative infinity comparisons are considered equal.
+/// - NaN comparisons are considered not equal.
+///
+/// This approach uses the approx library relative epsilon float equality testing implementation.
+/// This equivalence relation implementation is based on the approach described in
+/// [Comparing Floating Point Numbers, 2012 Edition](https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/)
+macro_rules! impl_vector_float_partialeq_from {
+    ($FloatTyp: ty, $doc: expr) => {
+        impl<const N: usize> PartialEq<Vector<$FloatTyp, N>> for Vector<$FloatTyp, N> {
+            #[doc = $doc]
+            #[inline]
+            fn eq(&self, other: &Self) -> bool {
+                self.partial_eq_float(other)
+            }
+        }
+    };
+    ($FloatTyp: ty) => {
+        impl_vector_float_partialeq_from!(
+            $FloatTyp,
+            concat!("PartialEq trait implementation for `Vector<", stringify!($FloatTyp), ",N>`")
+        );
+    };
+}
+
+impl_vector_float_partialeq_from!(f32);
+impl_vector_float_partialeq_from!(f64);
 
 #[cfg(test)]
 mod tests {
@@ -1150,5 +1256,249 @@ mod tests {
         assert_relative_eq!(v2_iter.next().unwrap(), &2.0);
         assert_relative_eq!(v2_iter.next().unwrap(), &3.0);
         assert_eq!(v2_iter.next(), None);
+    }
+
+    // ================================
+    //
+    // PartialEq trait impl
+    //
+    // ================================
+
+    #[test]
+    fn vector_partial_eq_i8() {
+        let v1 = Vector::<i8, 3>::from_array([-1, 2, 3]);
+        let v2 = Vector::<i8, 3>::from_array([-1, 2, 3]);
+        let v_eq = Vector::<i8, 3>::from_array([-1, 2, 3]);
+        let v_diff = Vector::<i8, 3>::from_array([-1, 2, 4]);
+
+        let v_zero = Vector::<i8, 3>::from_array([0, 0, 0]);
+        let v_zero_neg = Vector::<i8, 3>::from_array([-0, -0, -0]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+        assert!(v_zero == v_zero_neg);
+    }
+
+    #[test]
+    fn vector_partial_eq_i16() {
+        let v1 = Vector::<i16, 3>::from_array([-1, 2, 3]);
+        let v2 = Vector::<i16, 3>::from_array([-1, 2, 3]);
+        let v_eq = Vector::<i16, 3>::from_array([-1, 2, 3]);
+        let v_diff = Vector::<i16, 3>::from_array([-1, 2, 4]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_partial_eq_i32() {
+        let v1 = Vector::<i32, 3>::from_array([-1, 2, 3]);
+        let v2 = Vector::<i32, 3>::from_array([-1, 2, 3]);
+        let v_eq = Vector::<i32, 3>::from_array([-1, 2, 3]);
+        let v_diff = Vector::<i32, 3>::from_array([-1, 2, 4]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_partial_eq_i64() {
+        let v1 = Vector::<i64, 3>::from_array([-1, 2, 3]);
+        let v2 = Vector::<i64, 3>::from_array([-1, 2, 3]);
+        let v_eq = Vector::<i64, 3>::from_array([-1, 2, 3]);
+        let v_diff = Vector::<i64, 3>::from_array([-1, 2, 4]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_partial_eq_i128() {
+        let v1 = Vector::<i128, 3>::from_array([-1, 2, 3]);
+        let v2 = Vector::<i128, 3>::from_array([-1, 2, 3]);
+        let v_eq = Vector::<i128, 3>::from_array([-1, 2, 3]);
+        let v_diff = Vector::<i128, 3>::from_array([-1, 2, 4]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_partial_eq_u8() {
+        let v1 = Vector::<u8, 3>::from_array([1, 2, 3]);
+        let v2 = Vector::<u8, 3>::from_array([1, 2, 3]);
+        let v_eq = Vector::<u8, 3>::from_array([1, 2, 3]);
+        let v_diff = Vector::<u8, 3>::from_array([1, 2, 4]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_partial_eq_u16() {
+        let v1 = Vector::<u16, 3>::from_array([1, 2, 3]);
+        let v2 = Vector::<u16, 3>::from_array([1, 2, 3]);
+        let v_eq = Vector::<u16, 3>::from_array([1, 2, 3]);
+        let v_diff = Vector::<u16, 3>::from_array([1, 2, 4]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_partial_eq_u32() {
+        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let v2 = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let v_eq = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let v_diff = Vector::<u32, 3>::from_array([1, 2, 4]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_partial_eq_u64() {
+        let v1 = Vector::<u64, 3>::from_array([1, 2, 3]);
+        let v2 = Vector::<u64, 3>::from_array([1, 2, 3]);
+        let v_eq = Vector::<u64, 3>::from_array([1, 2, 3]);
+        let v_diff = Vector::<u64, 3>::from_array([1, 2, 4]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_partial_eq_u128() {
+        let v1 = Vector::<u128, 3>::from_array([1, 2, 3]);
+        let v2 = Vector::<u128, 3>::from_array([1, 2, 3]);
+        let v_eq = Vector::<u128, 3>::from_array([1, 2, 3]);
+        let v_diff = Vector::<u128, 3>::from_array([1, 2, 4]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_partial_eq_isize() {
+        let v1 = Vector::<isize, 3>::from_array([1, 2, 3]);
+        let v2 = Vector::<isize, 3>::from_array([1, 2, 3]);
+        let v_eq = Vector::<isize, 3>::from_array([1, 2, 3]);
+        let v_diff = Vector::<isize, 3>::from_array([1, 2, 4]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_partial_eq_usize() {
+        let v1 = Vector::<usize, 3>::from_array([1, 2, 3]);
+        let v2 = Vector::<usize, 3>::from_array([1, 2, 3]);
+        let v_eq = Vector::<usize, 3>::from_array([1, 2, 3]);
+        let v_diff = Vector::<usize, 3>::from_array([1, 2, 4]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_partial_eq_f32() {
+        let v1 = Vector::<f32, 3>::from_array([-1.1, 2.2, 3.3]);
+        let v2 = Vector::<f32, 3>::from_array([-1.1, 2.2, 3.3]);
+        let v_eq = Vector::<f32, 3>::from_array([-1.1, 2.2, 3.3]);
+        let v_diff = Vector::<f32, 3>::from_array([-1.1, 2.2, 4.4]);
+        let v_close = Vector::<f32, 3>::from_array([-1.1 + (f32::EPSILON * 2.), 2.2, 3.3]);
+
+        let v_zero = Vector::<f32, 3>::from_array([0.0, 0.0, 0.0]);
+        let v_zero_eq = Vector::<f32, 3>::from_array([0.0, 0.0, 0.0]);
+        let v_zero_neg_eq = Vector::<f32, 3>::from_array([-0.0, -0.0, -0.0]);
+
+        let v_nan = Vector::<f32, 3>::from_array([f32::NAN, 0.0, 0.0]);
+        let v_nan_diff = Vector::<f32, 3>::from_array([f32::NAN, 0.0, 0.0]);
+
+        let v_inf_pos = Vector::<f32, 3>::from_array([f32::INFINITY, 0.0, 0.0]);
+        let v_inf_pos_eq = Vector::<f32, 3>::from_array([f32::INFINITY, 0.0, 0.0]);
+        let v_inf_neg = Vector::<f32, 3>::from_array([f32::NEG_INFINITY, 0.0, 0.0]);
+        let v_inf_neg_eq = Vector::<f32, 3>::from_array([f32::NEG_INFINITY, 0.0, 0.0]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+        assert!(v1 != v_close);
+        assert!(v_zero == v_zero_eq);
+        assert!(v_zero == v_zero_neg_eq); // zero and neg zero are defined as equivalent
+        assert!(v_nan != v_nan_diff); // NaN comparisons are defined as different
+        assert!(v_inf_pos == v_inf_pos_eq); // postive infinity comparisons are defined as equivalent
+        assert!(v_inf_neg == v_inf_neg_eq); // negative infinity comparisons are defined as equivalent
+    }
+
+    #[test]
+    fn vector_partial_eq_f64() {
+        let v1 = Vector::<f64, 3>::from_array([-1.1, 2.2, 3.3]);
+        let v2 = Vector::<f64, 3>::from_array([-1.1, 2.2, 3.3]);
+        let v_eq = Vector::<f64, 3>::from_array([-1.1, 2.2, 3.3]);
+        let v_diff = Vector::<f64, 3>::from_array([-1.1, 2.2, 4.4]);
+        let v_close = Vector::<f64, 3>::from_array([-1.1 + (f64::EPSILON * 2.), 2.2, 3.3]);
+
+        let v_zero = Vector::<f64, 3>::from_array([0.0, 0.0, 0.0]);
+        let v_zero_eq = Vector::<f64, 3>::from_array([0.0, 0.0, 0.0]);
+        let v_zero_neg_eq = Vector::<f64, 3>::from_array([-0.0, -0.0, -0.0]);
+
+        let v_nan = Vector::<f64, 3>::from_array([f64::NAN, 0.0, 0.0]);
+        let v_nan_diff = Vector::<f64, 3>::from_array([f64::NAN, 0.0, 0.0]);
+
+        let v_inf_pos = Vector::<f64, 3>::from_array([f64::INFINITY, 0.0, 0.0]);
+        let v_inf_pos_eq = Vector::<f64, 3>::from_array([f64::INFINITY, 0.0, 0.0]);
+        let v_inf_neg = Vector::<f64, 3>::from_array([f64::NEG_INFINITY, 0.0, 0.0]);
+        let v_inf_neg_eq = Vector::<f64, 3>::from_array([f64::NEG_INFINITY, 0.0, 0.0]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+        assert!(v1 != v_close);
+        assert!(v_zero == v_zero_eq);
+        assert!(v_zero == v_zero_neg_eq); // zero and neg zero are defined as equivalent
+        assert!(v_nan != v_nan_diff); // NaN comparisons are defined as different
+        assert!(v_inf_pos == v_inf_pos_eq); // postive infinity comparisons are defined as equivalent
+        assert!(v_inf_neg == v_inf_neg_eq); // negative infinity comparisons are defined as equivalent
     }
 }
