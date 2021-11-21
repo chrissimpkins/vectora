@@ -89,7 +89,7 @@ pub type Vector3dIsize = Vector<isize, 3>;
 pub type Vector3dUsize = Vector<usize, 3>;
 
 /// A generic vector type that holds N-dimensional `coord` data.
-#[derive(Copy, Clone, Debug, Hash)]
+#[derive(Copy, Clone, Debug)]
 pub struct Vector<T, const N: usize>
 where
     T: Num + Copy,
