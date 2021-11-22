@@ -551,6 +551,25 @@ where
         Vec::from(self.components)
     }
 
+    /// Returns the [`Vector`] component number.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v2d: Vector<u32, 2> = Vector::new();
+    /// assert_eq!(v2d.len(), 2);
+    ///
+    /// let v3d: Vector<f64, 3> = Vector::new();
+    /// assert_eq!(v3d.len(), 3);
+    /// ```
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.components.len()
+    }
+
     // ================================
     //
     // Private methods
