@@ -2812,6 +2812,13 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "attempt to multiply with overflow")]
+    fn vector_trait_mul_overflow_panic() {
+        let v1: Vector<u8, 2> = Vector::from([2, 2]);
+        let _ = v1 * u8::MAX;
+    }
+
+    #[test]
     fn vector_multi_overloaded_operator_precedence() {
         let v1: Vector<i32, 3> = Vector::from([1, 1, 1]);
         let v2: Vector<i32, 3> = Vector::from([-2, -2, -2]);
