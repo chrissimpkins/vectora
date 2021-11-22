@@ -574,7 +574,7 @@ where
         self.components.len()
     }
 
-    /// Returns `true` if the [`Vector`] is empty and `false` otherwise.
+    /// Returns `true` if the [`Vector`] contains no items and `false` otherwise.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.components.is_empty()
