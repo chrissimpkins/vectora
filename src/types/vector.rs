@@ -5,7 +5,7 @@
 use std::{
     borrow::{Borrow, BorrowMut},
     iter::IntoIterator,
-    ops::{Deref, DerefMut, Index, IndexMut},
+    ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Neg, Sub},
     slice::SliceIndex,
 };
 
@@ -1170,6 +1170,80 @@ impl_vector_from_vector!(u8, f64);
 impl_vector_from_vector!(u16, f32);
 impl_vector_from_vector!(u16, f64);
 impl_vector_from_vector!(u32, f64);
+
+// ================================
+//
+// Operator overloads
+//
+// ================================
+
+// Unary
+
+impl<T, const N: usize> Neg for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    type Output = Self;
+
+    /// Unary negation operator overload implementation.
+    fn neg(self) -> Self::Output {
+        let new_components = &mut [T::zero(); N];
+        for (i, x) in new_components.iter_mut().enumerate() {
+            *x = T::zero() - self[i];
+        }
+        Self { components: *new_components }
+    }
+}
+
+// Binary
+
+impl<T, const N: usize> Add for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    type Output = Self;
+
+    /// Binary add operator overload implementation.
+    fn add(self, rhs: Self) -> Self::Output {
+        let new_components = &mut [T::zero(); N];
+        for (i, x) in new_components.iter_mut().enumerate() {
+            *x = self[i] + rhs[i];
+        }
+        Self { components: *new_components }
+    }
+}
+
+impl<T, const N: usize> Sub for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    type Output = Self;
+
+    /// Binary subtraction operator overload implementation.
+    fn sub(self, rhs: Self) -> Self::Output {
+        let new_components = &mut [T::zero(); N];
+        for (i, x) in new_components.iter_mut().enumerate() {
+            *x = self[i] - rhs[i];
+        }
+        Self { components: *new_components }
+    }
+}
+
+impl<T, const N: usize> Mul<T> for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    type Output = Self;
+
+    /// Binary multiplication operator overload implementation.
+    fn mul(self, rhs: T) -> Self::Output {
+        let new_components = &mut [T::zero(); N];
+        for (i, x) in new_components.iter_mut().enumerate() {
+            *x = self[i] * rhs;
+        }
+        Self { components: *new_components }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -2604,5 +2678,151 @@ mod tests {
         let e2 = Vector::<i32, 4>::try_from(v_slice);
         assert!(matches!(e1, Err(VectorError::TryFromSliceError(_))));
         assert!(matches!(e2, Err(VectorError::TryFromSliceError(_))));
+    }
+
+    // ================================
+    //
+    // Operator overloads
+    //
+    // ================================
+
+    #[test]
+    fn vector_trait_neg_unary() {
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v2: Vector<i32, 3> = Vector::from([-1, -2, -3]);
+        let v3: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
+        let v4: Vector<f64, 3> = Vector::from([-1.0, -2.0, -3.0]);
+
+        assert_eq!(-v1, -v1);
+        assert_eq!(-v1, v2);
+        assert_eq!(-v2, v1);
+        assert_eq!(-v3, -v3);
+        assert_eq!(-v3, v4);
+        assert_eq!(-v4, v3);
+    }
+
+    #[test]
+    fn vector_trait_add() {
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
+        let v3: Vector<i32, 3> = Vector::from([-2, -3, -4]);
+        let v_zero: Vector<i32, 3> = Vector::new();
+
+        assert_eq!(v1 + v2, Vector::<i32, 3>::from([5, 7, 9]));
+        assert_eq!(v2 + v3, Vector::<i32, 3>::from([2, 2, 2]));
+        assert_eq!(v1 + v2 + v3, Vector::<i32, 3>::from([3, 4, 5]));
+        assert_eq!(v1 + v_zero, v1);
+        assert_eq!(v_zero + v1, v1);
+        assert_eq!(v1 + v2, v2 + v1);
+        assert_eq!((v1 + v2) + v3, v1 + (v2 + v3));
+        assert_eq!(v1 + (-v1), v_zero);
+
+        let v1: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
+        let v2: Vector<f64, 3> = Vector::from([4.0, 5.0, 6.0]);
+        let v3: Vector<f64, 3> = Vector::from([-2.0, -3.0, -4.0]);
+        let v_zero: Vector<f64, 3> = Vector::new();
+
+        assert_eq!(v1 + v2, Vector::<f64, 3>::from([5.0, 7.0, 9.0]));
+        assert_eq!(v2 + v3, Vector::<f64, 3>::from([2.0, 2.0, 2.0]));
+        assert_eq!(v1 + v2 + v3, Vector::<f64, 3>::from([3.0, 4.0, 5.0]));
+        assert_eq!(v1 + v_zero, v1);
+        assert_eq!(v_zero + v1, v1);
+        assert_eq!(-v_zero + v1, v1);
+        assert_eq!(v1 + v2, v2 + v1);
+        assert_eq!((v1 + v2) + v3, v1 + (v2 + v3));
+        assert_eq!(v1 + (-v1), v_zero)
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to add with overflow")]
+    fn vector_trait_add_panics_on_overflow() {
+        let v1: Vector<u8, 3> = Vector::from([u8::MAX, 2, 3]);
+        let v2: Vector<u8, 3> = Vector::from([1, 1, 1]);
+        let _ = v1 + v2;
+    }
+
+    #[test]
+    fn vector_trait_sub() {
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
+        let v3: Vector<i32, 3> = Vector::from([-2, -3, -4]);
+        let v_zero: Vector<i32, 3> = Vector::new();
+
+        assert_eq!(v1 - v2, Vector::<i32, 3>::from([-3, -3, -3]));
+        assert_eq!(v2 - v1, Vector::<i32, 3>::from([3, 3, 3]));
+        assert_eq!(v1 - v2 - v3, Vector::<i32, 3>::from([-1, 0, 1]));
+        assert_eq!((v1 - v2) - v3, v1 - v2 - v3);
+        assert_eq!(v1 - (v2 - v3), Vector::<i32, 3>::from([-5, -6, -7]));
+        assert_eq!(v1 - v_zero, v1);
+        assert_eq!(v1 - (-v_zero), v1);
+        assert_eq!(v_zero - v1, -v1);
+        assert_eq!(-v_zero - v1, -v1);
+
+        let v1: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
+        let v2: Vector<f64, 3> = Vector::from([4.0, 5.0, 6.0]);
+        let v3: Vector<f64, 3> = Vector::from([-2.0, -3.0, -4.0]);
+        let v_zero: Vector<f64, 3> = Vector::new();
+
+        assert_eq!(v1 - v2, Vector::<f64, 3>::from([-3.0, -3.0, -3.0]));
+        assert_eq!(v2 - v1, Vector::<f64, 3>::from([3.0, 3.0, 3.0]));
+        assert_eq!(v1 - v2 - v3, Vector::<f64, 3>::from([-1.0, 0.0, 1.0]));
+        assert_eq!((v1 - v2) - v3, v1 - v2 - v3);
+        assert_eq!(v1 - (v2 - v3), Vector::<f64, 3>::from([-5.0, -6.0, -7.0]));
+        assert_eq!(v1 - v_zero, v1);
+        assert_eq!(v1 - (-v_zero), v1);
+        assert_eq!(v_zero - v1, -v1);
+        assert_eq!(-v_zero - v1, -v1);
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to subtract with overflow")]
+    fn vector_trait_sub_panics_on_overflow() {
+        let v1: Vector<u32, 3> = Vector::from([1, 2, 3]);
+        let v2: Vector<u32, 3> = Vector::from([4, 5, 6]);
+        let _ = v1 - v2;
+    }
+
+    #[test]
+    fn vector_trait_mul() {
+        let v1: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        assert_eq!(v1 * 10, Vector::from([10, 10, 10]));
+        assert_eq!(v1 * -10, Vector::from([-10, -10, -10]));
+        assert_eq!(v1 * 0, Vector::from([0, 0, 0]));
+        assert_eq!(v1 * -0, Vector::from([0, 0, 0]));
+        assert_eq!(v1 * 10 * 5, Vector::from([50, 50, 50]));
+        assert_eq!(v1 * 10 * -5, Vector::from([-50, -50, -50]));
+        assert_eq!((v1 * 10) * 5, v1 * (10 * 5));
+
+        let v1: Vector<f64, 3> = Vector::from([1.0, 1.0, 1.0]);
+        assert_eq!(v1 * 10.0, Vector::from([10.0, 10.0, 10.0]));
+        assert_eq!(v1 * -10.0, Vector::from([-10.0, -10.0, -10.0]));
+        assert_eq!(v1 * 0.0, Vector::from([0.0, 0.0, 0.0]));
+        assert_eq!(v1 * -0.0, Vector::from([0.0, 0.0, 0.0]));
+        assert_eq!(v1 * 10.0 * 5.0, Vector::from([50.0, 50.0, 50.0]));
+        assert_eq!(v1 * 10.0 * -5.0, Vector::from([-50.0, -50.0, -50.0]));
+        assert_eq!((v1 * 10.0) * 5.0, v1 * (10.0 * 5.0));
+    }
+
+    #[test]
+    fn vector_multi_overloaded_operator_precedence() {
+        let v1: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        let v2: Vector<i32, 3> = Vector::from([-2, -2, -2]);
+        let v_zero: Vector<i32, 3> = Vector::new();
+        assert_eq!(v1 + -v2 * 10, Vector::<i32, 3>::from([21, 21, 21]));
+        assert_eq!((v1 + -v2) * 10, Vector::<i32, 3>::from([30, 30, 30]));
+        assert_eq!(v1 - -v2 * 10, Vector::<i32, 3>::from([-19, -19, -19]));
+        assert_eq!((v1 - -v2) * 10, Vector::<i32, 3>::from([-10, -10, -10]));
+        assert_eq!(v1 + v2 * 0, v1);
+        assert_eq!((v1 + v2) * 0, v_zero);
+
+        let v1: Vector<f64, 3> = Vector::from([1.0, 1.0, 1.0]);
+        let v2: Vector<f64, 3> = Vector::from([-2.0, -2.0, -2.0]);
+        let v_zero: Vector<f64, 3> = Vector::new();
+        assert_eq!(v1 + -v2 * 10.0, Vector::<f64, 3>::from([21.0, 21.0, 21.0]));
+        assert_eq!((v1 + -v2) * 10.0, Vector::<f64, 3>::from([30.0, 30.0, 30.0]));
+        assert_eq!(v1 - -v2 * 10.0, Vector::<f64, 3>::from([-19.0, -19.0, -19.0]));
+        assert_eq!((v1 - -v2) * 10.0, Vector::<f64, 3>::from([-10.0, -10.0, -10.0]));
+        assert_eq!(v1 + v2 * 0.0, v1);
+        assert_eq!((v1 + v2) * 0.0, v_zero);
     }
 }
