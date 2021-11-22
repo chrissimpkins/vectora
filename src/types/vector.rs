@@ -91,7 +91,7 @@ pub type Vector3dIsize = Vector<isize, 3>;
 /// Type alias for a 3D usize integer vector.
 pub type Vector3dUsize = Vector<usize, 3>;
 
-/// A generic vector type that holds N-dimensional `components` data.
+/// A generic, fixed length vector type that holds N-dimensional `components` data.
 #[derive(Copy, Clone, Debug)]
 pub struct Vector<T, const N: usize>
 where
@@ -152,11 +152,7 @@ where
     }
 
     /// Returns a new [`Vector`] with a numeric type and scalar component data as
-    /// defined by the reference parameter.
-    ///
-    /// Note: If the [`Vec`] item length is greater than the requested [`Vector`]
-    /// component length, data are filled to the requested component length and
-    /// other data are discarded.
+    /// defined by the [`Vec`] reference parameter.
     ///
     /// # Errors
     ///
@@ -174,9 +170,9 @@ where
     /// ```
     ///
     /// Callers should check that the length of the [`Vec`] is
-    /// sufficient to fill the requested [`Vector`] dimensions.  The following
+    /// the same as the number of requested [`Vector`] dimensions.  The following
     /// code raises [`VectorError::TryFromSliceError`] on an attempt to make a
-    /// three dimensional [`Vector`] with two dimensinoal [`slice`] data:
+    /// three dimensional [`Vector`] with two dimensional data:
     ///
     /// ```
     ///# use vectora::types::vector::Vector;
@@ -190,10 +186,6 @@ where
 
     /// Returns a new [`Vector`] with a numeric type and scalar component data as
     /// defined by the [`slice`] parameter.
-    ///
-    /// Note: If the [`slice`] item length is greater than the requested [`Vector`]
-    /// component length, data are filled to the requested component length and
-    /// other data are discarded.
     ///
     /// # Errors
     ///
@@ -212,7 +204,7 @@ where
     /// ```
     ///
     /// Callers should check that the length of the [`slice`] is
-    /// sufficient to fill the requested [`Vector`] dimensions.  The following
+    /// the same as the number of requested [`Vector`] dimensions.  The following
     /// code raises [`VectorError::TryFromSliceError`] on an attempt to make a
     /// three dimensional [`Vector`] with two dimensinoal [`slice`] data:
     ///
@@ -712,6 +704,89 @@ where
 
 // ================================
 //
+// FromIterator trait impl
+//
+// ================================
+
+impl<T, const N: usize> FromIterator<T> for Vector<T, N>
+where
+    T: Num + Copy + Default,
+{
+    /// FromIterator trait implementation with support for `collect`.
+    ///
+    /// # Important
+    ///
+    /// This implementation is designed to be permissive across iterables
+    /// with lengths that differ from the requested [`Vector`] length. The
+    /// defines the following underflow and overflow behavior:
+    ///
+    /// - On underflow: take all items in the iterator and fill subsequent
+    /// undefined components with the default value for the numeric type
+    /// (`T::default`)
+    /// - On overflow: truncate data after the first N items in the iterator
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v: Vector<i32, 3> = [1, 2, 3].into_iter().collect();
+    /// assert_eq!(v.len(), 3);
+    /// assert_eq!(v[0], 1 as i32);
+    /// assert_eq!(v[1], 2 as i32);
+    /// assert_eq!(v[2], 3 as i32);
+    /// ```
+    ///
+    /// ## Overflow Example
+    ///
+    /// Three dimensional data used to instantiate a two dimensional
+    /// [`Vector`] results in truncation.
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v: Vector<i32, 2> = [1, 2, 3].into_iter().collect();
+    /// assert_eq!(v.len(), 2);
+    /// assert_eq!(v[0], 1 as i32);
+    /// assert_eq!(v[1], 2 as i32);
+    /// ```
+    ///
+    /// ## Underflow Example
+    ///
+    /// Two dimensional data used to instantiate a three dimensional
+    /// [`Vector`] results in a default numeric type value fill for
+    /// the undefined final component.
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v: Vector<i32, 3> = [1, 2].into_iter().collect();
+    /// assert_eq!(v.len(), 3);
+    /// assert_eq!(v[0], 1 as i32);
+    /// assert_eq!(v[1], 2 as i32);
+    /// assert_eq!(v[2], 0 as i32);
+    /// ```
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Vector<T, N> {
+        let mut newvec = Vector::<T, N>::new();
+        let mut it = iter.into_iter();
+        // n.b. *Truncation on overflows*
+        // We take a maximum of N items from the iterator.
+        // This results in truncation on overflow.
+        for i in 0..N {
+            // n.b. *Zero value fills on underflows*
+            // no need to edit values here because
+            // the type was instantiated with default
+            // type-secific zero values
+            if let Some(c) = it.next() {
+                newvec[i] = c
+            }
+        }
+
+        newvec
+    }
+}
+
+// ================================
+//
 // PartialEq trait impl
 //
 // ================================
@@ -967,10 +1042,6 @@ where
     type Error = VectorError;
     /// Returns a new [`Vector`] with numeric type as defined by a
     /// slice parameter.
-    ///
-    /// Note: If the slice item length is greater than the requested [`Vector`]
-    /// component length, data are filled to the requested component length and
-    /// other data are discarded.
     ///
     /// # Errors
     ///
@@ -1915,6 +1986,52 @@ mod tests {
         assert_relative_eq!(v2_iter.next().unwrap(), &2.0);
         assert_relative_eq!(v2_iter.next().unwrap(), &3.0);
         assert_eq!(v2_iter.next(), None);
+    }
+
+    // ==================================
+    //
+    // FromIterator trait / collect tests
+    //
+    // ==================================
+
+    #[test]
+    fn vector_trait_fromiterator_collect() {
+        let v1: Vector<i32, 3> = [1, 2, 3].into_iter().collect();
+        assert_eq!(v1.components.len(), 3);
+        assert_eq!(v1[0], 1 as i32);
+        assert_eq!(v1[1], 2 as i32);
+        assert_eq!(v1[2], 3 as i32);
+
+        // overflow test
+        // should truncate at the Vector length for overflows
+        let v2: Vector<i32, 2> = [1, 2, 3].into_iter().collect();
+        assert_eq!(v2.components.len(), 2);
+        assert_eq!(v2[0], 1 as i32);
+        assert_eq!(v2[1], 2 as i32);
+
+        // underflow test
+        // zero value fills for underflows
+        let v3: Vector<i32, 5> = [1, 2, 3].into_iter().collect();
+        assert_eq!(v3.components.len(), 5);
+        assert_eq!(v3[0], 1 as i32);
+        assert_eq!(v3[1], 2 as i32);
+        assert_eq!(v3[2], 3 as i32);
+        assert_eq!(v3[3], 0 as i32);
+        assert_eq!(v3[4], 0 as i32);
+
+        // test with Vector as the iterable
+        let v4: Vector<i32, 3> = Vector::from([1, 2, 3]).into_iter().map(|x| x * 2).collect();
+        assert_eq!(v4.components.len(), 3);
+        assert_eq!(v4[0], 2);
+        assert_eq!(v4[1], 4);
+        assert_eq!(v4[2], 6);
+
+        // empty iterable test
+        let v5: Vector<i32, 3> = [].into_iter().collect();
+        assert_eq!(v5.components.len(), 3);
+        assert_eq!(v5[0], 0 as i32);
+        assert_eq!(v5[1], 0 as i32);
+        assert_eq!(v5[2], 0 as i32);
     }
 
     // ================================
