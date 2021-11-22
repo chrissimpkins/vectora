@@ -118,7 +118,7 @@ where
     /// component scalar values and number of vector dimensions:
     ///
     /// ```
-    /// # use vectora::types::vector::*;
+    /// # use vectora::types::vector::Vector;
     /// let vec_2d_u32 = Vector::<u32, 2>::new();
     /// let vec_3d_f64 = Vector::<f64, 3>::new();
     /// ```
@@ -135,8 +135,92 @@ where
     /// let vec_3d_f64_1 = Vector3d::<f64>::new();
     /// let vec_3d_f64_2 = Vector3dF64::new();
     /// ```
+    ///
+    /// ## With type inference
+    ///
+    /// There is no requirement for additional type data when the type can be inferrred
+    /// by the compiler:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v: Vector<u32, 3> = Vector::new();
+    /// ```
     pub fn new() -> Self {
         Self { components: [T::default(); N] }
+    }
+
+    /// Returns a new [`Vector`] with a numeric type and scalar component data as
+    /// defined by the reference parameter.
+    ///
+    /// Note: If the [`Vec`] item length is greater than the requested [`Vector`]
+    /// component length, data are filled to the requested component length and
+    /// other data are discarded.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the [`Vec`] parameter length is less than the expected
+    /// [`Vector`] component length.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = vec![1 as u32, 2 as u32, 3 as u32];
+    /// let _: Vector<u32,3> = Vector::from_vec(&v);
+    /// ```
+    ///
+    /// Callers are responsible for checking that the length of the [`Vec`] is
+    /// sufficient to fill the requested [`Vector`] dimensions.  The following
+    /// code panics on an attempt to make a three dimensional [`Vector`] with
+    /// two dimensinoal [`Vec`] data:
+    ///
+    /// ```should_panic
+    ///# use vectora::types::vector::Vector;
+    /// let v = vec![1 as u32, 2 as u32];
+    /// let _: Vector<u32,3> = Vector::from_vec(&v);
+    /// ```
+    pub fn from_vec(t_vec: &[T]) -> Vector<T, N> {
+        Self::from(t_vec)
+    }
+
+    /// Returns a new [`Vector`] with a numeric type and scalar component data as
+    /// defined by the [`slice`] parameter.
+    ///
+    /// Note: If the [`slice`] item length is greater than the requested [`Vector`]
+    /// component length, data are filled to the requested component length and
+    /// other data are discarded.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the [`slice`] parameter length is less than the expected
+    /// [`Vector`] component length.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let a = [1 as u32, 2 as u32, 3 as u32];
+    /// let sl = &a[..];
+    /// let _: Vector<u32,3> = Vector::from_slice(sl);
+    /// ```
+    ///
+    /// Callers are responsible for checking that the length of the [`slice`] is
+    /// sufficient to fill the requested [`Vector`] dimensions.  The following
+    /// code panics on an attempt to make a three dimensional [`Vector`] with
+    /// two dimensinoal [`slice`] data:
+    ///
+    /// ```should_panic
+    ///# use vectora::types::vector::Vector;
+    /// let a = [1 as u32, 2 as u32];
+    /// let sl = &a[..];
+    /// let _: Vector<u32,3> = Vector::from_slice(sl);
+    /// ```
+    pub fn from_slice(t_slice: &[T]) -> Vector<T, N> {
+        Self::from(t_slice)
     }
 }
 
@@ -144,7 +228,7 @@ impl<T, const N: usize> Default for Vector<T, N>
 where
     T: Num + Copy + Default,
 {
-    /// Returns a new [`Vector`] filled with default component scalar values.
+    /// Returns a new [`Vector`] filled with default scalar values for each component.
     ///
     /// # Examples
     ///
@@ -165,7 +249,7 @@ where
     T: Num + Copy,
 {
     /// Returns a new [`Vector`] defined with component scalar values provided
-    /// in `array`.
+    /// in an [`array`].
     ///
     /// # Examples
     ///
@@ -173,11 +257,11 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v1 = Vector::<u32, 2>::from_array([1, 2]);
-    /// let v2 = Vector::<f64, 3>::from_array([3.0, 4.0, 5.0]);
+    /// let v1: Vector<u32, 2> = Vector::from_array([1, 2]);
+    /// let v2: Vector::<f64, 3> = Vector::from_array([3.0, 4.0, 5.0]);
     /// ```
-    pub fn from_array(array: [T; N]) -> Self {
-        Self { components: array }
+    pub fn from_array(t_array: [T; N]) -> Vector<T, N> {
+        Self::from(t_array)
     }
 
     /// Returns a reference to a [`Vector`] index value or range,
@@ -773,8 +857,135 @@ where
 // From trait impl
 //
 // ================================
-/// Lossless [`Vector`] scalar component numeric type conversion support with the
-/// [`From`] trait.
+impl<T, const N: usize> From<[T; N]> for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    /// Returns a new [`Vector`] with numeric type and dimensions as
+    /// defined by an array parameter.
+    ///
+    /// Note: The [`Vector`] dimension size is defined by the fixed [`array`]
+    /// size.
+    #[inline]
+    fn from(t_n_array: [T; N]) -> Vector<T, N> {
+        Vector { components: t_n_array }
+    }
+}
+
+impl<T, const N: usize> From<&[T; N]> for Vector<T, N>
+where
+    T: Num + Copy,
+{
+    /// Returns a new [`Vector`] with numeric type and dimensions as
+    /// defined by an [`array`] reference parameter.
+    ///
+    /// Note: If the [`array`] item length is greater than the requested [`Vector`]
+    /// component length, data are filled to the requested component length and
+    /// other data are discarded.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the `t_slice` parameter length is less than the expected
+    /// [`Vector`] component length.
+    #[inline]
+    fn from(t_n_array: &[T; N]) -> Vector<T, N> {
+        Vector { components: *t_n_array }
+    }
+}
+
+impl<T, const N: usize> From<Vec<T>> for Vector<T, N>
+where
+    T: Num + Copy + Default,
+{
+    /// Returns a new [`Vector`] with numeric type as
+    /// defined by a [`Vec`] parameter.
+    ///
+    /// Note: If the [`Vec`] item length is greater than the requested [`Vector`]
+    /// component length, data are filled to the requested component length and
+    /// other data are discarded.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the `t_vec` parameter length is less than the expected
+    /// [`Vector`] component length.
+    #[inline]
+    fn from(t_vec: Vec<T>) -> Vector<T, N> {
+        Self::from((&t_vec).as_slice())
+    }
+}
+
+impl<T, const N: usize> From<&Vec<T>> for Vector<T, N>
+where
+    T: Num + Copy + Default,
+{
+    /// Returns a new [`Vector`] with numeric type as
+    /// defined by a [`Vec`] reference parameter.
+    ///
+    /// Note: If the [`Vec`] item length is greater than the requested [`Vector`]
+    /// component length, data are filled to the requested component length and
+    /// other data are discarded.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the `t_vec` parameter length is less than the expected
+    /// [`Vector`] component length.
+    #[inline]
+    fn from(t_vec: &Vec<T>) -> Vector<T, N> {
+        Self::from(t_vec.as_slice())
+    }
+}
+
+impl<T, const N: usize> From<&[T]> for Vector<T, N>
+where
+    T: Num + Copy + Default,
+{
+    /// Returns a new [`Vector`] with numeric type as defined by a
+    /// slice parameter.
+    ///
+    /// Note: If the slice item length is greater than the requested [`Vector`]
+    /// component length, data are filled to the requested component length and
+    /// other data are discarded.
+    ///
+    /// # Panics
+    ///
+    /// Panics when the `t_slice` parameter length is less than the expected
+    /// [`Vector`] component length.
+    ///
+    /// # Examples
+    ///
+    /// ## From [`array`] slice
+    ///
+    /// ```
+    ///# use vectora::types::vector::Vector;
+    /// let _: Vector<u32, 3> = Vector::from(&[1, 2, 3][..]);
+    /// let _: Vector<f64, 2> = Vector::from(&[1.0, 2.0][..]);
+    /// ```
+    ///
+    /// ## From [`Vec`] slice
+    ///
+    /// ```
+    ///# use vectora::types::vector::Vector;
+    /// let _: Vector<u32, 3> = Vector::from(Vec::from([1, 2, 3]).as_slice());
+    /// let _: Vector<f64, 2> = Vector::from(Vec::from([1.0, 2.0]).as_slice());
+    /// ```
+    #[inline]
+    fn from(t_slice: &[T]) -> Vector<T, N> {
+        // n.b. if the length of the slice is less than the required number
+        // of Vector components, then we panic because this does not meet
+        // the requirements of the calling code.
+        if t_slice.len() < N {
+            panic!("expected slice with {} items, received slice with {} items", N, t_slice.len());
+        }
+        let mut new_components: [T; N] = [T::default(); N];
+        for (i, c) in t_slice[..N].iter().enumerate() {
+            new_components[i] = *c;
+        }
+        Vector { components: new_components }
+    }
+}
+
+/// Returns a new [`Vector`] with lossless [`Vector`] scalar component numeric type
+/// cast support.
 macro_rules! impl_vector_from_vector {
     ($Small: ty, $Large: ty, $doc: expr) => {
         impl<const N: usize> From<Vector<$Small, N>> for Vector<$Large, N> {
@@ -2169,5 +2380,57 @@ mod tests {
 
         let _: Vector<f64, 3> = Vector::<f64, 3>::from(v_i32);
         let _: Vector<f64, 3> = v_i32.into();
+    }
+
+    #[test]
+    fn vector_trait_from_into_array_to_vector() {
+        let a = [1, 2, 3];
+        let a_slice = &a[..];
+        // from / into with array
+        let va = Vector::<i32, 3>::from(a);
+        let va2: Vector<i32, 3> = Vector::from_array(a);
+        let va3: Vector<i32, 3> = a.into();
+        assert_eq!(va.components.len(), 3);
+        assert_eq!(va[0], 1 as i32);
+        assert_eq!(va[1], 2 as i32);
+        assert_eq!(va[2], 3 as i32);
+        assert_eq!(va, va2);
+        assert_eq!(va, va3);
+        // from / into with array slice
+        let vas: Vector<i32, 3> = Vector::<i32, 3>::from(a_slice);
+        let vas2: Vector<i32, 3> = Vector::from_slice(&a[..]);
+        let vas3: Vector<i32, 3> = a_slice.into();
+        assert_eq!(vas.components.len(), 3);
+        assert_eq!(vas[0], 1 as i32);
+        assert_eq!(vas[1], 2 as i32);
+        assert_eq!(vas[2], 3 as i32);
+        assert_eq!(vas, vas2);
+        assert_eq!(vas, vas3);
+    }
+
+    #[test]
+    fn vector_trait_from_into_vec_to_vector() {
+        let v = Vec::from([1, 2, 3]);
+        let v_slice = &v[..];
+        // from / into with Vec
+        let vv = Vector::<i32, 3>::from(&v);
+        let vv2: Vector<i32, 3> = Vector::from_vec(&v);
+        let vv3: Vector<i32, 3> = (&v).into();
+        assert_eq!(vv.components.len(), 3);
+        assert_eq!(vv[0], 1 as i32);
+        assert_eq!(vv[1], 2 as i32);
+        assert_eq!(vv[2], 3 as i32);
+        assert_eq!(vv, vv2);
+        assert_eq!(vv, vv3);
+        // from / into with array slice
+        let vvs: Vector<i32, 3> = Vector::<i32, 3>::from(v_slice);
+        let vvs2: Vector<i32, 3> = Vector::from_slice(&v[..]);
+        let vvs3: Vector<i32, 3> = v_slice.into();
+        assert_eq!(vvs.components.len(), 3);
+        assert_eq!(vvs[0], 1 as i32);
+        assert_eq!(vvs[1], 2 as i32);
+        assert_eq!(vvs[2], 3 as i32);
+        assert_eq!(vvs, vvs2);
+        assert_eq!(vvs, vvs3);
     }
 }
