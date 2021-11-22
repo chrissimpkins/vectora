@@ -2716,6 +2716,7 @@ mod tests {
         assert_eq!(v1 + v2, v2 + v1);
         assert_eq!((v1 + v2) + v3, v1 + (v2 + v3));
         assert_eq!(v1 + (-v1), v_zero);
+        assert_eq!((v1 + v2) * 10, (v1 * 10) + (v2 * 10));
 
         let v1: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
         let v2: Vector<f64, 3> = Vector::from([4.0, 5.0, 6.0]);
@@ -2730,7 +2731,8 @@ mod tests {
         assert_eq!(-v_zero + v1, v1);
         assert_eq!(v1 + v2, v2 + v1);
         assert_eq!((v1 + v2) + v3, v1 + (v2 + v3));
-        assert_eq!(v1 + (-v1), v_zero)
+        assert_eq!(v1 + (-v1), v_zero);
+        assert_eq!((v1 + v2) * 10.0, (v1 * 10.0) + (v2 * 10.0));
     }
 
     #[test]
@@ -2792,6 +2794,9 @@ mod tests {
         assert_eq!(v1 * 10 * 5, Vector::from([50, 50, 50]));
         assert_eq!(v1 * 10 * -5, Vector::from([-50, -50, -50]));
         assert_eq!((v1 * 10) * 5, v1 * (10 * 5));
+        assert_eq!(v1 * 1, v1);
+        assert_eq!(v1 * -1, -v1);
+        assert_eq!(v1 * 10 + v1 * 5, v1 * (10 + 5));
 
         let v1: Vector<f64, 3> = Vector::from([1.0, 1.0, 1.0]);
         assert_eq!(v1 * 10.0, Vector::from([10.0, 10.0, 10.0]));
@@ -2801,6 +2806,9 @@ mod tests {
         assert_eq!(v1 * 10.0 * 5.0, Vector::from([50.0, 50.0, 50.0]));
         assert_eq!(v1 * 10.0 * -5.0, Vector::from([-50.0, -50.0, -50.0]));
         assert_eq!((v1 * 10.0) * 5.0, v1 * (10.0 * 5.0));
+        assert_eq!(v1 * 1.0, v1);
+        assert_eq!(v1 * -1.0, -v1);
+        assert_eq!(v1 * 10.0 + v1 * 5.0, v1 * (10.0 + 5.0));
     }
 
     #[test]
