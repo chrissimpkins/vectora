@@ -12,6 +12,8 @@ use std::{
 use approx::{relative_eq, RelativeEq};
 use num::Num;
 
+use crate::errors::VectorError;
+
 // ================================
 //
 // Type aliases for 2D and 3D types
@@ -156,10 +158,10 @@ where
     /// component length, data are filled to the requested component length and
     /// other data are discarded.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics when the [`Vec`] parameter length is less than the expected
-    /// [`Vector`] component length.
+    /// Raises [`VectorError::TryFromSliceError`] when the [`Vec`] parameter length
+    /// does not equal the expected [`Vector`] component length.
     ///
     /// # Examples
     ///
@@ -168,21 +170,22 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let v = vec![1 as u32, 2 as u32, 3 as u32];
-    /// let _: Vector<u32,3> = Vector::from_vec(&v);
+    /// let t: Vector<u32,3> = Vector::try_from_vec(&v).unwrap();
     /// ```
     ///
-    /// Callers are responsible for checking that the length of the [`Vec`] is
+    /// Callers should check that the length of the [`Vec`] is
     /// sufficient to fill the requested [`Vector`] dimensions.  The following
-    /// code panics on an attempt to make a three dimensional [`Vector`] with
-    /// two dimensinoal [`Vec`] data:
+    /// code raises [`VectorError::TryFromSliceError`] on an attempt to make a
+    /// three dimensional [`Vector`] with two dimensinoal [`slice`] data:
     ///
-    /// ```should_panic
+    /// ```
     ///# use vectora::types::vector::Vector;
     /// let v = vec![1 as u32, 2 as u32];
-    /// let _: Vector<u32,3> = Vector::from_vec(&v);
+    /// let e = Vector::<u32, 3>::try_from_vec(&v);
+    /// assert!(e.is_err());
     /// ```
-    pub fn from_vec(t_vec: &[T]) -> Vector<T, N> {
-        Self::from(t_vec)
+    pub fn try_from_vec(t_vec: &[T]) -> Result<Vector<T, N>, VectorError> {
+        Self::try_from(t_vec)
     }
 
     /// Returns a new [`Vector`] with a numeric type and scalar component data as
@@ -192,10 +195,10 @@ where
     /// component length, data are filled to the requested component length and
     /// other data are discarded.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics when the [`slice`] parameter length is less than the expected
-    /// [`Vector`] component length.
+    /// Raises [`VectorError::TryFromSliceError`] when the [`slice`] parameter length
+    /// does not equal the expected [`Vector`] component length.
     ///
     /// # Examples
     ///
@@ -205,22 +208,23 @@ where
     /// # use vectora::types::vector::Vector;
     /// let a = [1 as u32, 2 as u32, 3 as u32];
     /// let sl = &a[..];
-    /// let _: Vector<u32,3> = Vector::from_slice(sl);
+    /// let _: Vector<u32,3> = Vector::try_from_slice(sl).unwrap();
     /// ```
     ///
-    /// Callers are responsible for checking that the length of the [`slice`] is
+    /// Callers should check that the length of the [`slice`] is
     /// sufficient to fill the requested [`Vector`] dimensions.  The following
-    /// code panics on an attempt to make a three dimensional [`Vector`] with
-    /// two dimensinoal [`slice`] data:
+    /// code raises [`VectorError::TryFromSliceError`] on an attempt to make a
+    /// three dimensional [`Vector`] with two dimensinoal [`slice`] data:
     ///
-    /// ```should_panic
+    /// ```
     ///# use vectora::types::vector::Vector;
     /// let a = [1 as u32, 2 as u32];
     /// let sl = &a[..];
-    /// let _: Vector<u32,3> = Vector::from_slice(sl);
+    /// let e = Vector::<u32, 3>::try_from_slice(sl);
+    /// assert!(e.is_err());
     /// ```
-    pub fn from_slice(t_slice: &[T]) -> Vector<T, N> {
-        Self::from(t_slice)
+    pub fn try_from_slice(t_slice: &[T]) -> Result<Vector<T, N>, VectorError> {
+        Self::try_from(t_slice)
     }
 }
 
@@ -570,6 +574,12 @@ where
         self.components.len()
     }
 
+    /// Returns `true` if the [`Vector`] is empty and `false` otherwise.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.components.is_empty()
+    }
+
     // ================================
     //
     // Private methods
@@ -898,24 +908,19 @@ where
     /// Returns a new [`Vector`] with numeric type and dimensions as
     /// defined by an [`array`] reference parameter.
     ///
-    /// Note: If the [`array`] item length is greater than the requested [`Vector`]
-    /// component length, data are filled to the requested component length and
-    /// other data are discarded.
-    ///
-    /// # Panics
-    ///
-    /// Panics when the `t_slice` parameter length is less than the expected
-    /// [`Vector`] component length.
+    /// Note: The [`Vector`] dimension size is defined by the fixed [`array`]
+    /// size.
     #[inline]
     fn from(t_n_array: &[T; N]) -> Vector<T, N> {
         Vector { components: *t_n_array }
     }
 }
 
-impl<T, const N: usize> From<Vec<T>> for Vector<T, N>
+impl<T, const N: usize> TryFrom<Vec<T>> for Vector<T, N>
 where
     T: Num + Copy + Default,
 {
+    type Error = VectorError;
     /// Returns a new [`Vector`] with numeric type as
     /// defined by a [`Vec`] parameter.
     ///
@@ -923,20 +928,21 @@ where
     /// component length, data are filled to the requested component length and
     /// other data are discarded.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics when the `t_vec` parameter length is less than the expected
-    /// [`Vector`] component length.
+    /// Raises [`VectorError::TryFromSliceError`] when the [`Vec`] parameter length
+    /// is not equal to the requested [`Vector`] component length.
     #[inline]
-    fn from(t_vec: Vec<T>) -> Vector<T, N> {
-        Self::from((&t_vec).as_slice())
+    fn try_from(t_vec: Vec<T>) -> Result<Vector<T, N>, VectorError> {
+        Self::try_from((&t_vec).as_slice())
     }
 }
 
-impl<T, const N: usize> From<&Vec<T>> for Vector<T, N>
+impl<T, const N: usize> TryFrom<&Vec<T>> for Vector<T, N>
 where
     T: Num + Copy + Default,
 {
+    type Error = VectorError;
     /// Returns a new [`Vector`] with numeric type as
     /// defined by a [`Vec`] reference parameter.
     ///
@@ -944,20 +950,21 @@ where
     /// component length, data are filled to the requested component length and
     /// other data are discarded.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics when the `t_vec` parameter length is less than the expected
-    /// [`Vector`] component length.
+    /// Raises [`VectorError::TryFromSliceError`] when the `t_vec` parameter length
+    /// is not equal to the requested [`Vector`] component length.
     #[inline]
-    fn from(t_vec: &Vec<T>) -> Vector<T, N> {
-        Self::from(t_vec.as_slice())
+    fn try_from(t_vec: &Vec<T>) -> Result<Vector<T, N>, VectorError> {
+        Self::try_from(t_vec.as_slice())
     }
 }
 
-impl<T, const N: usize> From<&[T]> for Vector<T, N>
+impl<T, const N: usize> TryFrom<&[T]> for Vector<T, N>
 where
     T: Num + Copy + Default,
 {
+    type Error = VectorError;
     /// Returns a new [`Vector`] with numeric type as defined by a
     /// slice parameter.
     ///
@@ -965,10 +972,10 @@ where
     /// component length, data are filled to the requested component length and
     /// other data are discarded.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics when the `t_slice` parameter length is less than the expected
-    /// [`Vector`] component length.
+    /// Raises [`VectorError::TryFromSliceError`] when the [`slice`] parameter length
+    /// is not equal to the requested [`Vector`] component length.
     ///
     /// # Examples
     ///
@@ -976,30 +983,35 @@ where
     ///
     /// ```
     ///# use vectora::types::vector::Vector;
-    /// let _: Vector<u32, 3> = Vector::from(&[1, 2, 3][..]);
-    /// let _: Vector<f64, 2> = Vector::from(&[1.0, 2.0][..]);
+    /// let _: Vector<u32, 3> = Vector::try_from(&[1, 2, 3][..]).unwrap();
+    /// let _: Vector<f64, 2> = Vector::try_from(&[1.0, 2.0][..]).unwrap();
     /// ```
     ///
     /// ## From [`Vec`] slice
     ///
     /// ```
     ///# use vectora::types::vector::Vector;
-    /// let _: Vector<u32, 3> = Vector::from(Vec::from([1, 2, 3]).as_slice());
-    /// let _: Vector<f64, 2> = Vector::from(Vec::from([1.0, 2.0]).as_slice());
+    /// let _: Vector<u32, 3> = Vector::try_from(Vec::from([1, 2, 3]).as_slice()).unwrap();
+    /// let _: Vector<f64, 2> = Vector::try_from(Vec::from([1.0, 2.0]).as_slice()).unwrap();
     /// ```
     #[inline]
-    fn from(t_slice: &[T]) -> Vector<T, N> {
+    fn try_from(t_slice: &[T]) -> Result<Vector<T, N>, VectorError> {
         // n.b. if the length of the slice is less than the required number
-        // of Vector components, then we panic because this does not meet
-        // the requirements of the calling code.
-        if t_slice.len() < N {
-            panic!("expected slice with {} items, received slice with {} items", N, t_slice.len());
+        // of Vector components, then we raise an error because this does
+        // not meet the requirements of the calling code.
+
+        if t_slice.len() != N {
+            return Err(VectorError::TryFromSliceError(format!(
+                "expected slice with {} items, but received slice with {} items",
+                N,
+                t_slice.len()
+            )));
         }
         let mut new_components: [T; N] = [T::default(); N];
         for (i, c) in t_slice[..N].iter().enumerate() {
             new_components[i] = *c;
         }
-        Vector { components: new_components }
+        Ok(Vector { components: new_components })
     }
 }
 
@@ -1750,6 +1762,20 @@ mod tests {
 
     // ================================
     //
+    // len and is_empty method tests
+    //
+    // ================================
+    #[test]
+    fn vector_method_len_is_empty() {
+        let v3 = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let v_empty = Vector::<u32, 0>::from_array([]);
+        assert_eq!(v3.len(), 3);
+        assert_eq!(v_empty.len(), 0);
+        assert!(v_empty.is_empty());
+    }
+
+    // ================================
+    //
     // Index / IndexMut trait tests
     //
     // ================================
@@ -2416,9 +2442,9 @@ mod tests {
         assert_eq!(va, va2);
         assert_eq!(va, va3);
         // from / into with array slice
-        let vas: Vector<i32, 3> = Vector::<i32, 3>::from(a_slice);
-        let vas2: Vector<i32, 3> = Vector::from_slice(&a[..]);
-        let vas3: Vector<i32, 3> = a_slice.into();
+        let vas: Vector<i32, 3> = Vector::<i32, 3>::try_from(a_slice).unwrap();
+        let vas2: Vector<i32, 3> = Vector::try_from_slice(&a[..]).unwrap();
+        let vas3: Vector<i32, 3> = a_slice.try_into().unwrap();
         assert_eq!(vas.components.len(), 3);
         assert_eq!(vas[0], 1 as i32);
         assert_eq!(vas[1], 2 as i32);
@@ -2432,9 +2458,9 @@ mod tests {
         let v = Vec::from([1, 2, 3]);
         let v_slice = &v[..];
         // from / into with Vec
-        let vv = Vector::<i32, 3>::from(&v);
-        let vv2: Vector<i32, 3> = Vector::from_vec(&v);
-        let vv3: Vector<i32, 3> = (&v).into();
+        let vv = Vector::<i32, 3>::try_from(&v).unwrap();
+        let vv2: Vector<i32, 3> = Vector::try_from_vec(&v).unwrap();
+        let vv3: Vector<i32, 3> = (&v).try_into().unwrap();
         assert_eq!(vv.components.len(), 3);
         assert_eq!(vv[0], 1 as i32);
         assert_eq!(vv[1], 2 as i32);
@@ -2442,14 +2468,24 @@ mod tests {
         assert_eq!(vv, vv2);
         assert_eq!(vv, vv3);
         // from / into with array slice
-        let vvs: Vector<i32, 3> = Vector::<i32, 3>::from(v_slice);
-        let vvs2: Vector<i32, 3> = Vector::from_slice(&v[..]);
-        let vvs3: Vector<i32, 3> = v_slice.into();
+        let vvs: Vector<i32, 3> = Vector::<i32, 3>::try_from(v_slice).unwrap();
+        let vvs2: Vector<i32, 3> = Vector::try_from_slice(&v[..]).unwrap();
+        let vvs3: Vector<i32, 3> = v_slice.try_into().unwrap();
         assert_eq!(vvs.components.len(), 3);
         assert_eq!(vvs[0], 1 as i32);
         assert_eq!(vvs[1], 2 as i32);
         assert_eq!(vvs[2], 3 as i32);
         assert_eq!(vvs, vvs2);
         assert_eq!(vvs, vvs3);
+    }
+
+    #[test]
+    fn vector_trait_from_into_slice_err() {
+        let v = Vec::from([1, 2, 3]);
+        let v_slice = &v[..];
+        let e1 = Vector::<i32, 2>::try_from(v_slice);
+        let e2 = Vector::<i32, 4>::try_from(v_slice);
+        assert!(matches!(e1, Err(VectorError::TryFromSliceError(_))));
+        assert!(matches!(e2, Err(VectorError::TryFromSliceError(_))));
     }
 }
