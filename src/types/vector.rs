@@ -122,7 +122,15 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let vec_2d_u32 = Vector::<u32, 2>::new();
+    /// assert_eq!(vec_2d_u32.len(), 2);
+    /// assert_eq!(vec_2d_u32[0], u32::default());
+    /// assert_eq!(vec_2d_u32[1], u32::default());
+    ///
     /// let vec_3d_f64 = Vector::<f64, 3>::new();
+    /// assert_eq!(vec_3d_f64.len(), 3);
+    /// assert_eq!(vec_3d_f64[0], f64::default());
+    /// assert_eq!(vec_3d_f64[1], f64::default());
+    /// assert_eq!(vec_3d_f64[2], f64::default());
     /// ```
     ///
     /// ## Type alias syntax
@@ -149,6 +157,37 @@ where
     /// ```
     pub fn new() -> Self {
         Self { components: [T::default(); N] }
+    }
+
+    /// Returns a new [`Vector`] filled with scalar component values defined as zero.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ## Integer types
+    ///
+    /// ```
+    /// # use vectora::types::vector::*;
+    /// let vi: Vector<i32, 3> = Vector::zero();
+    /// assert_eq!(vi.len(), 3);
+    /// assert_eq!(vi[0], 0 as i32);
+    /// assert_eq!(vi[1], 0 as i32);
+    /// assert_eq!(vi[2], 0 as i32);
+    /// ```
+    ///
+    /// ## Float types
+    ///
+    /// ```
+    /// # use vectora::types::vector::*;
+    /// let vf: Vector<f64, 3> = Vector::zero();
+    /// assert_eq!(vf.len(), 3);
+    /// assert_eq!(vf[0], 0.0 as f64);
+    /// assert_eq!(vf[1], 0.0 as f64);
+    /// assert_eq!(vf[2], 0.0 as f64);
+    /// ```
+    pub fn zero() -> Self {
+        Self { components: [T::zero(); N] }
     }
 
     /// Returns a new [`Vector`] with a numeric type and scalar component data as
@@ -2121,7 +2160,7 @@ mod tests {
         let v_eq = Vector::<i8, 3>::from_array([-1, 2, 3]);
         let v_diff = Vector::<i8, 3>::from_array([-1, 2, 4]);
 
-        let v_zero = Vector::<i8, 3>::from_array([0, 0, 0]);
+        let v_zero = Vector::<i8, 3>::zero();
         let v_zero_neg = Vector::<i8, 3>::from_array([-0, -0, -0]);
 
         assert!(v1 == v_eq);
@@ -2129,6 +2168,7 @@ mod tests {
         assert!(v2 == v_eq);
         assert!(v1 == v2); // transitivity
         assert!(v1 != v_diff);
+        assert!(v_zero == v_zero);
         assert!(v_zero == v_zero_neg);
     }
 
@@ -2294,8 +2334,8 @@ mod tests {
         let v_diff = Vector::<f32, 3>::from_array([-1.1, 2.2, 4.4]);
         let v_close = Vector::<f32, 3>::from_array([-1.1 + (f32::EPSILON * 2.), 2.2, 3.3]);
 
-        let v_zero = Vector::<f32, 3>::from_array([0.0, 0.0, 0.0]);
-        let v_zero_eq = Vector::<f32, 3>::from_array([0.0, 0.0, 0.0]);
+        let v_zero = Vector::<f32, 3>::zero();
+        let v_zero_eq = Vector::<f32, 3>::zero();
         let v_zero_neg_eq = Vector::<f32, 3>::from_array([-0.0, -0.0, -0.0]);
 
         let v_nan = Vector::<f32, 3>::from_array([f32::NAN, 0.0, 0.0]);
@@ -2327,8 +2367,8 @@ mod tests {
         let v_diff = Vector::<f64, 3>::from_array([-1.1, 2.2, 4.4]);
         let v_close = Vector::<f64, 3>::from_array([-1.1 + (f64::EPSILON * 2.), 2.2, 3.3]);
 
-        let v_zero = Vector::<f64, 3>::from_array([0.0, 0.0, 0.0]);
-        let v_zero_eq = Vector::<f64, 3>::from_array([0.0, 0.0, 0.0]);
+        let v_zero = Vector::<f64, 3>::zero();
+        let v_zero_eq = Vector::<f64, 3>::zero();
         let v_zero_neg_eq = Vector::<f64, 3>::from_array([-0.0, -0.0, -0.0]);
 
         let v_nan = Vector::<f64, 3>::from_array([f64::NAN, 0.0, 0.0]);
@@ -2706,7 +2746,7 @@ mod tests {
         let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
         let v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
         let v3: Vector<i32, 3> = Vector::from([-2, -3, -4]);
-        let v_zero: Vector<i32, 3> = Vector::new();
+        let v_zero: Vector<i32, 3> = Vector::zero();
 
         assert_eq!(v1 + v2, Vector::<i32, 3>::from([5, 7, 9]));
         assert_eq!(v2 + v3, Vector::<i32, 3>::from([2, 2, 2]));
@@ -2721,7 +2761,7 @@ mod tests {
         let v1: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
         let v2: Vector<f64, 3> = Vector::from([4.0, 5.0, 6.0]);
         let v3: Vector<f64, 3> = Vector::from([-2.0, -3.0, -4.0]);
-        let v_zero: Vector<f64, 3> = Vector::new();
+        let v_zero: Vector<f64, 3> = Vector::zero();
 
         assert_eq!(v1 + v2, Vector::<f64, 3>::from([5.0, 7.0, 9.0]));
         assert_eq!(v2 + v3, Vector::<f64, 3>::from([2.0, 2.0, 2.0]));
@@ -2748,7 +2788,7 @@ mod tests {
         let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
         let v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
         let v3: Vector<i32, 3> = Vector::from([-2, -3, -4]);
-        let v_zero: Vector<i32, 3> = Vector::new();
+        let v_zero: Vector<i32, 3> = Vector::zero();
 
         assert_eq!(v1 - v2, Vector::<i32, 3>::from([-3, -3, -3]));
         assert_eq!(v2 - v1, Vector::<i32, 3>::from([3, 3, 3]));
@@ -2763,7 +2803,7 @@ mod tests {
         let v1: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
         let v2: Vector<f64, 3> = Vector::from([4.0, 5.0, 6.0]);
         let v3: Vector<f64, 3> = Vector::from([-2.0, -3.0, -4.0]);
-        let v_zero: Vector<f64, 3> = Vector::new();
+        let v_zero: Vector<f64, 3> = Vector::zero();
 
         assert_eq!(v1 - v2, Vector::<f64, 3>::from([-3.0, -3.0, -3.0]));
         assert_eq!(v2 - v1, Vector::<f64, 3>::from([3.0, 3.0, 3.0]));
@@ -2822,7 +2862,7 @@ mod tests {
     fn vector_multi_overloaded_operator_precedence() {
         let v1: Vector<i32, 3> = Vector::from([1, 1, 1]);
         let v2: Vector<i32, 3> = Vector::from([-2, -2, -2]);
-        let v_zero: Vector<i32, 3> = Vector::new();
+        let v_zero: Vector<i32, 3> = Vector::zero();
         assert_eq!(v1 + -v2 * 10, Vector::<i32, 3>::from([21, 21, 21]));
         assert_eq!((v1 + -v2) * 10, Vector::<i32, 3>::from([30, 30, 30]));
         assert_eq!(v1 - -v2 * 10, Vector::<i32, 3>::from([-19, -19, -19]));
@@ -2832,7 +2872,7 @@ mod tests {
 
         let v1: Vector<f64, 3> = Vector::from([1.0, 1.0, 1.0]);
         let v2: Vector<f64, 3> = Vector::from([-2.0, -2.0, -2.0]);
-        let v_zero: Vector<f64, 3> = Vector::new();
+        let v_zero: Vector<f64, 3> = Vector::zero();
         assert_eq!(v1 + -v2 * 10.0, Vector::<f64, 3>::from([21.0, 21.0, 21.0]));
         assert_eq!((v1 + -v2) * 10.0, Vector::<f64, 3>::from([30.0, 30.0, 30.0]));
         assert_eq!(v1 - -v2 * 10.0, Vector::<f64, 3>::from([-19.0, -19.0, -19.0]));
