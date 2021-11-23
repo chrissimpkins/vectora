@@ -557,6 +557,36 @@ where
         self
     }
 
+    /// Vector subtraction with mutation of the calling [`Vector`].
+    ///
+    /// Returns a mutable reference to the calling [`Vector`].
+    ///
+    /// Vector subtraction with the [`-` operator overload](#impl-Sub<Vector<T%2C%20N>>) allocates a new [`Vector`].  This method
+    /// supports in-place vector subtraction mutation of the calling [`Vector`] using data in the
+    /// parameter [`Vector`]. This is an alternative approach to the operator overload that may be more
+    /// performant in some use cases.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let other = Vector::<i32, 3>::from(&[4, 5, 6]);
+    /// v.mut_sub(&other);
+    ///
+    /// assert_eq!(v[0], -3);
+    /// assert_eq!(v[1], -3);
+    /// assert_eq!(v[2], -3);
+    /// ```
+    #[inline]
+    pub fn mut_sub(&mut self, rhs: &Vector<T, N>) -> &mut Self {
+        for (i, x) in self.components.iter_mut().enumerate() {
+            *x = *x - rhs[i];
+        }
+
+        self
+    }
+
     /// Returns the dot product of two vectors.
     ///
     /// # Examples
@@ -3069,6 +3099,14 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "attempt to add with overflow")]
+    fn vector_method_mut_add_panics_on_overflow() {
+        let mut v1: Vector<u8, 3> = Vector::from([u8::MAX, 2, 3]);
+        let v2: Vector<u8, 3> = Vector::from([1, 1, 1]);
+        v1.mut_add(&v2);
+    }
+
+    #[test]
     fn vector_trait_sub() {
         let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
         let v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
@@ -3102,11 +3140,79 @@ mod tests {
     }
 
     #[test]
+    fn vector_method_mut_sub() {
+        let mut v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
+
+        v1.mut_sub(&v2);
+
+        assert_eq!(v1, Vector::<i32, 3>::from([-3, -3, -3]));
+
+        // reset
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let mut v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
+
+        v2.mut_sub(&v1);
+
+        assert_eq!(v2, Vector::<i32, 3>::from([3, 3, 3]));
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
+        let v3: Vector<i32, 3> = Vector::from([-2, -3, -4]);
+
+        v1.mut_sub(&v2).mut_sub(&v3);
+
+        assert_eq!(v1, Vector::<i32, 3>::from([-1, 0, 1]));
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v_zero: Vector<i32, 3> = Vector::zero();
+
+        v1.mut_sub(&v_zero);
+
+        assert_eq!(v1, Vector::<i32, 3>::from([1, 2, 3]));
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v_zero: Vector<i32, 3> = Vector::zero();
+
+        v1.mut_sub(&v_zero.neg());
+
+        assert_eq!(v1, Vector::<i32, 3>::from([1, 2, 3]));
+
+        // reset
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let mut v_zero: Vector<i32, 3> = Vector::zero();
+
+        v_zero.mut_sub(&v1);
+
+        assert_eq!(v_zero, Vector::<i32, 3>::from([-1, -2, -3]));
+
+        // reset
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        // note unary negation of the vector definition
+        let mut v_zero: Vector<i32, 3> = -Vector::zero();
+
+        v_zero.mut_sub(&v1);
+
+        assert_eq!(v_zero, Vector::<i32, 3>::from([-1, -2, -3]));
+    }
+
+    #[test]
     #[should_panic(expected = "attempt to subtract with overflow")]
     fn vector_trait_sub_panics_on_overflow() {
         let v1: Vector<u32, 3> = Vector::from([1, 2, 3]);
         let v2: Vector<u32, 3> = Vector::from([4, 5, 6]);
         let _ = v1 - v2;
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to subtract with overflow")]
+    fn vector_method_mut_sub_panics_on_overflow() {
+        let mut v1: Vector<u32, 3> = Vector::from([1, 2, 3]);
+        let v2: Vector<u32, 3> = Vector::from([4, 5, 6]);
+        let _ = v1.mut_sub(&v2);
     }
 
     #[test]
