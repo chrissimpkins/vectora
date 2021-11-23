@@ -527,6 +527,35 @@ where
         self.components.is_empty()
     }
 
+    /// Vector addition with mutation of the calling [`Vector`].
+    ///
+    /// Returns a mutable reference to the calling [`Vector`].
+    ///
+    /// Vector addition with the [`+` operator overload](#impl-Add<Vector<T%2C%20N>>) allocates a new [`Vector`].  This method
+    /// supports in-place vector addition mutation of the calling [`Vector`] using data in the
+    /// parameter [`Vector`]. This is an alternative approach to the operator overload.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let mut v = Vector::<u32, 3>::from(&[1, 2, 3]);
+    /// let other = Vector::<u32, 3>::from(&[4, 5, 6]);
+    /// v.mut_add(&other);
+    ///
+    /// assert_eq!(v[0], 5);
+    /// assert_eq!(v[1], 7);
+    /// assert_eq!(v[2], 9);
+    /// ```
+    #[inline]
+    pub fn mut_add(&mut self, rhs: &Vector<T, N>) -> &mut Self {
+        for (i, x) in self.components.iter_mut().enumerate() {
+            *x = *x + rhs[i];
+        }
+
+        self
+    }
+
     /// Returns the dot product of two vectors.
     ///
     /// # Examples
@@ -2955,6 +2984,79 @@ mod tests {
         assert_eq!((v1 + v2) + v3, v1 + (v2 + v3));
         assert_eq!(v1 + (-v1), v_zero);
         assert_eq!((v1 + v2) * 10.0, (v1 * 10.0) + (v2 * 10.0));
+    }
+
+    #[test]
+    fn vector_method_mut_add() {
+        let mut v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let mut v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
+        let v3: Vector<i32, 3> = Vector::from([-2, -3, -4]);
+
+        v1.mut_add(&v2);
+        v2.mut_add(&v3);
+
+        assert_eq!(v1, Vector::<i32, 3>::from([5, 7, 9]));
+        assert_eq!(v2, Vector::<i32, 3>::from([2, 2, 2]));
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
+        let v3: Vector<i32, 3> = Vector::from([-2, -3, -4]);
+
+        v1.mut_add(&v2).mut_add(&v3);
+        assert_eq!(v1, Vector::<i32, 3>::from([3, 4, 5]));
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v_zero: Vector<i32, 3> = Vector::zero();
+
+        v1.mut_add(&v_zero);
+
+        assert_eq!(v1, Vector::<i32, 3>::from([1, 2, 3]));
+
+        // reset
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let mut v_zero: Vector<i32, 3> = Vector::zero();
+
+        v_zero.mut_add(&v1);
+
+        assert_eq!(v_zero, v1);
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
+        let v3: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let mut v4: Vector<i32, 3> = Vector::from([4, 5, 6]);
+
+        v1.mut_add(&v2);
+        v4.mut_add(&v3);
+
+        assert_eq!(v1, v4);
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
+        let v3: Vector<i32, 3> = Vector::from([7, 8, 9]);
+        let v4: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v5: Vector<i32, 3> = Vector::from([4, 5, 6]);
+        let mut v6: Vector<i32, 3> = Vector::from([7, 8, 9]);
+
+        assert_eq!(v1.mut_add(&v2).mut_add(&v3), v6.mut_add(&v5).mut_add(&v4));
+        assert_eq!(v1, Vector::from([12, 15, 18]));
+        assert_eq!(v6, Vector::from([12, 15, 18]));
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        v1.mut_add(&v1.neg());
+        assert_eq!(v1, Vector::<i32, 3>::zero());
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
+        let v3: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let v4: Vector<i32, 3> = Vector::from([4, 5, 6]);
+        v1.mut_add(&v2);
+        assert_eq!(v1 * 10, *(v3 * 10).mut_add(&(v4 * 10)));
     }
 
     #[test]
