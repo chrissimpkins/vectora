@@ -90,7 +90,7 @@ pub type Vector3dIsize = Vector<isize, 3>;
 /// Type alias for a 3D usize integer vector.
 pub type Vector3dUsize = Vector<usize, 3>;
 
-/// A generic, fixed N-length vector type that supports computation with N-dimensional
+/// A generic, fixed length vector type that supports computation with N-dimensional
 /// scalar data.
 #[derive(Copy, Clone, Debug)]
 pub struct Vector<T, const N: usize>
@@ -532,8 +532,8 @@ where
     /// Returns a mutable reference to the calling [`Vector`].
     ///
     /// Vector addition with the [`+` operator overload](#impl-Add<Vector<T%2C%20N>>) allocates a new [`Vector`].  This method
-    /// supports in-place vector addition mutation of the calling [`Vector`] using data in the
-    /// parameter [`Vector`]. This is an alternative approach to the operator overload that may
+    /// supports in-place vector addition mutation of the calling [`Vector`] with data in the
+    /// parameter [`Vector`]. This is an alternative approach to the operator overload and may
     /// be more performant in some use cases.
     ///
     /// # Examples
@@ -562,8 +562,8 @@ where
     /// Returns a mutable reference to the calling [`Vector`].
     ///
     /// Vector subtraction with the [`-` operator overload](#impl-Sub<Vector<T%2C%20N>>) allocates a new [`Vector`].  This method
-    /// supports in-place vector subtraction mutation of the calling [`Vector`] using data in the
-    /// parameter [`Vector`]. This is an alternative approach to the operator overload that may be more
+    /// supports in-place vector subtraction mutation of the calling [`Vector`] with data in the
+    /// parameter [`Vector`]. This is an alternative approach to the operator overload and may be more
     /// performant in some use cases.
     ///
     /// # Examples
@@ -582,6 +582,35 @@ where
     pub fn mut_sub(&mut self, rhs: &Vector<T, N>) -> &mut Self {
         for (i, x) in self.components.iter_mut().enumerate() {
             *x = *x - rhs[i];
+        }
+
+        self
+    }
+
+    /// Scalar multiplication with mutation of the calling [`Vector`].
+    ///
+    /// Returns a mutable reference to the calling [`Vector`].
+    ///
+    /// Scalar multiplication with the [`*` operator overload](#impl-Mul<T>) allocates a
+    /// new [`Vector`].  This method supports in-place scalar multiplication mutation of the calling
+    /// [`Vector`] with a scalar parameter value. This is an alternative approach to the operator
+    /// overload and may be more performant in some use cases.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// v.mut_mul(4);
+    ///
+    /// assert_eq!(v[0], 4);
+    /// assert_eq!(v[1], 8);
+    /// assert_eq!(v[2], 12);
+    /// ```
+    #[inline]
+    pub fn mut_mul(&mut self, scale: T) -> &mut Self {
+        for x in self.components.iter_mut() {
+            *x = *x * scale;
         }
 
         self
@@ -3243,10 +3272,68 @@ mod tests {
     }
 
     #[test]
+    fn vector_method_mut_mul() {
+        let mut v1: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        v1.mut_mul(10);
+        assert_eq!(v1, Vector::from([10, 10, 10]));
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        v1.mut_mul(-10);
+        assert_eq!(v1, Vector::from([-10, -10, -10]));
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        v1.mut_mul(0);
+        assert_eq!(v1, Vector::zero());
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        v1.mut_mul(-0);
+        assert_eq!(v1, Vector::zero());
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        v1.mut_mul(10).mut_mul(5);
+        assert_eq!(v1, Vector::from([50, 50, 50]));
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        v1.mut_mul(10).mut_mul(-5);
+        assert_eq!(v1, Vector::from([-50, -50, -50]));
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        let mut v2: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        v1.mut_mul(10).mut_mul(5);
+        v2.mut_mul(10 * 5);
+        assert_eq!(v1, v2);
+
+        // reset
+        let mut v1: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        let v2: Vector<i32, 3> = Vector::from([1, 1, 1]);
+
+        v1.mut_mul(1);
+
+        assert_eq!(v1, v2);
+
+        v1.mut_mul(-1);
+
+        assert_eq!(v1, -v2);
+    }
+
+    #[test]
     #[should_panic(expected = "attempt to multiply with overflow")]
     fn vector_trait_mul_overflow_panic() {
         let v1: Vector<u8, 2> = Vector::from([2, 2]);
         let _ = v1 * u8::MAX;
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to multiply with overflow")]
+    fn vector_method_mut_mul_overflow_panic() {
+        let mut v1: Vector<u8, 2> = Vector::from([2, 2]);
+        let _ = v1.mut_mul(u8::MAX);
     }
 
     #[test]
