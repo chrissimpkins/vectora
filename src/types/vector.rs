@@ -1090,7 +1090,7 @@ where
     ///
     /// Callers should confirm that the length of the [`Vec`] is
     /// the same as the number of requested [`Vector`] dimensions.  The following
-    /// code raises [`VectorError::TryFromSliceError`] on an attempt to make a
+    /// code raises [`VectorError::TryFromVecError`] on an attempt to make a
     /// three dimensional [`Vector`] with two dimensional data:
     ///
     /// ```
@@ -1101,8 +1101,6 @@ where
     /// ```
     #[inline]
     fn try_from(t_vec: Vec<T>) -> Result<Vector<T, N>, VectorError> {
-        // Self::try_from((&t_vec).as_slice())
-        // Ok(Self { components: t_vec.try_into().unwrap() })
         if t_vec.len() != N {
             return Err(VectorError::TryFromVecError(format!(
                 "expected Vec with {} items, but received Vec with {} items",
@@ -1117,12 +1115,6 @@ where
                 err
             ))),
         }
-        // let mut new_components: [T; N] = [T::default(); N];
-        // for (i, c) in t_vec.iter().take(N).enumerate() {
-        //     new_components[i] = *c;
-        // }
-        // Ok(Vector { components: new_components })
-        // Self { components: t_vec.try_into().unwrap() }
     }
 }
 
@@ -1154,7 +1146,7 @@ where
     ///
     /// Callers should confirm that the length of the [`Vec`] is
     /// the same as the number of requested [`Vector`] dimensions.  The following
-    /// code raises [`VectorError::TryFromSliceError`] on an attempt to make a
+    /// code raises [`VectorError::TryFromVecError`] on an attempt to make a
     /// three dimensional [`Vector`] with two dimensional data:
     ///
     /// ```
@@ -1172,11 +1164,7 @@ where
                 t_vec.len()
             )));
         }
-        // let mut new_components: [T; N] = [T::default(); N];
-        // for (i, c) in t_vec.iter().take(N).enumerate() {
-        //     new_components[i] = *c;
-        // }
-        // Ok(Vector { components: new_components })
+
         match t_vec.clone().try_into() {
             Ok(s) => Ok(Self { components: s }),
             Err(err) => Err(VectorError::TryFromVecError(format!(
