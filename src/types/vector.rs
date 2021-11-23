@@ -292,10 +292,10 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v1: Vector<u32, 2> = Vector::from_array([1, 2]);
-    /// let v2: Vector::<f64, 3> = Vector::from_array([3.0, 4.0, 5.0]);
+    /// let v1: Vector<u32, 2> = Vector::from_array(&[1, 2]);
+    /// let v2: Vector::<f64, 3> = Vector::from_array(&[3.0, 4.0, 5.0]);
     /// ```
-    pub fn from_array(t_array: [T; N]) -> Vector<T, N> {
+    pub fn from_array(t_array: &[T; N]) -> Vector<T, N> {
         Self::from(t_array)
     }
 
@@ -311,7 +311,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// assert_eq!(v.get(0), Some(&1));
     /// assert_eq!(v.get(1), Some(&2));
     /// assert_eq!(v.get(3), None);
@@ -321,7 +321,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 5>::from_array([1, 2, 3, 4, 5]);
+    /// let v = Vector::<u32, 5>::from_array(&[1, 2, 3, 4, 5]);
     /// assert_eq!(v.get(0..3).unwrap(), [1, 2, 3]);
     /// assert_eq!(v.get(3..).unwrap(), [4, 5]);
     /// assert_eq!(v.get(..2).unwrap(), [1, 2]);
@@ -348,7 +348,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let mut v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     ///
     /// let x = v.get_mut(0).unwrap();
     /// assert_eq!(x, &mut 1);
@@ -362,7 +362,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let mut v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     ///
     /// let x = v.get_mut(0..2).unwrap();
     /// assert_eq!(x, &mut [1, 2]);
@@ -388,7 +388,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = &Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let v = &Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// let mut v_iter = v.iter();
     /// assert_eq!(v_iter.next(), Some(&1));
     /// assert_eq!(v_iter.next(), Some(&2));
@@ -408,7 +408,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let mut v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// for x in v.iter_mut() {
     ///     *x += 3;
     /// }
@@ -430,7 +430,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// let x: &[u32] = v.as_slice();
     /// assert_eq!(x, &[1, 2, 3]);
     /// ```
@@ -447,7 +447,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let mut v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// let mut x: &mut [u32] = v.as_mut_slice();
     /// assert_eq!(x, &[1, 2, 3]);
     /// x[0] = 10;
@@ -459,7 +459,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// # let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// # let mut v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// # let mut x: &mut [u32] = v.as_mut_slice();
     /// # assert_eq!(x, &[1, 2, 3]);
     /// # x[0] = 10;
@@ -479,7 +479,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// let x: &[u32;3] = v.as_array();
     /// assert_eq!(x, &[1, 2, 3]);
     /// ```
@@ -496,7 +496,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let mut v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// let mut x: &mut [u32;3] = v.as_mut_array();
     /// assert_eq!(x, &[1, 2, 3]);
     /// x[0] = 10;
@@ -508,7 +508,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// # let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// # let mut v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// # let mut x: &mut [u32;3] = v.as_mut_array();
     /// # assert_eq!(x, &[1, 2, 3]);
     /// # x[0] = 10;
@@ -528,7 +528,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// let mut x: [u32; 3] = v.to_array();
     /// assert_eq!(x, [1,2,3]);
     /// x[0] = 10;
@@ -541,7 +541,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// # let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// # let v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// # let mut x: [u32; 3] = v.to_array();
     /// # assert_eq!(x, [1,2,3]);
     /// # x[0] = 10;
@@ -561,7 +561,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// let mut x: Vec<u32> = v.to_vec();
     /// assert_eq!(x, Vec::from([1,2,3]));
     /// x[0] = 10;
@@ -574,7 +574,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// # let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// # let v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// # let mut x: Vec<u32> = v.to_vec();
     /// # assert_eq!(x, Vec::from([1,2,3]));
     /// # x[0] = 10;
@@ -772,7 +772,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// assert_eq!(v[0], 1);
     /// assert_eq!(v[1], 2);
     /// assert_eq!(v[2], 3);
@@ -798,7 +798,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+    /// let mut v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
     /// assert_eq!(v[0], 1);
     /// assert_eq!(v[1], 2);
     /// assert_eq!(v[2], 3);
@@ -1150,15 +1150,11 @@ where
 
 impl<T, const N: usize> TryFrom<Vec<T>> for Vector<T, N>
 where
-    T: Num + Copy + Default + Sync + Send,
+    T: Num + Copy + Default + Sync + Send + std::fmt::Debug,
 {
     type Error = VectorError;
     /// Returns a new [`Vector`] with numeric type as
     /// defined by a [`Vec`] parameter.
-    ///
-    /// Note: If the [`Vec`] item length is greater than the requested [`Vector`]
-    /// component length, data are filled to the requested component length and
-    /// other data are discarded.
     ///
     /// # Errors
     ///
@@ -1166,7 +1162,20 @@ where
     /// is not equal to the requested [`Vector`] component length.
     #[inline]
     fn try_from(t_vec: Vec<T>) -> Result<Vector<T, N>, VectorError> {
-        Self::try_from((&t_vec).as_slice())
+        // Self::try_from((&t_vec).as_slice())
+        // Ok(Self { components: t_vec.try_into().unwrap() })
+        if t_vec.len() != N {
+            return Err(VectorError::TryFromVecError(format!(
+                "expected Vec with {} items, but received Vec with {} items",
+                N,
+                t_vec.len()
+            )));
+        }
+        let mut new_components: [T; N] = [T::default(); N];
+        for (i, c) in t_vec.iter().take(N).enumerate() {
+            new_components[i] = *c;
+        }
+        Ok(Vector { components: new_components })
     }
 }
 
@@ -1178,17 +1187,25 @@ where
     /// Returns a new [`Vector`] with numeric type as
     /// defined by a [`Vec`] reference parameter.
     ///
-    /// Note: If the [`Vec`] item length is greater than the requested [`Vector`]
-    /// component length, data are filled to the requested component length and
-    /// other data are discarded.
-    ///
     /// # Errors
     ///
     /// Raises [`VectorError::TryFromSliceError`] when the `t_vec` parameter length
     /// is not equal to the requested [`Vector`] component length.
     #[inline]
     fn try_from(t_vec: &Vec<T>) -> Result<Vector<T, N>, VectorError> {
-        Self::try_from(t_vec.as_slice())
+        // Self::try_from(t_vec.as_slice())
+        if t_vec.len() != N {
+            return Err(VectorError::TryFromVecError(format!(
+                "expected Vec with {} items, but received Vec with {} items",
+                N,
+                t_vec.len()
+            )));
+        }
+        let mut new_components: [T; N] = [T::default(); N];
+        for (i, c) in t_vec.iter().take(N).enumerate() {
+            new_components[i] = *c;
+        }
+        Ok(Vector { components: new_components })
     }
 }
 
@@ -1900,8 +1917,8 @@ mod tests {
     #[test]
     fn vector_instantiation_from_array() {
         // Two dimension
-        let v1 = Vector::<u32, 2>::from_array([1, 2]);
-        let v2 = Vector::<f64, 2>::from_array([1.0, 2.0]);
+        let v1 = Vector::<u32, 2>::from_array(&[1, 2]);
+        let v2 = Vector::<f64, 2>::from_array(&[1.0, 2.0]);
         assert_eq!(v1[0], 1);
         assert_eq!(v1[1], 2);
         assert_eq!(v1.components.len(), 2);
@@ -1911,8 +1928,8 @@ mod tests {
         assert_eq!(v2.components.len(), 2);
 
         // Three dimension
-        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<f64, 3>::from_array(&[1.0, 2.0, 3.0]);
         assert_eq!(v1[0], 1);
         assert_eq!(v1[1], 2);
         assert_eq!(v1[2], 3);
@@ -1931,8 +1948,8 @@ mod tests {
     // ================================
     #[test]
     fn vector_method_get_with_value() {
-        let v1 = Vector::<u32, 2>::from_array([1, 2]);
-        let v2 = Vector::<f64, 2>::from_array([1.0, 2.0]);
+        let v1 = Vector::<u32, 2>::from_array(&[1, 2]);
+        let v2 = Vector::<f64, 2>::from_array(&[1.0, 2.0]);
         assert_eq!(v1.get(0).unwrap(), &1);
         assert_eq!(v1.get(1).unwrap(), &2);
         assert_eq!(v1.get(2), None);
@@ -1943,8 +1960,8 @@ mod tests {
 
     #[test]
     fn vector_method_get_with_range() {
-        let v1 = Vector::<u32, 5>::from_array([1, 2, 3, 4, 5]);
-        let v2 = Vector::<f64, 5>::from_array([1.0, 2.0, 3.0, 4.0, 5.0]);
+        let v1 = Vector::<u32, 5>::from_array(&[1, 2, 3, 4, 5]);
+        let v2 = Vector::<f64, 5>::from_array(&[1.0, 2.0, 3.0, 4.0, 5.0]);
 
         assert_eq!(v1.get(0..2).unwrap(), &[1, 2]);
         assert_eq!(v1.get(..2).unwrap(), &[1, 2]);
@@ -1961,8 +1978,8 @@ mod tests {
 
     #[test]
     fn vector_method_get_mut_with_value() {
-        let mut v1 = Vector::<u32, 2>::from_array([1, 2]);
-        let mut v2 = Vector::<f64, 2>::from_array([1.0, 2.0]);
+        let mut v1 = Vector::<u32, 2>::from_array(&[1, 2]);
+        let mut v2 = Vector::<f64, 2>::from_array(&[1.0, 2.0]);
 
         let x1 = v1.get_mut(0).unwrap();
         assert_eq!(*x1, 1);
@@ -1984,8 +2001,8 @@ mod tests {
 
     #[test]
     fn vector_method_get_mut_with_range() {
-        let mut v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let mut v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let mut v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let mut v2 = Vector::<f64, 3>::from_array(&[1.0, 2.0, 3.0]);
 
         let r1 = v1.get_mut(0..2).unwrap();
         assert_eq!(*r1, [1, 2]);
@@ -2012,32 +2029,32 @@ mod tests {
     // ================================
     #[test]
     fn vector_method_as_slice() {
-        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<f64, 3>::from_array(&[1.0, 2.0, 3.0]);
         let _: &[u32] = v1.as_slice();
         let _: &[f64] = v2.as_slice();
     }
 
     #[test]
     fn vector_method_as_mut_slice() {
-        let mut v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let mut v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let mut v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let mut v2 = Vector::<f64, 3>::from_array(&[1.0, 2.0, 3.0]);
         let _: &mut [u32] = v1.as_mut_slice();
         let _: &mut [f64] = v2.as_mut_slice();
     }
 
     #[test]
     fn vector_method_as_array() {
-        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<f64, 3>::from_array(&[1.0, 2.0, 3.0]);
         let _: &[u32; 3] = v1.as_array();
         let _: &[f64; 3] = v2.as_array();
     }
 
     #[test]
     fn vector_method_as_mut_array() {
-        let mut v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let mut v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let mut v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let mut v2 = Vector::<f64, 3>::from_array(&[1.0, 2.0, 3.0]);
         let _: &mut [u32; 3] = v1.as_mut_array();
         let _: &mut [f64; 3] = v2.as_mut_array();
     }
@@ -2049,16 +2066,16 @@ mod tests {
     // ================================
     #[test]
     fn vector_method_to_array() {
-        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<f64, 3>::from_array(&[1.0, 2.0, 3.0]);
         let _: [u32; 3] = v1.to_array();
         let _: [f64; 3] = v2.to_array();
     }
 
     #[test]
     fn vector_method_to_vec() {
-        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<f64, 3>::from_array(&[1.0, 2.0, 3.0]);
         let _: Vec<u32> = v1.to_vec();
         let _: Vec<f64> = v2.to_vec();
     }
@@ -2070,8 +2087,8 @@ mod tests {
     // ================================
     #[test]
     fn vector_method_len_is_empty() {
-        let v3 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let v_empty = Vector::<u32, 0>::from_array([]);
+        let v3 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let v_empty = Vector::<u32, 0>::from_array(&[]);
         assert_eq!(v3.len(), 3);
         assert_eq!(v_empty.len(), 0);
         assert!(v_empty.is_empty());
@@ -2162,8 +2179,8 @@ mod tests {
     // ================================
     #[test]
     fn vector_trait_index_access() {
-        let v1 = Vector::<u32, 2>::from_array([1, 2]);
-        let v2 = Vector::<f64, 2>::from_array([1.0, 2.0]);
+        let v1 = Vector::<u32, 2>::from_array(&[1, 2]);
+        let v2 = Vector::<f64, 2>::from_array(&[1.0, 2.0]);
         assert_eq!(v1[0], 1);
         assert_eq!(v1[1], 2);
         assert_relative_eq!(v2[0], 1.0);
@@ -2179,8 +2196,8 @@ mod tests {
 
     #[test]
     fn vector_trait_index_assignment() {
-        let mut v1 = Vector::<u32, 2>::from_array([1, 2]);
-        let mut v2 = Vector::<f64, 2>::from_array([1.0, 2.0]);
+        let mut v1 = Vector::<u32, 2>::from_array(&[1, 2]);
+        let mut v2 = Vector::<f64, 2>::from_array(&[1.0, 2.0]);
         v1[0] = 5;
         v1[1] = 6;
         v2[0] = 5.0;
@@ -2198,8 +2215,8 @@ mod tests {
     // ===================================
     #[test]
     fn vector_trait_intoiterator_ref() {
-        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<f64, 3>::from_array(&[1.0, 2.0, 3.0]);
 
         let mut i: usize = 0;
         for x in &v1 {
@@ -2226,8 +2243,8 @@ mod tests {
 
     #[test]
     fn vector_trait_intoiterator_mut_ref() {
-        let mut v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let mut v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let mut v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let mut v2 = Vector::<f64, 3>::from_array(&[1.0, 2.0, 3.0]);
 
         let mut i: usize = 0;
         for x in &mut v1 {
@@ -2254,8 +2271,8 @@ mod tests {
 
     #[test]
     fn vector_trait_intoiterator_owned() {
-        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<f64, 3>::from_array(&[1.0, 2.0, 3.0]);
 
         let mut i: usize = 0;
         for x in v1 {
@@ -2282,8 +2299,8 @@ mod tests {
 
     #[test]
     fn vector_method_iter() {
-        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<f64, 3>::from_array([1.0, 2.0, 3.0]);
+        let v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<f64, 3>::from_array(&[1.0, 2.0, 3.0]);
         let mut v1_iter = v1.iter();
         let mut v2_iter = v2.iter();
 
@@ -2352,13 +2369,13 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_i8() {
-        let v1 = Vector::<i8, 3>::from_array([-1, 2, 3]);
-        let v2 = Vector::<i8, 3>::from_array([-1, 2, 3]);
-        let v_eq = Vector::<i8, 3>::from_array([-1, 2, 3]);
-        let v_diff = Vector::<i8, 3>::from_array([-1, 2, 4]);
+        let v1 = Vector::<i8, 3>::from_array(&[-1, 2, 3]);
+        let v2 = Vector::<i8, 3>::from_array(&[-1, 2, 3]);
+        let v_eq = Vector::<i8, 3>::from_array(&[-1, 2, 3]);
+        let v_diff = Vector::<i8, 3>::from_array(&[-1, 2, 4]);
 
         let v_zero = Vector::<i8, 3>::zero();
-        let v_zero_neg = Vector::<i8, 3>::from_array([-0, -0, -0]);
+        let v_zero_neg = Vector::<i8, 3>::from_array(&[-0, -0, -0]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2371,10 +2388,10 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_i16() {
-        let v1 = Vector::<i16, 3>::from_array([-1, 2, 3]);
-        let v2 = Vector::<i16, 3>::from_array([-1, 2, 3]);
-        let v_eq = Vector::<i16, 3>::from_array([-1, 2, 3]);
-        let v_diff = Vector::<i16, 3>::from_array([-1, 2, 4]);
+        let v1 = Vector::<i16, 3>::from_array(&[-1, 2, 3]);
+        let v2 = Vector::<i16, 3>::from_array(&[-1, 2, 3]);
+        let v_eq = Vector::<i16, 3>::from_array(&[-1, 2, 3]);
+        let v_diff = Vector::<i16, 3>::from_array(&[-1, 2, 4]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2385,10 +2402,10 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_i32() {
-        let v1 = Vector::<i32, 3>::from_array([-1, 2, 3]);
-        let v2 = Vector::<i32, 3>::from_array([-1, 2, 3]);
-        let v_eq = Vector::<i32, 3>::from_array([-1, 2, 3]);
-        let v_diff = Vector::<i32, 3>::from_array([-1, 2, 4]);
+        let v1 = Vector::<i32, 3>::from_array(&[-1, 2, 3]);
+        let v2 = Vector::<i32, 3>::from_array(&[-1, 2, 3]);
+        let v_eq = Vector::<i32, 3>::from_array(&[-1, 2, 3]);
+        let v_diff = Vector::<i32, 3>::from_array(&[-1, 2, 4]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2399,10 +2416,10 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_i64() {
-        let v1 = Vector::<i64, 3>::from_array([-1, 2, 3]);
-        let v2 = Vector::<i64, 3>::from_array([-1, 2, 3]);
-        let v_eq = Vector::<i64, 3>::from_array([-1, 2, 3]);
-        let v_diff = Vector::<i64, 3>::from_array([-1, 2, 4]);
+        let v1 = Vector::<i64, 3>::from_array(&[-1, 2, 3]);
+        let v2 = Vector::<i64, 3>::from_array(&[-1, 2, 3]);
+        let v_eq = Vector::<i64, 3>::from_array(&[-1, 2, 3]);
+        let v_diff = Vector::<i64, 3>::from_array(&[-1, 2, 4]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2413,10 +2430,10 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_i128() {
-        let v1 = Vector::<i128, 3>::from_array([-1, 2, 3]);
-        let v2 = Vector::<i128, 3>::from_array([-1, 2, 3]);
-        let v_eq = Vector::<i128, 3>::from_array([-1, 2, 3]);
-        let v_diff = Vector::<i128, 3>::from_array([-1, 2, 4]);
+        let v1 = Vector::<i128, 3>::from_array(&[-1, 2, 3]);
+        let v2 = Vector::<i128, 3>::from_array(&[-1, 2, 3]);
+        let v_eq = Vector::<i128, 3>::from_array(&[-1, 2, 3]);
+        let v_diff = Vector::<i128, 3>::from_array(&[-1, 2, 4]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2427,10 +2444,10 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_u8() {
-        let v1 = Vector::<u8, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<u8, 3>::from_array([1, 2, 3]);
-        let v_eq = Vector::<u8, 3>::from_array([1, 2, 3]);
-        let v_diff = Vector::<u8, 3>::from_array([1, 2, 4]);
+        let v1 = Vector::<u8, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<u8, 3>::from_array(&[1, 2, 3]);
+        let v_eq = Vector::<u8, 3>::from_array(&[1, 2, 3]);
+        let v_diff = Vector::<u8, 3>::from_array(&[1, 2, 4]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2441,10 +2458,10 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_u16() {
-        let v1 = Vector::<u16, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<u16, 3>::from_array([1, 2, 3]);
-        let v_eq = Vector::<u16, 3>::from_array([1, 2, 3]);
-        let v_diff = Vector::<u16, 3>::from_array([1, 2, 4]);
+        let v1 = Vector::<u16, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<u16, 3>::from_array(&[1, 2, 3]);
+        let v_eq = Vector::<u16, 3>::from_array(&[1, 2, 3]);
+        let v_diff = Vector::<u16, 3>::from_array(&[1, 2, 4]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2455,10 +2472,10 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_u32() {
-        let v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let v_eq = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let v_diff = Vector::<u32, 3>::from_array([1, 2, 4]);
+        let v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let v_eq = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let v_diff = Vector::<u32, 3>::from_array(&[1, 2, 4]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2469,10 +2486,10 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_u64() {
-        let v1 = Vector::<u64, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<u64, 3>::from_array([1, 2, 3]);
-        let v_eq = Vector::<u64, 3>::from_array([1, 2, 3]);
-        let v_diff = Vector::<u64, 3>::from_array([1, 2, 4]);
+        let v1 = Vector::<u64, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<u64, 3>::from_array(&[1, 2, 3]);
+        let v_eq = Vector::<u64, 3>::from_array(&[1, 2, 3]);
+        let v_diff = Vector::<u64, 3>::from_array(&[1, 2, 4]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2483,10 +2500,10 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_u128() {
-        let v1 = Vector::<u128, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<u128, 3>::from_array([1, 2, 3]);
-        let v_eq = Vector::<u128, 3>::from_array([1, 2, 3]);
-        let v_diff = Vector::<u128, 3>::from_array([1, 2, 4]);
+        let v1 = Vector::<u128, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<u128, 3>::from_array(&[1, 2, 3]);
+        let v_eq = Vector::<u128, 3>::from_array(&[1, 2, 3]);
+        let v_diff = Vector::<u128, 3>::from_array(&[1, 2, 4]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2497,10 +2514,10 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_isize() {
-        let v1 = Vector::<isize, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<isize, 3>::from_array([1, 2, 3]);
-        let v_eq = Vector::<isize, 3>::from_array([1, 2, 3]);
-        let v_diff = Vector::<isize, 3>::from_array([1, 2, 4]);
+        let v1 = Vector::<isize, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<isize, 3>::from_array(&[1, 2, 3]);
+        let v_eq = Vector::<isize, 3>::from_array(&[1, 2, 3]);
+        let v_diff = Vector::<isize, 3>::from_array(&[1, 2, 4]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2511,10 +2528,10 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_usize() {
-        let v1 = Vector::<usize, 3>::from_array([1, 2, 3]);
-        let v2 = Vector::<usize, 3>::from_array([1, 2, 3]);
-        let v_eq = Vector::<usize, 3>::from_array([1, 2, 3]);
-        let v_diff = Vector::<usize, 3>::from_array([1, 2, 4]);
+        let v1 = Vector::<usize, 3>::from_array(&[1, 2, 3]);
+        let v2 = Vector::<usize, 3>::from_array(&[1, 2, 3]);
+        let v_eq = Vector::<usize, 3>::from_array(&[1, 2, 3]);
+        let v_diff = Vector::<usize, 3>::from_array(&[1, 2, 4]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2525,23 +2542,23 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_f32() {
-        let v1 = Vector::<f32, 3>::from_array([-1.1, 2.2, 3.3]);
-        let v2 = Vector::<f32, 3>::from_array([-1.1, 2.2, 3.3]);
-        let v_eq = Vector::<f32, 3>::from_array([-1.1, 2.2, 3.3]);
-        let v_diff = Vector::<f32, 3>::from_array([-1.1, 2.2, 4.4]);
-        let v_close = Vector::<f32, 3>::from_array([-1.1 + (f32::EPSILON * 2.), 2.2, 3.3]);
+        let v1 = Vector::<f32, 3>::from_array(&[-1.1, 2.2, 3.3]);
+        let v2 = Vector::<f32, 3>::from_array(&[-1.1, 2.2, 3.3]);
+        let v_eq = Vector::<f32, 3>::from_array(&[-1.1, 2.2, 3.3]);
+        let v_diff = Vector::<f32, 3>::from_array(&[-1.1, 2.2, 4.4]);
+        let v_close = Vector::<f32, 3>::from_array(&[-1.1 + (f32::EPSILON * 2.), 2.2, 3.3]);
 
         let v_zero = Vector::<f32, 3>::zero();
         let v_zero_eq = Vector::<f32, 3>::zero();
-        let v_zero_neg_eq = Vector::<f32, 3>::from_array([-0.0, -0.0, -0.0]);
+        let v_zero_neg_eq = Vector::<f32, 3>::from_array(&[-0.0, -0.0, -0.0]);
 
-        let v_nan = Vector::<f32, 3>::from_array([f32::NAN, 0.0, 0.0]);
-        let v_nan_diff = Vector::<f32, 3>::from_array([f32::NAN, 0.0, 0.0]);
+        let v_nan = Vector::<f32, 3>::from_array(&[f32::NAN, 0.0, 0.0]);
+        let v_nan_diff = Vector::<f32, 3>::from_array(&[f32::NAN, 0.0, 0.0]);
 
-        let v_inf_pos = Vector::<f32, 3>::from_array([f32::INFINITY, 0.0, 0.0]);
-        let v_inf_pos_eq = Vector::<f32, 3>::from_array([f32::INFINITY, 0.0, 0.0]);
-        let v_inf_neg = Vector::<f32, 3>::from_array([f32::NEG_INFINITY, 0.0, 0.0]);
-        let v_inf_neg_eq = Vector::<f32, 3>::from_array([f32::NEG_INFINITY, 0.0, 0.0]);
+        let v_inf_pos = Vector::<f32, 3>::from_array(&[f32::INFINITY, 0.0, 0.0]);
+        let v_inf_pos_eq = Vector::<f32, 3>::from_array(&[f32::INFINITY, 0.0, 0.0]);
+        let v_inf_neg = Vector::<f32, 3>::from_array(&[f32::NEG_INFINITY, 0.0, 0.0]);
+        let v_inf_neg_eq = Vector::<f32, 3>::from_array(&[f32::NEG_INFINITY, 0.0, 0.0]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2558,23 +2575,23 @@ mod tests {
 
     #[test]
     fn vector_trait_partial_eq_f64() {
-        let v1 = Vector::<f64, 3>::from_array([-1.1, 2.2, 3.3]);
-        let v2 = Vector::<f64, 3>::from_array([-1.1, 2.2, 3.3]);
-        let v_eq = Vector::<f64, 3>::from_array([-1.1, 2.2, 3.3]);
-        let v_diff = Vector::<f64, 3>::from_array([-1.1, 2.2, 4.4]);
-        let v_close = Vector::<f64, 3>::from_array([-1.1 + (f64::EPSILON * 2.), 2.2, 3.3]);
+        let v1 = Vector::<f64, 3>::from_array(&[-1.1, 2.2, 3.3]);
+        let v2 = Vector::<f64, 3>::from_array(&[-1.1, 2.2, 3.3]);
+        let v_eq = Vector::<f64, 3>::from_array(&[-1.1, 2.2, 3.3]);
+        let v_diff = Vector::<f64, 3>::from_array(&[-1.1, 2.2, 4.4]);
+        let v_close = Vector::<f64, 3>::from_array(&[-1.1 + (f64::EPSILON * 2.), 2.2, 3.3]);
 
         let v_zero = Vector::<f64, 3>::zero();
         let v_zero_eq = Vector::<f64, 3>::zero();
-        let v_zero_neg_eq = Vector::<f64, 3>::from_array([-0.0, -0.0, -0.0]);
+        let v_zero_neg_eq = Vector::<f64, 3>::from_array(&[-0.0, -0.0, -0.0]);
 
-        let v_nan = Vector::<f64, 3>::from_array([f64::NAN, 0.0, 0.0]);
-        let v_nan_diff = Vector::<f64, 3>::from_array([f64::NAN, 0.0, 0.0]);
+        let v_nan = Vector::<f64, 3>::from_array(&[f64::NAN, 0.0, 0.0]);
+        let v_nan_diff = Vector::<f64, 3>::from_array(&[f64::NAN, 0.0, 0.0]);
 
-        let v_inf_pos = Vector::<f64, 3>::from_array([f64::INFINITY, 0.0, 0.0]);
-        let v_inf_pos_eq = Vector::<f64, 3>::from_array([f64::INFINITY, 0.0, 0.0]);
-        let v_inf_neg = Vector::<f64, 3>::from_array([f64::NEG_INFINITY, 0.0, 0.0]);
-        let v_inf_neg_eq = Vector::<f64, 3>::from_array([f64::NEG_INFINITY, 0.0, 0.0]);
+        let v_inf_pos = Vector::<f64, 3>::from_array(&[f64::INFINITY, 0.0, 0.0]);
+        let v_inf_pos_eq = Vector::<f64, 3>::from_array(&[f64::INFINITY, 0.0, 0.0]);
+        let v_inf_neg = Vector::<f64, 3>::from_array(&[f64::NEG_INFINITY, 0.0, 0.0]);
+        let v_inf_neg_eq = Vector::<f64, 3>::from_array(&[f64::NEG_INFINITY, 0.0, 0.0]);
 
         assert!(v1 == v_eq);
         assert!(v_eq == v1); // symmetry
@@ -2596,7 +2613,7 @@ mod tests {
     // ================================
     #[test]
     fn vector_trait_as_ref() {
-        let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
         let test_vector: &Vector<u32, 3> = v.as_ref();
         let test_slice: &[u32] = v.as_ref();
 
@@ -2611,8 +2628,8 @@ mod tests {
 
     #[test]
     fn vector_trait_as_mut() {
-        let mut v1 = Vector::<u32, 3>::from_array([1, 2, 3]);
-        let mut v2 = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let mut v1 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
+        let mut v2 = Vector::<u32, 3>::from_array(&[1, 2, 3]);
         let test_vector: &mut Vector<u32, 3> = v1.as_mut();
         let test_slice: &mut [u32] = v2.as_mut();
 
@@ -2632,7 +2649,7 @@ mod tests {
     // ================================
     #[test]
     fn vector_trait_borrow() {
-        let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
         let test_slice: &[u32] = v.borrow();
 
         assert_eq!(test_slice, [1, 2, 3]);
@@ -2640,7 +2657,7 @@ mod tests {
 
     #[test]
     fn vector_trait_borrow_mut() {
-        let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let mut v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
         let test_slice: &mut [u32] = v.borrow_mut();
 
         test_slice[0] = 10;
@@ -2655,7 +2672,7 @@ mod tests {
     // ================================
     #[test]
     fn vector_trait_deref() {
-        let v = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
         let test_slice: &[u32] = &v;
 
         assert_eq!(test_slice, [1, 2, 3]);
@@ -2663,7 +2680,7 @@ mod tests {
 
     #[test]
     fn vector_trait_deref_mut() {
-        let mut v = Vector::<u32, 3>::from_array([1, 2, 3]);
+        let mut v = Vector::<u32, 3>::from_array(&[1, 2, 3]);
         let test_slice: &mut [u32] = &mut v;
 
         assert_eq!(test_slice, [1, 2, 3]);
@@ -2676,7 +2693,7 @@ mod tests {
     // ================================
     #[test]
     fn vector_trait_from_into_uint_to_uint() {
-        let v_u8 = Vector::<u8, 3>::from_array([1, 2, 3]);
+        let v_u8 = Vector::<u8, 3>::from_array(&[1, 2, 3]);
         let v_u16 = Vector::<u16, 3>::new();
         let v_u32 = Vector::<u32, 3>::new();
         let v_u64 = Vector::<u64, 3>::new();
@@ -2718,7 +2735,7 @@ mod tests {
 
     #[test]
     fn vector_trait_from_into_iint_to_iint() {
-        let v_i8 = Vector::<i8, 3>::from_array([1, 2, 3]);
+        let v_i8 = Vector::<i8, 3>::from_array(&[1, 2, 3]);
         let v_i16 = Vector::<i16, 3>::new();
         let v_i32 = Vector::<i32, 3>::new();
         let v_i64 = Vector::<i64, 3>::new();
@@ -2760,7 +2777,7 @@ mod tests {
 
     #[test]
     fn vector_trait_from_into_uint_to_iint() {
-        let v_u8 = Vector::<u8, 3>::from_array([1, 2, 3]);
+        let v_u8 = Vector::<u8, 3>::from_array(&[1, 2, 3]);
         let v_u16 = Vector::<u16, 3>::new();
         let v_u32 = Vector::<u32, 3>::new();
         let v_u64 = Vector::<u64, 3>::new();
@@ -2805,7 +2822,7 @@ mod tests {
 
     #[test]
     fn vector_trait_from_into_uint_to_float() {
-        let v_u8 = Vector::<u8, 3>::from_array([1, 2, 3]);
+        let v_u8 = Vector::<u8, 3>::from_array(&[1, 2, 3]);
         let v_u16 = Vector::<u16, 3>::new();
         let v_u32 = Vector::<u32, 3>::new();
 
@@ -2831,7 +2848,7 @@ mod tests {
 
     #[test]
     fn vector_trait_from_into_iint_to_float() {
-        let v_i8 = Vector::<i8, 3>::from_array([1, 2, 3]);
+        let v_i8 = Vector::<i8, 3>::from_array(&[1, 2, 3]);
         let v_i16 = Vector::<i16, 3>::new();
         let v_i32 = Vector::<i32, 3>::new();
 
@@ -2861,7 +2878,7 @@ mod tests {
         let a_slice = &a[..];
         // from / into with array
         let va = Vector::<i32, 3>::from(a);
-        let va2: Vector<i32, 3> = Vector::from_array(a);
+        let va2: Vector<i32, 3> = Vector::from_array(&a);
         let va3: Vector<i32, 3> = a.into();
         assert_eq!(va.components.len(), 3);
         assert_eq!(va[0], 1 as i32);
