@@ -91,11 +91,12 @@ pub type Vector3dIsize = Vector<isize, 3>;
 /// Type alias for a 3D usize integer vector.
 pub type Vector3dUsize = Vector<usize, 3>;
 
-/// A generic, fixed length vector type that holds N-dimensional `components` data.
+/// A generic, fixed N-length vector type that supports computation with N-dimensional
+/// scalar data.
 #[derive(Copy, Clone, Debug)]
 pub struct Vector<T, const N: usize>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     /// N-dimensional vector component values.
     pub components: [T; N],
@@ -108,7 +109,7 @@ where
 // ================================
 impl<T, const N: usize> Vector<T, N>
 where
-    T: Num + Copy + Default,
+    T: Num + Copy + Default + Sync + Send,
 {
     /// Returns a new [`Vector`] filled with default scalar component values.
     ///
@@ -261,7 +262,7 @@ where
 
 impl<T, const N: usize> Default for Vector<T, N>
 where
-    T: Num + Copy + Default,
+    T: Num + Copy + Default + Sync + Send,
 {
     /// Returns a new [`Vector`] filled with default scalar values for each component.
     ///
@@ -281,7 +282,7 @@ where
 
 impl<T, const N: usize> Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     /// Returns a new [`Vector`] defined with component scalar values provided
     /// in an [`array`].
@@ -611,6 +612,31 @@ where
         self.components.is_empty()
     }
 
+    /// Returns the dot product of two vectors.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v1: Vector<i32, 3> = Vector::from([1, 3, -5]);
+    /// let v2: Vector<i32, 3> = Vector::from([4, -2, -1]);
+    /// let x1 = v1 * 3;
+    /// let x2 = v2 * 6;
+    /// assert_eq!(v1.dot(&v2), 3);
+    /// assert_eq!(v2.dot(&v1), 3);
+    /// assert_eq!(-v1.dot(&-v2), 3);
+    /// assert_eq!(x1.dot(&x2), (3 * 6) * v1.dot(&v2));
+    /// ```
+    #[inline]
+    pub fn dot(&self, other: &Vector<T, N>) -> T
+    where
+        T: Num + Copy + std::iter::Sum<T> + Sync + Send,
+    {
+        self.components.iter().zip(other.components.iter()).map(|(a, b)| *a * *b).sum()
+    }
+
     // ================================
     //
     // Private methods
@@ -643,7 +669,7 @@ where
 // ================================
 impl<T, const N: usize> Index<usize> for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     type Output = T;
     /// Returns [`Vector`] scalar component values by zero-based index.
@@ -668,7 +694,7 @@ where
 
 impl<T, const N: usize> IndexMut<usize> for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     /// Returns mutable [`Vector`] scalar component values by zero-based index.
     ///
@@ -704,7 +730,7 @@ where
 
 impl<T, const N: usize> IntoIterator for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     type Item = T;
     type IntoIter = std::array::IntoIter<Self::Item, N>;
@@ -717,7 +743,7 @@ where
 
 impl<'a, T, const N: usize> IntoIterator for &'a Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     type Item = &'a T;
     type IntoIter = std::slice::Iter<'a, T>;
@@ -730,7 +756,7 @@ where
 
 impl<'a, T, const N: usize> IntoIterator for &'a mut Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     type Item = &'a mut T;
     type IntoIter = std::slice::IterMut<'a, T>;
@@ -749,7 +775,7 @@ where
 
 impl<T, const N: usize> FromIterator<T> for Vector<T, N>
 where
-    T: Num + Copy + Default,
+    T: Num + Copy + Default + Sync + Send,
 {
     /// FromIterator trait implementation with support for `collect`.
     ///
@@ -913,7 +939,7 @@ impl_vector_float_partialeq_from!(f64);
 // ================================
 impl<T, const N: usize> AsRef<Vector<T, N>> for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     fn as_ref(&self) -> &Vector<T, N> {
         self
@@ -922,7 +948,7 @@ where
 
 impl<T, const N: usize> AsRef<[T]> for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     fn as_ref(&self) -> &[T] {
         &self.components
@@ -931,7 +957,7 @@ where
 
 impl<T, const N: usize> AsMut<Vector<T, N>> for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     fn as_mut(&mut self) -> &mut Vector<T, N> {
         self
@@ -940,7 +966,7 @@ where
 
 impl<T, const N: usize> AsMut<[T]> for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     fn as_mut(&mut self) -> &mut [T] {
         &mut self.components
@@ -954,7 +980,7 @@ where
 // ================================
 impl<T, const N: usize> Borrow<[T]> for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     fn borrow(&self) -> &[T] {
         &self.components
@@ -963,7 +989,7 @@ where
 
 impl<T, const N: usize> BorrowMut<[T]> for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     fn borrow_mut(&mut self) -> &mut [T] {
         &mut self.components
@@ -977,7 +1003,7 @@ where
 // ================================
 impl<T, const N: usize> Deref for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     type Target = [T];
 
@@ -988,7 +1014,7 @@ where
 
 impl<T, const N: usize> DerefMut for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     fn deref_mut(&mut self) -> &mut [T] {
         &mut self.components
@@ -1002,7 +1028,7 @@ where
 // ================================
 impl<T, const N: usize> From<[T; N]> for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     /// Returns a new [`Vector`] with numeric type and dimensions as
     /// defined by an array parameter.
@@ -1017,7 +1043,7 @@ where
 
 impl<T, const N: usize> From<&[T; N]> for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     /// Returns a new [`Vector`] with numeric type and dimensions as
     /// defined by an [`array`] reference parameter.
@@ -1032,7 +1058,7 @@ where
 
 impl<T, const N: usize> TryFrom<Vec<T>> for Vector<T, N>
 where
-    T: Num + Copy + Default,
+    T: Num + Copy + Default + Sync + Send,
 {
     type Error = VectorError;
     /// Returns a new [`Vector`] with numeric type as
@@ -1054,7 +1080,7 @@ where
 
 impl<T, const N: usize> TryFrom<&Vec<T>> for Vector<T, N>
 where
-    T: Num + Copy + Default,
+    T: Num + Copy + Default + Sync + Send,
 {
     type Error = VectorError;
     /// Returns a new [`Vector`] with numeric type as
@@ -1076,7 +1102,7 @@ where
 
 impl<T, const N: usize> TryFrom<&[T]> for Vector<T, N>
 where
-    T: Num + Copy + Default,
+    T: Num + Copy + Default + Sync + Send,
 {
     type Error = VectorError;
     /// Returns a new [`Vector`] with numeric type as defined by a
@@ -1220,7 +1246,7 @@ impl_vector_from_vector!(u32, f64);
 
 impl<T, const N: usize> Neg for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     type Output = Self;
 
@@ -1238,11 +1264,11 @@ where
 
 impl<T, const N: usize> Add for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     type Output = Self;
 
-    /// Binary add operator overload implementation.
+    /// Binary add operator overload implemenatation for vector addition.
     fn add(self, rhs: Self) -> Self::Output {
         let new_components = &mut [T::zero(); N];
         for (i, x) in new_components.iter_mut().enumerate() {
@@ -1254,11 +1280,11 @@ where
 
 impl<T, const N: usize> Sub for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     type Output = Self;
 
-    /// Binary subtraction operator overload implementation.
+    /// Binary subtraction operator overload implementation for vector substration.
     fn sub(self, rhs: Self) -> Self::Output {
         let new_components = &mut [T::zero(); N];
         for (i, x) in new_components.iter_mut().enumerate() {
@@ -1270,11 +1296,12 @@ where
 
 impl<T, const N: usize> Mul<T> for Vector<T, N>
 where
-    T: Num + Copy,
+    T: Num + Copy + Sync + Send,
 {
     type Output = Self;
 
-    /// Binary multiplication operator overload implementation.
+    /// Binary multiplication operator overload implementation for vector
+    /// scalar multiplication.
     fn mul(self, rhs: T) -> Self::Output {
         let new_components = &mut [T::zero(); N];
         for (i, x) in new_components.iter_mut().enumerate() {
@@ -1956,6 +1983,32 @@ mod tests {
         assert_eq!(v3.len(), 3);
         assert_eq!(v_empty.len(), 0);
         assert!(v_empty.is_empty());
+    }
+
+    // ================================
+    //
+    // dot method tests
+    //
+    // ================================
+    #[test]
+    fn vector_method_dot() {
+        let v1: Vector<i32, 3> = Vector::from([1, 3, -5]);
+        let v2: Vector<i32, 3> = Vector::from([4, -2, -1]);
+        let x1 = v1 * 3;
+        let x2 = v2 * 6;
+        assert_eq!(v1.dot(&v2), 3);
+        assert_eq!(v2.dot(&v1), 3);
+        assert_eq!(-v1.dot(&-v2), 3);
+        assert_eq!(x1.dot(&x2), (3 * 6) * v1.dot(&v2));
+
+        let v1: Vector<f64, 3> = Vector::from([1.0, 3.0, -5.0]);
+        let v2: Vector<f64, 3> = Vector::from([4.0, -2.0, -1.0]);
+        let x1 = v1 * 3.0;
+        let x2 = v2 * 6.0;
+        assert_relative_eq!(v1.dot(&v2), 3.0);
+        assert_relative_eq!(v2.dot(&v1), 3.0);
+        assert_relative_eq!(-v1.dot(&-v2), 3.0);
+        assert_relative_eq!(x1.dot(&x2), (3.0 * 6.0) * v1.dot(&v2));
     }
 
     // ================================
