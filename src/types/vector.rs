@@ -193,9 +193,13 @@ where
     /// Returns a new [`Vector`] with a numeric type and scalar component data as
     /// defined by the [`Vec`] reference parameter.
     ///
+    /// [`Vec`] lengths are not known at compile time. Bounds checks are used in
+    /// this approach.  This is slower than instantiation from arrays and will fail
+    /// with overflows and underflows.
+    ///
     /// # Errors
     ///
-    /// Raises [`VectorError::TryFromSliceError`] when the [`Vec`] parameter length
+    /// Raises [`VectorError::TryFromVecError`] when the [`Vec`] parameter length
     /// does not equal the expected [`Vector`] component length.
     ///
     /// # Examples
@@ -208,7 +212,7 @@ where
     /// let t: Vector<u32,3> = Vector::try_from_vec(&v).unwrap();
     /// ```
     ///
-    /// Callers should check that the length of the [`Vec`] is
+    /// Callers should confirm that the length of the [`Vec`] is
     /// the same as the number of requested [`Vector`] dimensions.  The following
     /// code raises [`VectorError::TryFromSliceError`] on an attempt to make a
     /// three dimensional [`Vector`] with two dimensional data:
@@ -226,6 +230,10 @@ where
     /// Returns a new [`Vector`] with a numeric type and scalar component data as
     /// defined by the [`slice`] parameter.
     ///
+    /// [`slice`] lengths are not known at compile time. Bounds checks are used in
+    /// this approach.  This is slower than instantiation from [`array`] and will fail
+    /// with overflows and underflows.
+    ///
     /// # Errors
     ///
     /// Raises [`VectorError::TryFromSliceError`] when the [`slice`] parameter length
@@ -242,7 +250,7 @@ where
     /// let _: Vector<u32,3> = Vector::try_from_slice(sl).unwrap();
     /// ```
     ///
-    /// Callers should check that the length of the [`slice`] is
+    /// Callers should confirm that the length of the [`slice`] is
     /// the same as the number of requested [`Vector`] dimensions.  The following
     /// code raises [`VectorError::TryFromSliceError`] on an attempt to make a
     /// three dimensional [`Vector`] with two dimensinoal [`slice`] data:
@@ -951,7 +959,7 @@ where
 /// PartialEq trait implementation for [`Vector`] with integer component types.
 ///
 /// These comparisons establish the symmetry and transitivity relationships
-/// required for the partial equivalence relation definition.
+/// required for the partial equivalence relation definition with integer types.
 ///
 /// /// Note:
 ///
@@ -990,7 +998,7 @@ impl_vector_int_partialeq_from!(i128);
 /// PartialEq trait implementation for [`Vector`] with float component types.
 ///
 /// These comparisons establish the symmetry and transitivity relationships
-/// required for the partial equivalence relation definition for floating point
+/// required for the partial equivalence relation definition with floating point
 /// types.  
 ///
 /// Note:
@@ -1122,8 +1130,7 @@ impl<T, const N: usize> From<[T; N]> for Vector<T, N>
 where
     T: Num + Copy + Sync + Send,
 {
-    /// Returns a new [`Vector`] with numeric type and dimensions as
-    /// defined by an array parameter.
+    /// Returns a new [`Vector`] as defined by an [`array`] parameter.
     ///
     /// Note: The [`Vector`] dimension size is defined by the fixed [`array`]
     /// size.
@@ -1137,8 +1144,7 @@ impl<T, const N: usize> From<&[T; N]> for Vector<T, N>
 where
     T: Num + Copy + Sync + Send,
 {
-    /// Returns a new [`Vector`] with numeric type and dimensions as
-    /// defined by an [`array`] reference parameter.
+    /// Returns a new [`Vector`] as defined by an [`array`] reference parameter.
     ///
     /// Note: The [`Vector`] dimension size is defined by the fixed [`array`]
     /// size.
@@ -1153,12 +1159,11 @@ where
     T: Num + Copy + Default + Sync + Send + std::fmt::Debug,
 {
     type Error = VectorError;
-    /// Returns a new [`Vector`] with numeric type as
-    /// defined by a [`Vec`] parameter.
+    /// Returns a new [`Vector`] as defined by a [`Vec`] parameter.
     ///
     /// # Errors
     ///
-    /// Raises [`VectorError::TryFromSliceError`] when the [`Vec`] parameter length
+    /// Raises [`VectorError::TryFromVecError`] when the [`Vec`] parameter length
     /// is not equal to the requested [`Vector`] component length.
     #[inline]
     fn try_from(t_vec: Vec<T>) -> Result<Vector<T, N>, VectorError> {
@@ -1184,16 +1189,14 @@ where
     T: Num + Copy + Default + Sync + Send,
 {
     type Error = VectorError;
-    /// Returns a new [`Vector`] with numeric type as
-    /// defined by a [`Vec`] reference parameter.
+    /// Returns a new [`Vector`] as defined by a [`Vec`] reference parameter.
     ///
     /// # Errors
     ///
-    /// Raises [`VectorError::TryFromSliceError`] when the `t_vec` parameter length
-    /// is not equal to the requested [`Vector`] component length.
+    /// Raises [`VectorError::TryFromVecError`] when the [`Vec`] reference parameter
+    /// length is not equal to the requested [`Vector`] component length.
     #[inline]
     fn try_from(t_vec: &Vec<T>) -> Result<Vector<T, N>, VectorError> {
-        // Self::try_from(t_vec.as_slice())
         if t_vec.len() != N {
             return Err(VectorError::TryFromVecError(format!(
                 "expected Vec with {} items, but received Vec with {} items",
@@ -1214,8 +1217,7 @@ where
     T: Num + Copy + Default + Sync + Send,
 {
     type Error = VectorError;
-    /// Returns a new [`Vector`] with numeric type as defined by a
-    /// slice parameter.
+    /// Returns a new [`Vector`] as defined by a [`slice`] parameter.
     ///
     /// # Errors
     ///
