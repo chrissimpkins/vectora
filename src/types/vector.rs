@@ -670,8 +670,7 @@ impl<T, const N: usize> Vector<T, N>
 where
     T: Float + Copy + Sync + Send + Sum,
 {
-    /// Returns the vector magnitude for [`Vector`] with
-    /// [`Float`] component types.
+    /// Returns the vector magnitude for a float [`Vector`].
     ///
     /// # Examples
     ///
@@ -687,21 +686,71 @@ where
     /// assert_relative_eq!(v2.magnitude(), 3.82099463490856);
     /// ```
     ///
-    /// There is support for lossless type casts of integer [`Vector`]
-    /// to float [`Vector`]:
+    /// There is support for lossless type casts of integer
+    /// to float [`Vector`] types:
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
     /// use approx::assert_relative_eq;
+    ///
     /// let v1: Vector<i32, 2> = Vector::from([2, 2]);
     /// let v1_f: Vector<f64, 2> = v1.into();
     /// assert_relative_eq!(v1_f.magnitude(), 2.8284271247461903);
     /// ```
     ///
-    /// Lossy integer to float type casts are not supported.
+    /// Lossy integer to float type casts are **not** supported (e.g.,
+    /// `i64` to `f64`).
     pub fn magnitude(&self) -> T {
         let x: T = self.components.iter().map(|a| *a * *a).sum();
         x.sqrt()
+    }
+
+    /// Returns a new, normalized float [`Vector`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v: Vector<f64, 2> = Vector::from([25.123, 30.456]);
+    /// assert_relative_eq!(v.normalize().magnitude(), 1.0);
+    /// assert_relative_eq!(v[0], 25.123);
+    /// assert_relative_eq!(v[1], 30.456);
+    /// ```
+    pub fn normalize(&self) -> Self
+    where
+        T: Float + Copy + Sync + Send + Sum,
+    {
+        let mut new_components = [T::zero(); N];
+        let this_magnitude = self.magnitude();
+        for _ in
+            self.components.iter().enumerate().map(|(i, a)| new_components[i] = *a / this_magnitude)
+        {
+        }
+        Self { components: new_components }
+    }
+
+    /// Normalizes the float [`Vector`] in-place.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let mut v: Vector<f64, 2> = Vector::from([25.123, 30.456]);
+    /// assert_relative_eq!(v.mut_normalize().magnitude(), 1.0);
+    /// assert_relative_eq!(v[0], 0.6363347262144607);
+    /// assert_relative_eq!(v[1], 0.7714130645857428);
+    /// ```
+    pub fn mut_normalize(&mut self) -> Self
+    where
+        T: Float + Copy + Sync + Send + Sum,
+    {
+        let this_magnitude = self.magnitude();
+        for _ in self.components.iter_mut().map(|a| *a = *a / this_magnitude) {}
+        *self
     }
 }
 
@@ -2077,6 +2126,33 @@ mod tests {
 
         assert_relative_eq!(v1.magnitude(), 3.82099463490856);
         assert_relative_eq!(v2.magnitude(), 3.82099463490856);
+    }
+
+    // ================================
+    //
+    // normalize method tests
+    //
+    // ================================
+
+    #[test]
+    fn vector_method_normalize() {
+        let v1: Vector<f64, 2> = Vector::from([25.123, 30.456]);
+        let v2: Vector<f64, 2> = Vector::from([-25.123, -30.456]);
+        let mut v3: Vector<f64, 2> = Vector::from([25.123, 30.456]);
+        let mut v4: Vector<f64, 2> = Vector::from([-25.123, -30.456]);
+        assert_relative_eq!(v1.normalize().magnitude(), 1.0);
+        assert_relative_eq!(v2.normalize().magnitude(), 1.0);
+        // normalize does not mutate the calling Vector
+        assert_relative_eq!(v1[0], 25.123);
+        assert_relative_eq!(v1[1], 30.456);
+
+        assert_relative_eq!(v3.mut_normalize().magnitude(), 1.0);
+        assert_relative_eq!(v4.mut_normalize().magnitude(), 1.0);
+        // mut_normalize does mutate the calling Vector
+        assert_relative_eq!(v3[0], 0.6363347262144607);
+        assert_relative_eq!(v3[1], 0.7714130645857428);
+
+        assert_eq!((v1.normalize() * v1.magnitude()).magnitude(), v1.magnitude());
     }
 
     // ================================
