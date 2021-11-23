@@ -121,10 +121,10 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let vec_2d_u32 = Vector::<u32, 2>::new();
-    /// assert_eq!(vec_2d_u32.len(), 2);
-    /// assert_eq!(vec_2d_u32[0], u32::default());
-    /// assert_eq!(vec_2d_u32[1], u32::default());
+    /// let vec_2d_i32 = Vector::<i32, 2>::new();
+    /// assert_eq!(vec_2d_i32.len(), 2);
+    /// assert_eq!(vec_2d_i32[0], i32::default());
+    /// assert_eq!(vec_2d_i32[1], i32::default());
     ///
     /// let vec_3d_f64 = Vector::<f64, 3>::new();
     /// assert_eq!(vec_3d_f64.len(), 3);
@@ -139,8 +139,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::*;
-    /// let vec_2d_u32_1 = Vector2d::<u32>::new();
-    /// let vec_2d_u32_2 = Vector2dU32::new();
+    /// let vec_2d_i32_1 = Vector2d::<i32>::new();
+    /// let vec_2d_i32_2 = Vector2dI32::new();
     ///
     /// let vec_3d_f64_1 = Vector3d::<f64>::new();
     /// let vec_3d_f64_2 = Vector3dF64::new();
@@ -203,7 +203,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v1 = Vector::<u32, 2>::default();
+    /// let v1 = Vector::<i32, 2>::default();
     /// let v2 = Vector::<f64, 3>::default();
     /// ```
     fn default() -> Self {
@@ -227,7 +227,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 3>::from(&[1, 2, 3]);
+    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
     /// assert_eq!(v.get(0), Some(&1));
     /// assert_eq!(v.get(1), Some(&2));
     /// assert_eq!(v.get(3), None);
@@ -237,7 +237,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 5>::from(&[1, 2, 3, 4, 5]);
+    /// let v = Vector::<i32, 5>::from(&[1, 2, 3, 4, 5]);
     /// assert_eq!(v.get(0..3).unwrap(), [1, 2, 3]);
     /// assert_eq!(v.get(3..).unwrap(), [4, 5]);
     /// assert_eq!(v.get(..2).unwrap(), [1, 2]);
@@ -264,7 +264,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from(&[1, 2, 3]);
+    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
     ///
     /// let x = v.get_mut(0).unwrap();
     /// assert_eq!(x, &mut 1);
@@ -278,7 +278,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from(&[1, 2, 3]);
+    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
     ///
     /// let x = v.get_mut(0..2).unwrap();
     /// assert_eq!(x, &mut [1, 2]);
@@ -304,7 +304,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = &Vector::<u32, 3>::from(&[1, 2, 3]);
+    /// let v = &Vector::<i32, 3>::from(&[1, 2, 3]);
     /// let mut v_iter = v.iter();
     /// assert_eq!(v_iter.next(), Some(&1));
     /// assert_eq!(v_iter.next(), Some(&2));
@@ -324,7 +324,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from(&[1, 2, 3]);
+    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
     /// for x in v.iter_mut() {
     ///     *x += 3;
     /// }
@@ -346,8 +346,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 3>::from(&[1, 2, 3]);
-    /// let x: &[u32] = v.as_slice();
+    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let x: &[i32] = v.as_slice();
     /// assert_eq!(x, &[1, 2, 3]);
     /// ```
     #[inline]
@@ -363,8 +363,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from(&[1, 2, 3]);
-    /// let mut x: &mut [u32] = v.as_mut_slice();
+    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let mut x: &mut [i32] = v.as_mut_slice();
     /// assert_eq!(x, &[1, 2, 3]);
     /// x[0] = 10;
     /// assert_eq!(x, &[10,2,3]);
@@ -395,8 +395,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 3>::from(&[1, 2, 3]);
-    /// let x: &[u32;3] = v.as_array();
+    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let x: &[i32;3] = v.as_array();
     /// assert_eq!(x, &[1, 2, 3]);
     /// ```
     #[inline]
@@ -412,8 +412,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from(&[1, 2, 3]);
-    /// let mut x: &mut [u32;3] = v.as_mut_array();
+    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let mut x: &mut [i32;3] = v.as_mut_array();
     /// assert_eq!(x, &[1, 2, 3]);
     /// x[0] = 10;
     /// assert_eq!(x, &[10,2,3]);
@@ -444,8 +444,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 3>::from(&[1, 2, 3]);
-    /// let mut x: [u32; 3] = v.to_array();
+    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let mut x: [i32; 3] = v.to_array();
     /// assert_eq!(x, [1,2,3]);
     /// x[0] = 10;
     /// assert_eq!(x, [10, 2, 3]);
@@ -477,8 +477,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 3>::from(&[1, 2, 3]);
-    /// let mut x: Vec<u32> = v.to_vec();
+    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let mut x: Vec<i32> = v.to_vec();
     /// assert_eq!(x, Vec::from([1,2,3]));
     /// x[0] = 10;
     /// assert_eq!(x, Vec::from([10, 2, 3]));
@@ -510,7 +510,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v2d: Vector<u32, 2> = Vector::new();
+    /// let v2d: Vector<i32, 2> = Vector::new();
     /// assert_eq!(v2d.len(), 2);
     ///
     /// let v3d: Vector<f64, 3> = Vector::new();
@@ -533,14 +533,15 @@ where
     ///
     /// Vector addition with the [`+` operator overload](#impl-Add<Vector<T%2C%20N>>) allocates a new [`Vector`].  This method
     /// supports in-place vector addition mutation of the calling [`Vector`] using data in the
-    /// parameter [`Vector`]. This is an alternative approach to the operator overload.
+    /// parameter [`Vector`]. This is an alternative approach to the operator overload that may
+    /// be more performant in some use cases.
     ///
     /// # Examples
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from(&[1, 2, 3]);
-    /// let other = Vector::<u32, 3>::from(&[4, 5, 6]);
+    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let other = Vector::<i32, 3>::from(&[4, 5, 6]);
     /// v.mut_add(&other);
     ///
     /// assert_eq!(v[0], 5);
@@ -717,7 +718,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<u32, 3>::from(&[1, 2, 3]);
+    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
     /// assert_eq!(v[0], 1);
     /// assert_eq!(v[1], 2);
     /// assert_eq!(v[2], 3);
@@ -743,7 +744,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<u32, 3>::from(&[1, 2, 3]);
+    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
     /// assert_eq!(v[0], 1);
     /// assert_eq!(v[1], 2);
     /// assert_eq!(v[2], 3);
@@ -1113,7 +1114,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let _: Vector<u32, 3> = Vector::try_from(Vec::from([1, 2, 3])).unwrap();
+    /// let _: Vector<i32, 3> = Vector::try_from(Vec::from([1, 2, 3])).unwrap();
     /// let _: Vector<f64, 2> = Vector::try_from(Vec::from([1.0, 2.0])).unwrap();
     /// ```
     ///
@@ -1124,8 +1125,8 @@ where
     ///
     /// ```
     ///# use vectora::types::vector::Vector;
-    /// let v = vec![1 as u32, 2 as u32];
-    /// let e = Vector::<u32, 3>::try_from(v);
+    /// let v = vec![1 as i32, 2 as i32];
+    /// let e = Vector::<i32, 3>::try_from(v);
     /// assert!(e.is_err());
     /// ```
     #[inline]
@@ -1169,7 +1170,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let _: Vector<u32, 3> = Vector::try_from(&Vec::from([1, 2, 3])).unwrap();
+    /// let _: Vector<i32, 3> = Vector::try_from(&Vec::from([1, 2, 3])).unwrap();
     /// let _: Vector<f64, 2> = Vector::try_from(&Vec::from([1.0, 2.0])).unwrap();
     /// ```
     ///
@@ -1180,8 +1181,8 @@ where
     ///
     /// ```
     ///# use vectora::types::vector::Vector;
-    /// let v = vec![1 as u32, 2 as u32];
-    /// let e = Vector::<u32, 3>::try_from(&v);
+    /// let v = vec![1 as i32, 2 as i32];
+    /// let e = Vector::<i32, 3>::try_from(&v);
     /// assert!(e.is_err());
     /// ```
     #[inline]
@@ -1222,7 +1223,7 @@ where
     ///
     /// ```
     ///# use vectora::types::vector::Vector;
-    /// let _: Vector<u32, 3> = Vector::try_from(&[1, 2, 3][..]).unwrap();
+    /// let _: Vector<i32, 3> = Vector::try_from(&[1, 2, 3][..]).unwrap();
     /// let _: Vector<f64, 2> = Vector::try_from(&[1.0, 2.0][..]).unwrap();
     /// ```
     ///
@@ -1230,7 +1231,7 @@ where
     ///
     /// ```
     ///# use vectora::types::vector::Vector;
-    /// let _: Vector<u32, 3> = Vector::try_from(Vec::from([1, 2, 3]).as_slice()).unwrap();
+    /// let _: Vector<i32, 3> = Vector::try_from(Vec::from([1, 2, 3]).as_slice()).unwrap();
     /// let _: Vector<f64, 2> = Vector::try_from(Vec::from([1.0, 2.0]).as_slice()).unwrap();
     /// ```
     #[inline]
