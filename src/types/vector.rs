@@ -1,16 +1,15 @@
 //! Vector types.
 
 // use std::cmp::PartialOrd;
-// use std::convert::From;
 use std::{
     borrow::{Borrow, BorrowMut},
-    iter::IntoIterator,
+    iter::{IntoIterator, Sum},
     ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Neg, Sub},
     slice::SliceIndex,
 };
 
 use approx::{relative_eq, RelativeEq};
-use num::Num;
+use num::{Float, Num};
 
 use crate::errors::VectorError;
 
@@ -659,6 +658,50 @@ where
         }
 
         true
+    }
+}
+
+// ================================
+//
+// Numeric type specific methods
+//
+// ================================
+impl<T, const N: usize> Vector<T, N>
+where
+    T: Float + Copy + Sync + Send + Sum,
+{
+    /// Returns the vector magnitude for [`Vector`] with
+    /// [`Float`] component types.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    /// let v1: Vector<f64, 2> = Vector::from([2.8, 2.6]);
+    /// let v2: Vector<f64, 2> = Vector::from([-2.8, -2.6]);
+    ///
+    /// assert_relative_eq!(v1.magnitude(), 3.82099463490856);
+    /// assert_relative_eq!(v2.magnitude(), 3.82099463490856);
+    /// ```
+    ///
+    /// There is support for lossless type casts of integer [`Vector`]
+    /// to float [`Vector`]:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    /// let v1: Vector<i32, 2> = Vector::from([2, 2]);
+    /// let v1_f: Vector<f64, 2> = v1.into();
+    /// assert_relative_eq!(v1_f.magnitude(), 2.8284271247461903);
+    /// ```
+    ///
+    /// Lossy integer to float type casts are not supported.
+    pub fn magnitude(&self) -> T {
+        let x: T = self.components.iter().map(|a| *a * *a).sum();
+        x.sqrt()
     }
 }
 
@@ -2009,6 +2052,31 @@ mod tests {
         assert_relative_eq!(v2.dot(&v1), 3.0);
         assert_relative_eq!(-v1.dot(&-v2), 3.0);
         assert_relative_eq!(x1.dot(&x2), (3.0 * 6.0) * v1.dot(&v2));
+    }
+
+    // ================================
+    //
+    // magnitude method tests
+    //
+    // ================================
+
+    #[test]
+    fn vector_method_magnitude_int() {
+        let v1: Vector<i32, 2> = Vector::from([2, 2]);
+        let v2: Vector<i32, 2> = Vector::from([-2, -2]);
+        let v1_f: Vector<f64, 2> = v1.into();
+        let v2_f: Vector<f64, 2> = v2.into();
+        assert_relative_eq!(v1_f.magnitude(), 2.8284271247461903);
+        assert_relative_eq!(v2_f.magnitude(), 2.8284271247461903);
+    }
+
+    #[test]
+    fn vector_method_magnitude_float() {
+        let v1: Vector<f64, 2> = Vector::from([2.8, 2.6]);
+        let v2: Vector<f64, 2> = Vector::from([-2.8, -2.6]);
+
+        assert_relative_eq!(v1.magnitude(), 3.82099463490856);
+        assert_relative_eq!(v2.magnitude(), 3.82099463490856);
     }
 
     // ================================
