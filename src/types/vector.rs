@@ -726,6 +726,23 @@ where
         self.mul(scale)
     }
 
+    /// Scales a [`Vector`] in place by a given scalar parameter value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// v.mut_scale(10);
+    ///
+    /// assert_eq!(v[0], 10);
+    /// assert_eq!(v[1], 20);
+    /// assert_eq!(v[2], 30);
+    /// ```
+    pub fn mut_scale(&mut self, scale: T) -> &mut Self {
+        self.mut_mul(scale)
+    }
+
     /// Returns a translated [`Vector`] with displacement defined by a
     /// translation [`Vector`] parameter.
     ///
