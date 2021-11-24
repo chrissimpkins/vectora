@@ -868,10 +868,12 @@ where
     {
         let mut new_components = [T::zero(); N];
         let this_magnitude = self.magnitude();
-        for _ in
-            self.components.iter().enumerate().map(|(i, a)| new_components[i] = *a / this_magnitude)
-        {
-        }
+
+        self.components
+            .iter()
+            .enumerate()
+            .for_each(|(i, a)| new_components[i] = *a / this_magnitude);
+
         Self { components: new_components }
     }
 
@@ -907,7 +909,7 @@ where
         T: Float + Copy + Sync + Send + Sum,
     {
         let this_magnitude = self.magnitude();
-        for _ in self.components.iter_mut().map(|a| *a = *a / this_magnitude) {}
+        self.components.iter_mut().for_each(|a| *a = *a / this_magnitude);
         *self
     }
 }
