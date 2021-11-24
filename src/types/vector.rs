@@ -869,7 +869,9 @@ where
     /// use approx::assert_relative_eq;
     ///
     /// let mut v: Vector<f64, 2> = Vector::from([25.123, 30.456]);
-    /// assert_relative_eq!(v.mut_normalize().magnitude(), 1.0);
+    /// v.mut_normalize();
+    ///
+    /// assert_relative_eq!(v.magnitude(), 1.0);
     /// assert_relative_eq!(v[0], 0.6363347262144607);
     /// assert_relative_eq!(v[1], 0.7714130645857428);
     /// ```
@@ -887,13 +889,13 @@ where
     ///
     /// Lossy integer to float type casts are **not** supported (e.g.,
     /// `i64` to `f64`).
-    pub fn mut_normalize(&mut self) -> Self
+    pub fn mut_normalize(&mut self) -> &mut Self
     where
         T: Float + Copy + Sync + Send + Sum,
     {
         let this_magnitude = self.magnitude();
         self.components.iter_mut().for_each(|a| *a = *a / this_magnitude);
-        *self
+        self
     }
 }
 
