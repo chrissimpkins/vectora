@@ -641,6 +641,50 @@ where
         self.components.iter().zip(other.components.iter()).map(|(a, b)| *a * *b).sum()
     }
 
+    /// Returns a [`Vector`] that is scaled by a scalar value.
+    ///
+    /// Note: This is an alias for the [`Vector::mul`] scalar multiplication
+    /// method and the operation can be performed with the overloaded `*` operator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let v_s = v.scale(10);
+    ///
+    /// assert_eq!(v_s[0], 10);
+    /// assert_eq!(v_s[1], 20);
+    /// assert_eq!(v_s[2], 30);
+    /// ```
+    #[inline]
+    pub fn scale(&self, scale: T) -> Self {
+        self.mul(scale)
+    }
+
+    /// Returns a translated [`Vector`] with displacement defined by a
+    /// translation [`Vector`].
+    ///
+    /// Note: This is an alias for the [`Vector::add`] vector addition method
+    /// and the operation can be performed with the overloaded `+` operator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let translation_vec = Vector::<i32, 3>::from(&[4, 5, 6]);
+    /// let v_t = v.translate(&translation_vec);
+    ///
+    /// assert_eq!(v_t[0], 5);
+    /// assert_eq!(v_t[1], 7);
+    /// assert_eq!(v_t[2], 9);
+    /// ```
+    #[inline]
+    pub fn translate(&self, translation_vector: &Vector<T, N>) -> Self {
+        self.add(*translation_vector)
+    }
+
     // ================================
     //
     // Private methods
