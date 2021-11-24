@@ -640,7 +640,7 @@ where
     /// Returns a [`Vector`] with the same magnitude and opposite direction for
     /// a non-zero [`Vector`].
     ///
-    /// If the caller is a zero [`Vector`], the method returns a zero [`Vector`].
+    /// This operation does not change zero vectors.
     ///
     /// Note: This is an alias for the unary [`Vector::neg`] operation
     /// and can be performed with the overloaded unary `-` operator.
@@ -670,6 +670,40 @@ where
     /// ```
     pub fn opposite(&self) -> Self {
         -*self
+    }
+
+    /// Mutates a non-zero [`Vector`] in place to one with the same magnitude and opposite direction.
+    ///
+    /// This operation returns a zero vector when the calling vector is a zero vector.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// v.mut_opposite();
+    ///
+    /// assert_eq!(v[0], -1);
+    /// assert_eq!(v[1], -2);
+    /// assert_eq!(v[2], -3);
+    /// ```
+    ///
+    /// The zero vector case:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let mut v_zero = Vector::<i32, 3>::zero();
+    /// v_zero.mut_opposite();
+    ///
+    /// assert_eq!(v_zero[0], 0);
+    /// assert_eq!(v_zero[1], 0);
+    /// assert_eq!(v_zero[2], 0);
+    /// ```
+    pub fn mut_opposite(&mut self) -> &mut Self {
+        self.components.iter_mut().for_each(|a| *a = T::zero() - *a);
+        self
     }
 
     /// Returns a [`Vector`] that is scaled by a given scalar parameter value.
