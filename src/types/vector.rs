@@ -880,7 +880,7 @@ where
     ///
     /// This implementation is designed to be permissive across iterables
     /// with lengths that differ from the requested [`Vector`] length. The
-    /// defines the following underflow and overflow behavior:
+    /// approaches to underflow and overflow are:
     ///
     /// - On underflow: take all items in the iterator and fill subsequent
     /// undefined components with the default value for the numeric type
