@@ -517,8 +517,6 @@ where
 
     /// Vector addition with mutation of the calling [`Vector`].
     ///
-    /// Returns a mutable reference to the calling [`Vector`].
-    ///
     /// Vector addition with the [`+` operator overload](#impl-Add<Vector<T%2C%20N>>) allocates a new [`Vector`].  This method
     /// supports in-place vector addition mutation of the calling [`Vector`] with data in the
     /// parameter [`Vector`].
@@ -543,8 +541,6 @@ where
 
     /// Vector subtraction with mutation of the calling [`Vector`].
     ///
-    /// Returns a mutable reference to the calling [`Vector`].
-    ///
     /// Vector subtraction with the [`-` operator overload](#impl-Sub<Vector<T%2C%20N>>) allocates a new [`Vector`].  This method
     /// supports in-place vector subtraction mutation of the calling [`Vector`] with data in the
     /// parameter [`Vector`].
@@ -568,8 +564,6 @@ where
     }
 
     /// Scalar multiplication with mutation of the calling [`Vector`].
-    ///
-    /// Returns a mutable reference to the calling [`Vector`].
     ///
     /// Scalar multiplication with the [`*` operator overload](#impl-Mul<T>) allocates a
     /// new [`Vector`].  This method supports in-place scalar multiplication mutation of the calling
@@ -633,8 +627,8 @@ where
     /// assert_eq!(v_d[1], -2);
     /// assert_eq!(v_d[2], -3);
     /// ```
-    pub fn displacement(&self, other: &Vector<T, N>) -> Self {
-        self.sub(*other)
+    pub fn displacement(&self, from: &Vector<T, N>) -> Self {
+        self.sub(*from)
     }
 
     /// Returns a [`Vector`] with the same magnitude and opposite direction for
@@ -763,6 +757,25 @@ where
     /// ```
     pub fn translate(&self, translation_vector: &Vector<T, N>) -> Self {
         self.add(*translation_vector)
+    }
+
+    /// Translates a [`Vector`] in place with displacement defined by a
+    /// translation [`Vector`] parameter.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let translation_vec = Vector::<i32, 3>::from(&[4, 5, 6]);
+    /// v.mut_translate(&translation_vec);
+    ///
+    /// assert_eq!(v[0], 5);
+    /// assert_eq!(v[1], 7);
+    /// assert_eq!(v[2], 9);
+    /// ```
+    pub fn mut_translate(&mut self, translation_vector: &Vector<T, N>) -> &mut Self {
+        self.mut_add(translation_vector)
     }
 
     // ================================
