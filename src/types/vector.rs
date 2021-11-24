@@ -663,7 +663,7 @@ where
     }
 
     /// Returns a [`Vector`] with the same magnitude and opposite direction for
-    /// non-zero [`Vector`].
+    /// a non-zero [`Vector`].
     ///
     /// If the caller is a zero [`Vector`], the method returns a zero [`Vector`].
     ///
@@ -679,13 +679,14 @@ where
     /// assert_eq!(v_o[0], -1);
     /// assert_eq!(v_o[1], -2);
     /// assert_eq!(v_o[2], -3);
+    /// assert_eq!(v + v_o, Vector::zero());
     /// ```
     ///
     /// The zero vector case:
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v_zero = Vector::<i32, 3>::from(&[0, 0, 0]);
+    /// let v_zero = Vector::<i32, 3>::zero();
     /// let v_zero_o = v_zero.opposite();
     /// assert_eq!(v_zero_o, v_zero);
     /// ```
@@ -771,6 +772,41 @@ impl<T, const N: usize> Vector<T, N>
 where
     T: Float + Copy + Sync + Send + Sum,
 {
+    /// Returns the magnitude of the displacement vector between the
+    /// calling float [`Vector`] and a float [`Vector`] parameter.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    ///# use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v1: Vector<f64, 2> = Vector::from([2.0, 2.0]);
+    /// let v2: Vector<f64, 2> = Vector::from([4.0, 4.0]);
+    ///
+    /// assert_relative_eq!(v1.distance(&v2), 8.0_f64.sqrt());
+    /// assert_relative_eq!(v1.distance(&v1), 0.0_f64);
+    /// ```
+    ///
+    /// Note: This method can be used with a **lossless** integer
+    /// to float [`Vector`] type cast:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v1: Vector<i32, 2> = Vector::from([2, 2]);
+    /// let v1_f: Vector<f64, 2> = v1.into();
+    /// ```
+    ///
+    /// Lossy integer to float type casts are **not** supported (e.g.,
+    /// `i64` to `f64`).
+    pub fn distance(&self, other: &Vector<T, N>) -> T {
+        (*self - *other).magnitude()
+    }
+
     /// Returns the vector magnitude for a float [`Vector`].
     ///
     /// # Examples
@@ -780,15 +816,18 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// use approx::assert_relative_eq;
+    ///
     /// let v1: Vector<f64, 2> = Vector::from([2.8, 2.6]);
     /// let v2: Vector<f64, 2> = Vector::from([-2.8, -2.6]);
+    /// let v_zero: Vector<f64, 2> = Vector::zero();
     ///
     /// assert_relative_eq!(v1.magnitude(), 3.82099463490856);
     /// assert_relative_eq!(v2.magnitude(), 3.82099463490856);
+    /// assert_relative_eq!(v_zero.magnitude(), 0.0);
     /// ```
     ///
-    /// There is support for lossless type casts of integer
-    /// to float [`Vector`] types:
+    /// Note: This method can be used with a **lossless** integer
+    /// to float [`Vector`] type cast:
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
@@ -796,7 +835,6 @@ where
     ///
     /// let v1: Vector<i32, 2> = Vector::from([2, 2]);
     /// let v1_f: Vector<f64, 2> = v1.into();
-    /// assert_relative_eq!(v1_f.magnitude(), 2.8284271247461903);
     /// ```
     ///
     /// Lossy integer to float type casts are **not** supported (e.g.,
@@ -819,6 +857,20 @@ where
     /// assert_relative_eq!(v[0], 25.123);
     /// assert_relative_eq!(v[1], 30.456);
     /// ```
+    ///
+    /// Note: This method can be used with a **lossless** integer
+    /// to float [`Vector`] type cast:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v1: Vector<i32, 2> = Vector::from([2, 2]);
+    /// let v1_f: Vector<f64, 2> = v1.into();
+    /// ```
+    ///
+    /// Lossy integer to float type casts are **not** supported (e.g.,
+    /// `i64` to `f64`).
     pub fn normalize(&self) -> Self
     where
         T: Float + Copy + Sync + Send + Sum,
@@ -832,7 +884,7 @@ where
         Self { components: new_components }
     }
 
-    /// Normalizes the float [`Vector`] in-place.
+    /// Normalizes a float [`Vector`] in place.
     ///
     /// # Examples
     ///
@@ -845,6 +897,20 @@ where
     /// assert_relative_eq!(v[0], 0.6363347262144607);
     /// assert_relative_eq!(v[1], 0.7714130645857428);
     /// ```
+    ///
+    /// Note: This method can be used with a **lossless** integer
+    /// to float [`Vector`] type cast:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v1: Vector<i32, 2> = Vector::from([2, 2]);
+    /// let v1_f: Vector<f64, 2> = v1.into();
+    /// ```
+    ///
+    /// Lossy integer to float type casts are **not** supported (e.g.,
+    /// `i64` to `f64`).
     pub fn mut_normalize(&mut self) -> Self
     where
         T: Float + Copy + Sync + Send + Sum,
