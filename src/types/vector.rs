@@ -244,7 +244,6 @@ where
     /// assert_eq!(v.get(..).unwrap(), [1, 2, 3, 4, 5]);
     /// assert_eq!(v.get(2..10), None);
     /// ```
-    #[inline]
     pub fn get<I>(&self, index: I) -> Option<&I::Output>
     where
         I: SliceIndex<[T]>,
@@ -288,7 +287,6 @@ where
     /// assert_eq!(v[1], 6);
     /// assert_eq!(v[2], 3);
     /// ```
-    #[inline]
     pub fn get_mut<I>(&mut self, index: I) -> Option<&mut I::Output>
     where
         I: SliceIndex<[T]>,
@@ -311,7 +309,6 @@ where
     /// assert_eq!(v_iter.next(), Some(&3));
     /// assert_eq!(v_iter.next(), None);
     /// ```
-    #[inline]
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.components.iter()
     }
@@ -333,7 +330,6 @@ where
     /// assert_eq!(v[1], 5);
     /// assert_eq!(v[2], 6);
     /// ```
-    #[inline]
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.components.iter_mut()
     }
@@ -350,7 +346,6 @@ where
     /// let x: &[i32] = v.as_slice();
     /// assert_eq!(x, &[1, 2, 3]);
     /// ```
-    #[inline]
     pub fn as_slice(&self) -> &[T] {
         &self.components[..]
     }
@@ -382,7 +377,6 @@ where
     /// # assert_eq!(x, &[10,2,3]);
     /// assert_eq!(v[0], 10);
     /// ```
-    #[inline]
     pub fn as_mut_slice(&mut self) -> &mut [T] {
         &mut self.components[..]
     }
@@ -399,7 +393,6 @@ where
     /// let x: &[i32;3] = v.as_array();
     /// assert_eq!(x, &[1, 2, 3]);
     /// ```
-    #[inline]
     pub fn as_array(&self) -> &[T; N] {
         &self.components
     }
@@ -431,7 +424,6 @@ where
     /// # assert_eq!(x, &[10,2,3]);
     /// assert_eq!(v[0], 10);
     /// ```
-    #[inline]
     pub fn as_mut_array(&mut self) -> &mut [T; N] {
         &mut self.components
     }
@@ -464,7 +456,6 @@ where
     /// # assert_eq!(x, [10, 2, 3]);
     /// assert_eq!(v[0], 1);
     /// ```
-    #[inline]
     pub fn to_array(&self) -> [T; N] {
         self.components
     }
@@ -497,7 +488,6 @@ where
     /// # assert_eq!(x, Vec::from([10, 2, 3]));
     /// assert_eq!(v[0], 1);
     /// ```
-    #[inline]
     pub fn to_vec(&self) -> Vec<T> {
         Vec::from(self.components)
     }
@@ -516,13 +506,11 @@ where
     /// let v3d: Vector<f64, 3> = Vector::new();
     /// assert_eq!(v3d.len(), 3);
     /// ```
-    #[inline]
     pub fn len(&self) -> usize {
         self.components.len()
     }
 
     /// Returns `true` if the [`Vector`] contains no items and `false` otherwise.
-    #[inline]
     pub fn is_empty(&self) -> bool {
         self.components.is_empty()
     }
@@ -547,7 +535,6 @@ where
     /// assert_eq!(v[1], 7);
     /// assert_eq!(v[2], 9);
     /// ```
-    #[inline]
     pub fn mut_add(&mut self, rhs: &Vector<T, N>) -> &mut Self {
         self.components.iter_mut().zip(rhs).for_each(|(a, b)| *a = *a + *b);
 
@@ -574,7 +561,6 @@ where
     /// assert_eq!(v[1], -3);
     /// assert_eq!(v[2], -3);
     /// ```
-    #[inline]
     pub fn mut_sub(&mut self, rhs: &Vector<T, N>) -> &mut Self {
         self.components.iter_mut().zip(rhs.iter()).for_each(|(a, b)| *a = *a - *b);
 
@@ -600,7 +586,6 @@ where
     /// assert_eq!(v[1], 8);
     /// assert_eq!(v[2], 12);
     /// ```
-    #[inline]
     pub fn mut_mul(&mut self, scale: T) -> &mut Self {
         self.components.iter_mut().for_each(|a| *a = *a * scale);
 
@@ -624,7 +609,6 @@ where
     /// assert_eq!(-v1.dot(&-v2), 3);
     /// assert_eq!(x1.dot(&x2), (3 * 6) * v1.dot(&v2));
     /// ```
-    #[inline]
     pub fn dot(&self, other: &Vector<T, N>) -> T
     where
         T: Num + Copy + std::iter::Sum<T> + Sync + Send,
@@ -658,6 +642,9 @@ where
     ///
     /// If the caller is a zero [`Vector`], the method returns a zero [`Vector`].
     ///
+    /// Note: This is an alias for the unary [`Vector::neg`] operation
+    /// and can be performed with the overloaded unary `-` operator.
+    ///
     /// # Examples
     ///
     /// Basic usage:
@@ -682,7 +669,7 @@ where
     /// assert_eq!(v_zero_o, v_zero);
     /// ```
     pub fn opposite(&self) -> Self {
-        self.mul(T::zero() - T::one())
+        -*self
     }
 
     /// Returns a [`Vector`] that is scaled by a given scalar parameter value.
@@ -701,7 +688,6 @@ where
     /// assert_eq!(v_s[1], 20);
     /// assert_eq!(v_s[2], 30);
     /// ```
-    #[inline]
     pub fn scale(&self, scale: T) -> Self {
         self.mul(scale)
     }
@@ -724,7 +710,6 @@ where
     /// assert_eq!(v_t[1], 7);
     /// assert_eq!(v_t[2], 9);
     /// ```
-    #[inline]
     pub fn translate(&self, translation_vector: &Vector<T, N>) -> Self {
         self.add(*translation_vector)
     }
@@ -734,12 +719,10 @@ where
     // Private methods
     //
     // ================================
-    #[inline]
     fn partial_eq_int(&self, other: &Self) -> bool {
         self.components == other.components
     }
 
-    #[inline]
     fn partial_eq_float(&self, other: &Self) -> bool
     where
         T: Num + Copy + RelativeEq<T>,
@@ -938,7 +921,6 @@ where
     /// assert_eq!(v[2], 3);
     /// ```
     ///
-    #[inline]
     fn index(&self, i: usize) -> &T {
         &self.components[i]
     }
@@ -968,7 +950,6 @@ where
     /// assert_eq!(v[1], 6);
     /// assert_eq!(v[2], 3);
     /// ```
-    #[inline]
     fn index_mut(&mut self, i: usize) -> &mut T {
         &mut self.components[i]
     }
@@ -1120,7 +1101,6 @@ macro_rules! impl_vector_int_partialeq_from {
     ($IntTyp: ty, $doc: expr) => {
         impl<const N: usize> PartialEq<Vector<$IntTyp, N>> for Vector<$IntTyp, N> {
             #[doc = $doc]
-            #[inline]
             fn eq(&self, other: &Self) -> bool {
                 self.partial_eq_int(other)
             }
@@ -1167,7 +1147,6 @@ macro_rules! impl_vector_float_partialeq_from {
     ($FloatTyp: ty, $doc: expr) => {
         impl<const N: usize> PartialEq<Vector<$FloatTyp, N>> for Vector<$FloatTyp, N> {
             #[doc = $doc]
-            #[inline]
             fn eq(&self, other: &Self) -> bool {
                 self.partial_eq_float(other)
             }
@@ -1286,7 +1265,6 @@ where
     ///
     /// Note: The [`Vector`] dimension size is defined by the fixed [`array`]
     /// size.
-    #[inline]
     fn from(t_n_array: [T; N]) -> Vector<T, N> {
         Vector { components: t_n_array }
     }
@@ -1300,7 +1278,6 @@ where
     ///
     /// Note: The [`Vector`] dimension size is defined by the fixed [`array`]
     /// size.
-    #[inline]
     fn from(t_n_array: &[T; N]) -> Vector<T, N> {
         Vector { components: *t_n_array }
     }
@@ -1343,7 +1320,6 @@ where
     /// let e = Vector::<i32, 3>::try_from(v);
     /// assert!(e.is_err());
     /// ```
-    #[inline]
     fn try_from(t_vec: Vec<T>) -> Result<Vector<T, N>, VectorError> {
         if t_vec.len() != N {
             return Err(VectorError::TryFromVecError(format!(
@@ -1399,7 +1375,6 @@ where
     /// let e = Vector::<i32, 3>::try_from(&v);
     /// assert!(e.is_err());
     /// ```
-    #[inline]
     fn try_from(t_vec: &Vec<T>) -> Result<Vector<T, N>, VectorError> {
         if t_vec.len() != N {
             return Err(VectorError::TryFromVecError(format!(
@@ -1448,7 +1423,6 @@ where
     /// let _: Vector<i32, 3> = Vector::try_from(Vec::from([1, 2, 3]).as_slice()).unwrap();
     /// let _: Vector<f64, 2> = Vector::try_from(Vec::from([1.0, 2.0]).as_slice()).unwrap();
     /// ```
-    #[inline]
     fn try_from(t_slice: &[T]) -> Result<Vector<T, N>, VectorError> {
         // n.b. if the length of the slice is less than the required number
         // of Vector components, then we raise an error because this does
@@ -1477,7 +1451,6 @@ macro_rules! impl_vector_from_vector {
     ($Small: ty, $Large: ty, $doc: expr) => {
         impl<const N: usize> From<Vector<$Small, N>> for Vector<$Large, N> {
             #[doc = $doc]
-            #[inline]
             fn from(small: Vector<$Small, N>) -> Vector<$Large, N> {
                 let mut new_components: [$Large; N] = [0 as $Large; N];
                 let mut i = 0;
