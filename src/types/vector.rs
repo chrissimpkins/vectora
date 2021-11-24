@@ -533,8 +533,7 @@ where
     ///
     /// Vector addition with the [`+` operator overload](#impl-Add<Vector<T%2C%20N>>) allocates a new [`Vector`].  This method
     /// supports in-place vector addition mutation of the calling [`Vector`] with data in the
-    /// parameter [`Vector`]. This is an alternative approach to the operator overload and may
-    /// be more performant in some use cases.
+    /// parameter [`Vector`].
     ///
     /// # Examples
     ///
@@ -550,9 +549,7 @@ where
     /// ```
     #[inline]
     pub fn mut_add(&mut self, rhs: &Vector<T, N>) -> &mut Self {
-        for (i, x) in self.components.iter_mut().enumerate() {
-            *x = *x + rhs[i];
-        }
+        for _ in self.components.iter_mut().zip(rhs).map(|(a, b)| *a = *a + *b) {}
 
         self
     }
@@ -563,8 +560,7 @@ where
     ///
     /// Vector subtraction with the [`-` operator overload](#impl-Sub<Vector<T%2C%20N>>) allocates a new [`Vector`].  This method
     /// supports in-place vector subtraction mutation of the calling [`Vector`] with data in the
-    /// parameter [`Vector`]. This is an alternative approach to the operator overload and may be more
-    /// performant in some use cases.
+    /// parameter [`Vector`].
     ///
     /// # Examples
     ///
@@ -580,9 +576,7 @@ where
     /// ```
     #[inline]
     pub fn mut_sub(&mut self, rhs: &Vector<T, N>) -> &mut Self {
-        for (i, x) in self.components.iter_mut().enumerate() {
-            *x = *x - rhs[i];
-        }
+        for _ in self.components.iter_mut().zip(rhs.iter()).map(|(a, b)| *a = *a - *b) {}
 
         self
     }
@@ -593,8 +587,7 @@ where
     ///
     /// Scalar multiplication with the [`*` operator overload](#impl-Mul<T>) allocates a
     /// new [`Vector`].  This method supports in-place scalar multiplication mutation of the calling
-    /// [`Vector`] with a scalar parameter value. This is an alternative approach to the operator
-    /// overload and may be more performant in some use cases.
+    /// [`Vector`] with a scalar parameter value.
     ///
     /// # Examples
     ///
@@ -609,9 +602,7 @@ where
     /// ```
     #[inline]
     pub fn mut_mul(&mut self, scale: T) -> &mut Self {
-        for x in self.components.iter_mut() {
-            *x = *x * scale;
-        }
+        for _ in self.components.iter_mut().map(|a| *a = *a * scale) {}
 
         self
     }
