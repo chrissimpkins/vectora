@@ -549,7 +549,7 @@ where
     /// ```
     #[inline]
     pub fn mut_add(&mut self, rhs: &Vector<T, N>) -> &mut Self {
-        for _ in self.components.iter_mut().zip(rhs).map(|(a, b)| *a = *a + *b) {}
+        self.components.iter_mut().zip(rhs).for_each(|(a, b)| *a = *a + *b);
 
         self
     }
@@ -576,7 +576,7 @@ where
     /// ```
     #[inline]
     pub fn mut_sub(&mut self, rhs: &Vector<T, N>) -> &mut Self {
-        for _ in self.components.iter_mut().zip(rhs.iter()).map(|(a, b)| *a = *a - *b) {}
+        self.components.iter_mut().zip(rhs.iter()).for_each(|(a, b)| *a = *a - *b);
 
         self
     }
@@ -602,7 +602,7 @@ where
     /// ```
     #[inline]
     pub fn mut_mul(&mut self, scale: T) -> &mut Self {
-        for _ in self.components.iter_mut().map(|a| *a = *a * scale) {}
+        self.components.iter_mut().for_each(|a| *a = *a * scale);
 
         self
     }
