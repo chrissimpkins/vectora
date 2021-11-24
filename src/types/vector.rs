@@ -652,17 +652,48 @@ where
     /// # use vectora::types::vector::Vector;
     /// let to = Vector::<i32, 3>::from(&[1, 2, 3]);
     /// let from = Vector::<i32, 3>::from(&[2, 4, 6]);
-    /// let v_s = to.displacement(&from);
+    /// let v_d = to.displacement(&from);
     ///
-    /// assert_eq!(v_s[0], -1);
-    /// assert_eq!(v_s[1], -2);
-    /// assert_eq!(v_s[2], -3);
+    /// assert_eq!(v_d[0], -1);
+    /// assert_eq!(v_d[1], -2);
+    /// assert_eq!(v_d[2], -3);
     /// ```
     pub fn displacement(&self, other: &Vector<T, N>) -> Self {
         self.sub(*other)
     }
 
-    /// Returns a [`Vector`] that is scaled by a scalar value.
+    /// Returns a [`Vector`] with the same magnitude and opposite direction for
+    /// non-zero [`Vector`].
+    ///
+    /// If the caller is a zero [`Vector`], the method returns a zero [`Vector`].
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let v_o = v.opposite();
+    ///
+    /// assert_eq!(v_o[0], -1);
+    /// assert_eq!(v_o[1], -2);
+    /// assert_eq!(v_o[2], -3);
+    /// ```
+    ///
+    /// The zero vector case:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v_zero = Vector::<i32, 3>::from(&[0, 0, 0]);
+    /// let v_zero_o = v_zero.opposite();
+    /// assert_eq!(v_zero_o, v_zero);
+    /// ```
+    pub fn opposite(&self) -> Self {
+        self.mul(T::zero() - T::one())
+    }
+
+    /// Returns a [`Vector`] that is scaled by a given scalar parameter value.
     ///
     /// Note: This is an alias for the [`Vector::mul`] scalar multiplication
     /// method and the operation can be performed with the overloaded `*` operator.
@@ -684,7 +715,7 @@ where
     }
 
     /// Returns a translated [`Vector`] with displacement defined by a
-    /// translation [`Vector`].
+    /// translation [`Vector`] parameter.
     ///
     /// Note: This is an alias for the [`Vector::add`] vector addition method
     /// and the operation can be performed with the overloaded `+` operator.
