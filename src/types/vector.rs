@@ -641,6 +641,27 @@ where
         self.components.iter().zip(other.components.iter()).map(|(a, b)| *a * *b).sum()
     }
 
+    /// Returns the displacement [`Vector`] from a parameter [`Vector`] to the calling [`Vector`].
+    ///
+    /// Note: This is an alias for the [`Vector::sub`] vector subtraction
+    /// method and the operation can be performed with the overloaded `-` operator.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let to = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let from = Vector::<i32, 3>::from(&[2, 4, 6]);
+    /// let v_s = to.displacement(&from);
+    ///
+    /// assert_eq!(v_s[0], -1);
+    /// assert_eq!(v_s[1], -2);
+    /// assert_eq!(v_s[2], -3);
+    /// ```
+    pub fn displacement(&self, other: &Vector<T, N>) -> Self {
+        self.sub(*other)
+    }
+
     /// Returns a [`Vector`] that is scaled by a scalar value.
     ///
     /// Note: This is an alias for the [`Vector::mul`] scalar multiplication
