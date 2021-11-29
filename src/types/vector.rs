@@ -877,11 +877,8 @@ where
     where
         T: std::fmt::Debug,
     {
-        let zero = T::zero();
-        let one = T::one();
-
         // weight bounds check
-        if weight > one || weight < zero {
+        if weight > T::one() || weight < T::zero() {
             return Err(VectorError::ValueError(format!(
                 "invalid interpolation weight request. The weight must be in the closed interval [0,1]. Received '{:?}'",
                 weight
@@ -900,15 +897,35 @@ where
             return Ok(Self { components: self.components });
         }
 
-        let mut new_components = [zero; N];
-        self.components
-            .iter()
-            .zip(end.components.iter())
-            .map(|(a, b)| ((one - weight) * *a) + (weight * *b))
-            .enumerate()
-            .for_each(|(i, a)| new_components[i] = a);
+        Ok(self.lerp_impl(end, weight))
+    }
 
-        Ok(Self { components: new_components })
+    /// Returns the midpoint between a float [`Vector`] and a parameter [`Vector`].
+    ///
+    /// This vector is defined as the [linear interpolant](#method.lerp) with `weight` = 0.5.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    ///
+    /// let v1: Vector<f64, 2> = Vector::from([0.0, 0.0]);
+    /// let v2: Vector<f64, 2> = Vector::from([10.0, 10.0]);
+    ///
+    /// let mid = v1.midpoint(&v2);
+    ///
+    /// assert_eq!(mid, Vector::from([5.0, 5.0]));
+    /// ```
+    pub fn midpoint(&self, end: &Vector<T, N>) -> Self
+    where
+        T: std::fmt::Debug,
+    {
+        // we don't need the bounds checks on weight because it has
+        // an explicit, valid definition here.  Ok to use `lerp_impl`
+        // directly.
+        self.lerp_impl(end, num::cast(0.5).unwrap())
     }
 
     /// Returns the vector magnitude for a float [`Vector`].
@@ -1026,6 +1043,24 @@ where
         let this_magnitude = self.magnitude();
         self.components.iter_mut().for_each(|a| *a = *a / this_magnitude);
         self
+    }
+
+    // ================================
+    //
+    // Private methods
+    //
+    // ================================
+
+    fn lerp_impl(&self, end: &Vector<T, N>, weight: T) -> Self {
+        let mut new_components = [T::zero(); N];
+        self.components
+            .iter()
+            .zip(end.components.iter())
+            .map(|(a, b)| ((T::one() - weight) * *a) + (weight * *b))
+            .enumerate()
+            .for_each(|(i, a)| new_components[i] = a);
+
+        Self { components: new_components }
     }
 }
 
@@ -2591,6 +2626,45 @@ mod tests {
         let v_res = v1.lerp(&v2, f64::NAN);
         assert!(v_res.is_err());
         assert!(matches!(v_res, Err(VectorError::ValueError(_))));
+    }
+
+    // ================================
+    //
+    // midpoint method tests
+    //
+    // ================================
+
+    #[test]
+    fn vector_method_midpoint() {
+        let v1: Vector<f64, 2> = Vector::from([0.0, 0.0]);
+        let v2: Vector<f64, 2> = Vector::from([10.0, 10.0]);
+
+        assert_eq!(v1.midpoint(&v2), Vector::from([5.0, 5.0]));
+
+        let v1: Vector<f64, 2> = Vector::from([0.0, 0.0]);
+        let v2: Vector<f64, 2> = Vector::from([-10.0, -10.0]);
+
+        assert_eq!(v1.midpoint(&v2), Vector::from([-5.0, -5.0]));
+
+        let v1: Vector<f64, 3> = Vector::from([-10.0, -10.0, -10.0]);
+        let v2: Vector<f64, 3> = Vector::from([10.0, 10.0, 10.0]);
+
+        assert_eq!(v1.midpoint(&v2), Vector::zero());
+
+        // NaN tests
+        let v1: Vector<f64, 2> = Vector::from([0.0, 0.0]);
+        let v2: Vector<f64, 2> = Vector::from([f64::NAN, 10.0]);
+        let v3: Vector<f64, 2> = Vector::from([f64::NAN, f64::NAN]);
+
+        // interpolation with NaN does not fail and midpoint value
+        // is always NaN
+        let v_res_1 = v1.midpoint(&v2);
+        assert!(v_res_1[0].is_nan());
+        assert_relative_eq!(v_res_1[1], 5.0);
+
+        let v_res_2 = v2.midpoint(&v3);
+        assert!(v_res_2[0].is_nan());
+        assert!(v_res_2[1].is_nan());
     }
 
     // ================================
