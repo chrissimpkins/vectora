@@ -2,7 +2,7 @@
 //!
 //! ## About
 //!
-//! This crate is a library for n-dimenensional vector computation.
+//! This crate is a library for n-dimensional vector computation.
 //!
 //! ## Source
 //!
