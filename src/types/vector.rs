@@ -845,6 +845,72 @@ where
         (*self - *other).magnitude()
     }
 
+    /// Returns the linear interpolant between a float [`Vector`] and a
+    /// parameter [`Vector`] given a parametric line equation `weight` parameter.
+    ///
+    /// Calculated with the parametric line equation `(1 - t)A + tB`
+    /// where `A` is the start vector, `B` is the end vector, and `t` is the weight.
+    ///
+    /// The `weight` parameter must be in the closed interval [0.0, 1.0].
+    ///
+    /// # Errors
+    ///
+    /// This method does not support extrapolation.  [`VectorError::ValueError`]
+    /// is raised if the `weight` parameter is not in the closed interval [0.0, 1.0].
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v1: Vector<f64, 2> = Vector::from([0.0, 0.0]);
+    /// let v2: Vector<f64, 2> = Vector::from([10.0, 10.0]);
+    ///
+    /// assert_eq!(v1.lerp(&v2, 0.0).unwrap(), Vector::from([0.0, 0.0]));
+    /// assert_eq!(v1.lerp(&v2, 0.25).unwrap(), Vector::from([2.5, 2.5]));
+    /// assert_eq!(v1.lerp(&v2, 0.5).unwrap(), Vector::from([5.0, 5.0]));
+    /// assert_eq!(v1.lerp(&v2, 0.75).unwrap(), Vector::from([7.5, 7.5]));
+    /// assert_eq!(v1.lerp(&v2, 1.0).unwrap(), Vector::from([10.0, 10.0]));
+    /// ```
+    pub fn lerp(&self, end: &Vector<T, N>, weight: T) -> Result<Self, VectorError>
+    where
+        T: std::fmt::Debug,
+    {
+        let zero = T::zero();
+        let one = T::one();
+
+        // weight bounds check
+        if weight > one || weight < zero {
+            return Err(VectorError::ValueError(format!(
+                "invalid interpolation weight request. The weight must be in the closed interval [0,1]. Received '{:?}'",
+                weight
+            )));
+        }
+
+        // weight bounds check for NaN
+        if weight.is_nan() {
+            return Err(VectorError::ValueError(
+                "invalid interpolation weight request. The weight must be in the closed interval [0,1]. Received NaN.".to_string(),
+            ));
+        }
+        // if the vectors are the same, always return the start vector (== end vector)
+        // no calculation is required
+        if self.components == end.components {
+            return Ok(Self { components: self.components });
+        }
+
+        let mut new_components = [zero; N];
+        self.components
+            .iter()
+            .zip(end.components.iter())
+            .map(|(a, b)| ((one - weight) * *a) + (weight * *b))
+            .enumerate()
+            .for_each(|(i, a)| new_components[i] = a);
+
+        Ok(Self { components: new_components })
+    }
+
     /// Returns the vector magnitude for a float [`Vector`].
     ///
     /// # Examples
@@ -2420,6 +2486,111 @@ mod tests {
         assert_relative_eq!(v3[1], 0.7714130645857428);
 
         assert_eq!((v1.normalize() * v1.magnitude()).magnitude(), v1.magnitude());
+    }
+
+    // ================================
+    //
+    // lerp method tests
+    //
+    // ================================
+    #[test]
+    fn vector_method_lerp() {
+        let v1: Vector<f64, 2> = Vector::from([0.0, 0.0]);
+        let v2: Vector<f64, 2> = Vector::from([10.0, 10.0]);
+
+        // the value at weight 0 is the start vector
+        assert_eq!(v1.lerp(&v2, 0.0).unwrap(), v1);
+        // values move from start to end
+        assert_eq!(v1.lerp(&v2, 0.25).unwrap(), Vector::from([2.5, 2.5]));
+        assert_eq!(v1.lerp(&v2, 0.5).unwrap(), Vector::from([5.0, 5.0]));
+        assert_eq!(v1.lerp(&v2, 0.75).unwrap(), Vector::from([7.5, 7.5]));
+        // the value at weight 1 is the end vector
+        assert_eq!(v1.lerp(&v2, 1.0).unwrap(), v2);
+
+        // if start == end, the value at any weight will always be start (equivalent to end)
+        assert_eq!(v2.lerp(&v2, 0.0).unwrap(), Vector::from([10.0, 10.0]));
+        assert_eq!(v2.lerp(&v2, 0.1).unwrap(), Vector::from([10.0, 10.0]));
+        assert_eq!(v2.lerp(&v2, 0.2).unwrap(), Vector::from([10.0, 10.0]));
+        assert_eq!(v2.lerp(&v2, 0.3).unwrap(), Vector::from([10.0, 10.0]));
+        assert_eq!(v2.lerp(&v2, 0.4).unwrap(), Vector::from([10.0, 10.0]));
+        assert_eq!(v2.lerp(&v2, 0.5).unwrap(), Vector::from([10.0, 10.0]));
+        assert_eq!(v2.lerp(&v2, 0.6).unwrap(), Vector::from([10.0, 10.0]));
+        assert_eq!(v2.lerp(&v2, 0.7).unwrap(), Vector::from([10.0, 10.0]));
+        assert_eq!(v2.lerp(&v2, 0.8).unwrap(), Vector::from([10.0, 10.0]));
+        assert_eq!(v2.lerp(&v2, 1.0).unwrap(), Vector::from([10.0, 10.0]));
+
+        let v1: Vector<f64, 2> = Vector::from([0.0, 0.0]);
+        let v2: Vector<f64, 2> = Vector::from([-10.0, -10.0]);
+
+        // the value at weight 0 is the start vector
+        assert_eq!(v1.lerp(&v2, 0.0).unwrap(), v1);
+        // values move from start to end
+        assert_eq!(v1.lerp(&v2, 0.25).unwrap(), Vector::from([-2.5, -2.5]));
+        assert_eq!(v1.lerp(&v2, 0.5).unwrap(), Vector::from([-5.0, -5.0]));
+        assert_eq!(v1.lerp(&v2, 0.75).unwrap(), Vector::from([-7.5, -7.5]));
+        // value at weight 1 is the end vector
+        assert_eq!(v1.lerp(&v2, 1.0).unwrap(), v2);
+
+        // if start == end, the value at any weight will always be start (equivalent to end)
+        assert_eq!(v2.lerp(&v2, 0.0).unwrap(), Vector::from([-10.0, -10.0]));
+        assert_eq!(v2.lerp(&v2, 0.1).unwrap(), Vector::from([-10.0, -10.0]));
+        assert_eq!(v2.lerp(&v2, 0.2).unwrap(), Vector::from([-10.0, -10.0]));
+        assert_eq!(v2.lerp(&v2, 0.3).unwrap(), Vector::from([-10.0, -10.0]));
+        assert_eq!(v2.lerp(&v2, 0.4).unwrap(), Vector::from([-10.0, -10.0]));
+        assert_eq!(v2.lerp(&v2, 0.5).unwrap(), Vector::from([-10.0, -10.0]));
+        assert_eq!(v2.lerp(&v2, 0.6).unwrap(), Vector::from([-10.0, -10.0]));
+        assert_eq!(v2.lerp(&v2, 0.7).unwrap(), Vector::from([-10.0, -10.0]));
+        assert_eq!(v2.lerp(&v2, 0.8).unwrap(), Vector::from([-10.0, -10.0]));
+        assert_eq!(v2.lerp(&v2, 1.0).unwrap(), Vector::from([-10.0, -10.0]));
+
+        // higher dimension tests
+        let v1: Vector<f64, 3> = Vector::from([-10.0, -10.0, -10.0]);
+        let v2: Vector<f64, 3> = Vector::from([10.0, 10.0, 10.0]);
+
+        assert_eq!(v1.lerp(&v2, 0.0).unwrap(), v1);
+        assert_eq!(v1.lerp(&v2, 0.25).unwrap(), Vector::from([-5.0, -5.0, -5.0]));
+        assert_eq!(v1.lerp(&v2, 0.5).unwrap(), Vector::from([0.0, 0.0, 0.0]));
+        assert_eq!(v1.lerp(&v2, 0.75).unwrap(), Vector::from([5.0, 5.0, 5.0]));
+        assert_eq!(v1.lerp(&v2, 1.0).unwrap(), v2);
+
+        // NaN tests
+        let v1: Vector<f64, 2> = Vector::from([0.0, 0.0]);
+        let v2: Vector<f64, 2> = Vector::from([f64::NAN, 10.0]);
+        let v3: Vector<f64, 2> = Vector::from([f64::NAN, f64::NAN]);
+
+        // interpolation with NaN does not fail and interpolated value
+        // is always NaN
+        let v_res_1 = v1.lerp(&v2, 0.5).unwrap();
+        assert!(v_res_1[0].is_nan());
+        assert_relative_eq!(v_res_1[1], 5.0);
+
+        let v_res_2 = v2.lerp(&v3, 0.5).unwrap();
+        assert!(v_res_2[0].is_nan());
+        assert!(v_res_2[1].is_nan());
+    }
+
+    #[test]
+    fn vector_method_lerp_bounds_checks() {
+        let v1: Vector<f64, 2> = Vector::from([0.0, 0.0]);
+        let v2: Vector<f64, 2> = Vector::from([10.0, 10.0]);
+
+        let err1 = v1.lerp(&v2, -0.01);
+        let err2 = v1.lerp(&v2, 1.01);
+
+        assert!(err1.is_err());
+        assert!(matches!(err1, Err(VectorError::ValueError(_))));
+        assert!(err2.is_err());
+        assert!(matches!(err2, Err(VectorError::ValueError(_))));
+    }
+
+    #[test]
+    fn vector_method_lerp_bounds_check_nan() {
+        let v1: Vector<f64, 2> = Vector::from([0.0, 0.0]);
+        let v2: Vector<f64, 2> = Vector::from([10.0, 10.0]);
+
+        let v_res = v1.lerp(&v2, f64::NAN);
+        assert!(v_res.is_err());
+        assert!(matches!(v_res, Err(VectorError::ValueError(_))));
     }
 
     // ================================
