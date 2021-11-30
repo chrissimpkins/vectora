@@ -619,8 +619,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let to = Vector::<i32, 3>::from(&[1, 2, 3]);
-    /// let from = Vector::<i32, 3>::from(&[2, 4, 6]);
+    /// let to = Vector::<i32, 3>::from([1, 2, 3]);
+    /// let from = Vector::<i32, 3>::from([2, 4, 6]);
     /// let v_d = to.displacement(&from);
     ///
     /// assert_eq!(v_d[0], -1);
@@ -645,7 +645,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
     /// let v_o = v.opposite();
     ///
     /// assert_eq!(v_o[0], -1);
@@ -676,7 +676,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
     /// v.mut_opposite();
     ///
     /// assert_eq!(v[0], -1);
@@ -709,7 +709,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
     /// let v_s = v.scale(10);
     ///
     /// assert_eq!(v_s[0], 10);
@@ -726,7 +726,7 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
     /// v.mut_scale(10);
     ///
     /// assert_eq!(v[0], 10);
@@ -747,8 +747,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
-    /// let translation_vec = Vector::<i32, 3>::from(&[4, 5, 6]);
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
+    /// let translation_vec = Vector::<i32, 3>::from([4, 5, 6]);
     /// let v_t = v.translate(&translation_vec);
     ///
     /// assert_eq!(v_t[0], 5);
@@ -766,8 +766,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
-    /// let translation_vec = Vector::<i32, 3>::from(&[4, 5, 6]);
+    /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+    /// let translation_vec = Vector::<i32, 3>::from([4, 5, 6]);
     /// v.mut_translate(&translation_vec);
     ///
     /// assert_eq!(v[0], 5);
@@ -776,6 +776,112 @@ where
     /// ```
     pub fn mut_translate(&mut self, translation_vector: &Vector<T, N>) -> &mut Self {
         self.mut_add(translation_vector)
+    }
+
+    /// Returns a new [`Vector`] with components that are modified
+    /// according to the definition in a closure parameter.
+    ///
+    /// Note: the closure must return items of the same numeric
+    /// type as the [`Vector`] components.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
+    /// let square = |x: i32| { x.pow(2) };
+    /// let squared_v = v.map_closure(square);
+    ///
+    /// assert_eq!(squared_v, Vector::from([1, 4, 9]));
+    /// ```
+    pub fn map_closure<U>(&self, closur: U) -> Self
+    where
+        U: Fn(T) -> T,
+    {
+        let mut new_components: [T; N] = [T::zero(); N];
+        self.components.iter().enumerate().for_each(|(i, x)| new_components[i] = closur(*x));
+        Self { components: new_components }
+    }
+
+    /// Mutates the [`Vector`] components in place according to the
+    /// definition in a closure parameter.
+    ///
+    /// Note: the closure must return items of the same numeric
+    /// type as the [`Vector`] components.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+    /// let square = |x: i32| { x.pow(2) };
+    /// v.mut_map_closure(square);
+    ///
+    /// assert_eq!(v, Vector::from([1, 4, 9]));
+    /// ```
+    pub fn mut_map_closure<U>(&mut self, mut closur: U) -> &mut Self
+    where
+        U: FnMut(T) -> T,
+    {
+        self.components.iter_mut().for_each(|x| *x = closur(*x));
+        self
+    }
+
+    /// Returns a new [`Vector`] with components that are modified
+    /// according to the definition in a function parameter.
+    ///
+    /// Note: the function must return items of the same numeric
+    /// type as the [`Vector`] components.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// fn square(x: i32) -> i32 {
+    ///     x.pow(2)
+    /// }
+    ///
+    /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+    /// let squared_v = v.map_fn(square);
+    ///
+    /// assert_eq!(squared_v, Vector::from([1, 4, 9]));
+    /// ```
+    pub fn map_fn(&self, func: fn(T) -> T) -> Self {
+        let mut new_components: [T; N] = [T::zero(); N];
+        self.components.iter().enumerate().for_each(|(i, x)| new_components[i] = func(*x));
+        Self { components: new_components }
+    }
+
+    /// Mutates the [`Vector`] components in place according to
+    /// the definition in a function parameter.
+    ///
+    /// Note: the function must return items of the same numeric
+    /// type as the [`Vector`] components.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// fn square(x: i32) -> i32 {
+    ///     x.pow(2)
+    /// }
+    ///
+    /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+    /// v.mut_map_fn(square);
+    ///
+    /// assert_eq!(v, Vector::from([1, 4, 9]));
+    /// ```
+    pub fn mut_map_fn(&mut self, func: fn(T) -> T) -> &mut Self {
+        self.components.iter_mut().for_each(|x| *x = func(*x));
+        self
     }
 
     // ================================
@@ -2665,6 +2771,88 @@ mod tests {
         let v_res_2 = v2.midpoint(&v3);
         assert!(v_res_2[0].is_nan());
         assert!(v_res_2[1].is_nan());
+    }
+
+    // ===================================
+    //
+    // map_closure & map_func method tests
+    //
+    // ===================================
+
+    #[test]
+    fn vector_method_map_closure() {
+        let v1 = Vector::<i32, 2>::from([-1, 2]);
+        let v2 = Vector::<f64, 2>::from([-1.0, 2.0]);
+
+        let square_int = |x: i32| x.pow(2);
+        let square_float = |x: f64| x.powi(2);
+
+        let v1_squared = v1.map_closure(square_int);
+        let v2_squared = v2.map_closure(square_float);
+
+        assert_eq!(v1_squared, Vector::<i32, 2>::from([1, 4]));
+        assert_eq!(v2_squared, Vector::<f64, 2>::from([1.0, 4.0]));
+
+        assert_eq!(v1, Vector::<i32, 2>::from([-1, 2]));
+        assert_eq!(v2, Vector::<f64, 2>::from([-1.0, 2.0]));
+    }
+
+    #[test]
+    fn vector_method_mut_map_closure() {
+        let mut v1 = Vector::<i32, 2>::from([-1, 2]);
+        let mut v2 = Vector::<f64, 2>::from([-1.0, 2.0]);
+
+        let square_int = |x: i32| x.pow(2);
+        let square_float = |x: f64| x.powi(2);
+
+        v1.mut_map_closure(square_int);
+        v2.mut_map_closure(square_float);
+
+        assert_eq!(v1, Vector::<i32, 2>::from([1, 4]));
+        assert_eq!(v2, Vector::<f64, 2>::from([1.0, 4.0]));
+    }
+
+    #[test]
+    fn vector_method_map_fn() {
+        let v1 = Vector::<i32, 2>::from([-1, 2]);
+        let v2 = Vector::<f64, 2>::from([-1.0, 2.0]);
+
+        fn square_int(x: i32) -> i32 {
+            x.pow(2)
+        }
+
+        fn square_float(x: f64) -> f64 {
+            x.powi(2)
+        }
+
+        let v1_squared = v1.map_fn(square_int);
+        let v2_squared = v2.map_fn(square_float);
+
+        assert_eq!(v1_squared, Vector::<i32, 2>::from([1, 4]));
+        assert_eq!(v2_squared, Vector::<f64, 2>::from([1.0, 4.0]));
+
+        assert_eq!(v1, Vector::<i32, 2>::from([-1, 2]));
+        assert_eq!(v2, Vector::<f64, 2>::from([-1.0, 2.0]));
+    }
+
+    #[test]
+    fn vector_method_mut_map_fn() {
+        let mut v1 = Vector::<i32, 2>::from([-1, 2]);
+        let mut v2 = Vector::<f64, 2>::from([-1.0, 2.0]);
+
+        fn square_int(x: i32) -> i32 {
+            x.pow(2)
+        }
+
+        fn square_float(x: f64) -> f64 {
+            x.powi(2)
+        }
+
+        v1.mut_map_fn(square_int);
+        v2.mut_map_fn(square_float);
+
+        assert_eq!(v1, Vector::<i32, 2>::from([1, 4]));
+        assert_eq!(v2, Vector::<f64, 2>::from([1.0, 4.0]));
     }
 
     // ================================
