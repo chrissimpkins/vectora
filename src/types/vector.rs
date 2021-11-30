@@ -428,6 +428,54 @@ where
         &mut self.components
     }
 
+    /// Returns a new [`Vector`] with an **unchecked** numeric type cast as defined by
+    /// the return type in a closure parameter.
+    ///
+    /// # Safety
+    ///
+    /// The caller is responsible for the safety contract on this numeric
+    /// type cast.  While this method does not use `unsafe` blocks of code
+    /// and returned data *should* be sound, it can lead to information loss
+    /// and incorrect programs if return values are unexpected
+    /// (e.g., saturating overflows and underflows,
+    /// `NAN` can cast to zero integer values).
+    ///
+    /// Please understand the nuances of your type cast and use caution.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<f32, 3>::from([1.12, 2.50, 3.99]);
+    ///
+    /// // Float to int type with default trunc
+    /// let i64_trunc_v = v.to_num_cast(|x| x as i64);
+    /// assert_eq!(i64_trunc_v, Vector::<i64, 3>::from([1, 2, 3]));
+    ///
+    /// // Float to int type with round
+    /// let i64_round_v = v.to_num_cast(|x| x.round() as i64);
+    /// assert_eq!(i64_round_v, Vector::<i64, 3>::from([1, 3, 4]));
+    ///
+    /// // Float to int type with ceil
+    /// let i64_ceil_v = v.to_num_cast(|x| x.ceil() as i64);
+    /// assert_eq!(i64_ceil_v, Vector::<i64, 3>::from([2, 3, 4]));
+    ///
+    /// // Float to int type with floor
+    /// let i64_floor_v = v.to_num_cast(|x| x.floor() as i64);
+    /// assert_eq!(i64_floor_v, Vector::<i64, 3>::from([1, 2, 3]));
+    /// ```
+    pub fn to_num_cast<U, V>(&self, closur: U) -> Vector<V, N>
+    where
+        U: Fn(T) -> V,
+        V: Num + Copy + Sync + Send,
+    {
+        let mut new_components: [V; N] = [V::zero(); N];
+        self.components.iter().enumerate().for_each(|(i, x)| new_components[i] = closur(*x));
+        Vector { components: new_components }
+    }
+
     /// Returns a new, allocated [`array`] representation of the [`Vector`] scalar components
     ///
     /// # Examples
@@ -2535,6 +2583,70 @@ mod tests {
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
         let _: Vec<u32> = v1.to_vec();
         let _: Vec<f64> = v2.to_vec();
+    }
+
+    #[test]
+    fn vector_to_num_cast() {
+        // ~~~~~~~~~~~~~~~~~~
+        // Float to int tests
+        // ~~~~~~~~~~~~~~~~~~
+        let v = Vector::<f32, 3>::from([1.12, 2.50, 3.99]);
+
+        // Float to int type with default trunc
+        let i64_trunc_v = v.to_num_cast(|x| x as i64);
+        assert_eq!(i64_trunc_v, Vector::<i64, 3>::from([1, 2, 3]));
+
+        // Float to int type with round
+        let i64_round_v = v.to_num_cast(|x| x.round() as i64);
+        assert_eq!(i64_round_v, Vector::<i64, 3>::from([1, 3, 4]));
+
+        // Float to int type with ceil
+        let i64_ceil_v = v.to_num_cast(|x| x.ceil() as i64);
+        assert_eq!(i64_ceil_v, Vector::<i64, 3>::from([2, 3, 4]));
+
+        // Float to int type with floor
+        let i64_floor_v = v.to_num_cast(|x| x.floor() as i64);
+        assert_eq!(i64_floor_v, Vector::<i64, 3>::from([1, 2, 3]));
+
+        // ~~~~~~~~~~~~~~~~~~
+        // Int to float tests
+        // ~~~~~~~~~~~~~~~~~~
+        let v = Vector::<i32, 3>::from([1, 2, 3]);
+
+        let f64_v = v.to_num_cast(|x| x as f64);
+        assert_eq!(f64_v, Vector::<f64, 3>::from([1.0, 2.0, 3.0]));
+
+        let v = Vector::<i16, 3>::from([1, 2, 3]);
+
+        let f32_v = v.to_num_cast(|x| x as f32);
+        assert_eq!(f32_v, Vector::<f32, 3>::from([1.0, 2.0, 3.0]));
+    }
+
+    #[test]
+    fn vector_to_num_cast_safety() {
+        let v = Vector::<f64, 2>::from([f64::MAX, 1.00]);
+        let i8_v = v.to_num_cast(|x| x as i8);
+
+        // Rust 1.45+ overflows are handled with a saturating cast.
+        assert_eq!(i8_v[0], f64::MAX as i8);
+        assert_eq!(i8_v[0], i8::MAX);
+        assert_eq!(i8_v[0], 127);
+
+        let v = Vector::<i64, 2>::from([i64::MIN, 1]);
+        let u8_v_2 = v.to_num_cast(|x| x as u8);
+
+        // signed to unsigned can change the value and eliminate the unary neg num sign
+        // underflows saturate too
+        assert_eq!(u8_v_2[0], i64::MIN as u8);
+        assert_eq!(u8_v_2[0], u8::MIN);
+        assert_eq!(u8_v_2[0], 0);
+
+        let v = Vector::<f64, 2>::from([f64::NAN, 1.00]);
+        let u8_v_3 = v.to_num_cast(|x| x as u8);
+
+        // NAN casts to zero value
+        assert_eq!(u8_v_3[0], f64::NAN as u8);
+        assert_eq!(u8_v_3[0], 0);
     }
 
     // ================================
