@@ -1760,7 +1760,7 @@ where
             Ok(s) => Ok(Self { components: s }),
             Err(err) => Err(VectorError::TryFromSliceError(format!(
                 "failed to cast slice to Vector type: {}",
-                err.to_string()
+                err
             ))),
         }
     }
