@@ -90,8 +90,8 @@ pub type Vector3dIsize = Vector<isize, 3>;
 /// Type alias for a 3D usize integer vector.
 pub type Vector3dUsize = Vector<usize, 3>;
 
-/// A generic, fixed length vector type that supports computation with N-dimensional
-/// scalar data.
+/// A generic, fixed length, ordered vector type that supports
+/// computation with N-dimensional scalar data.
 #[derive(Copy, Clone, Debug)]
 pub struct Vector<T, const N: usize>
 where
@@ -1415,7 +1415,7 @@ where
 /// These comparisons establish the symmetry and transitivity relationships
 /// required for the partial equivalence relation definition with integer types.
 ///
-/// /// Note:
+/// Note:
 ///
 /// - Negative zero to positive zero comparisons are considered equal.
 macro_rules! impl_vector_int_partialeq_from {
