@@ -1223,16 +1223,17 @@ where
 // Index / IndexMut trait impl
 //
 // ================================
-impl<T, const N: usize> Index<usize> for Vector<T, N>
+impl<I, T, const N: usize> Index<I> for Vector<T, N>
 where
+    I: SliceIndex<[T]>,
     T: Num + Copy + Sync + Send,
 {
-    type Output = T;
+    type Output = I::Output;
     /// Returns [`Vector`] scalar component values by zero-based index.
     ///
     /// # Examples
     ///
-    /// Basic usage:
+    /// Indexing:
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
@@ -1242,7 +1243,17 @@ where
     /// assert_eq!(v[2], 3);
     /// ```
     ///
-    fn index(&self, i: usize) -> &T {
+    /// Slicing:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let v_slice = &v[..];
+    ///
+    /// assert_eq!(v_slice, [1, 2, 3]);
+    /// ```
+    ///
+    fn index(&self, i: I) -> &Self::Output {
         &self.components[i]
     }
 }
@@ -2987,6 +2998,25 @@ mod tests {
     fn vector_trait_index_access_out_of_bounds() {
         let v = Vector::<u32, 10>::new();
         v[10];
+    }
+
+    #[test]
+    fn vector_trait_index_slicing() {
+        let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+        let v_slice = &v[..];
+
+        assert_eq!(v_slice, [1, 2, 3]);
+
+        let v_slice = &v[0..2];
+
+        assert_eq!(v_slice, [1, 2]);
+    }
+
+    #[test]
+    #[should_panic(expected = "range end index 11 out of range for slice of length 10")]
+    fn vector_trait_index_slice_access_out_of_bounds() {
+        let v = Vector::<u32, 10>::new();
+        let _ = &v[0..11];
     }
 
     #[test]
