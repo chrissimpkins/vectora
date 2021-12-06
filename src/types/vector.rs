@@ -2459,6 +2459,34 @@ mod tests {
 
     // ================================
     //
+    // concurrency support
+    //
+    // ================================
+
+    #[test]
+    fn vector_send_sync_concurrency_int() {
+        let v = Vector::<i32, 2>::from([1, 2]);
+
+        let handle = std::thread::spawn(move || {
+            println!("{:?}", v);
+        });
+
+        handle.join().unwrap();
+    }
+
+    #[test]
+    fn vector_send_sync_concurrency_float() {
+        let v = Vector::<f64, 2>::from([1.0, 2.0]);
+
+        let handle = std::thread::spawn(move || {
+            println!("{:?}", v);
+        });
+
+        handle.join().unwrap();
+    }
+
+    // ================================
+    //
     // get method tests
     //
     // ================================
