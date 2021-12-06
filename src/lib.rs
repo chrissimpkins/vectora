@@ -409,6 +409,20 @@
 //!
 //! [ [API docs](types/vector/struct.Vector.html#method.distance) ]
 //!
+//! ### Opposite Vector
+//!
+//! ```
+//! # use vectora::Vector;
+//! use approx::assert_relative_eq;
+//!
+//! let v: Vector<f64, 3> = Vector::from([2.0, 2.0, 2.0]);
+//!
+//! assert_eq!(v.opposite(), Vector::from([-2.0, -2.0, -2.0]));
+//! assert_relative_eq!(v.opposite().magnitude(), v.magnitude());
+//! ```
+//!
+//! [ [API docs](types/vector/struct.Vector.html#method.opposite) ]
+//!
 //! ### Normalization
 //!
 //! ```
