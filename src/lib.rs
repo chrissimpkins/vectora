@@ -476,7 +476,8 @@
 //!
 //! Casting a [`Vector`] to a number of commonly used Rust standard library data collection
 //! types is straightforward.  Note that some of these type casts support mutable [`Vector`]
-//! owned data references, allowing you to use standard library type operations to change [`Vector`] data.
+//! owned data references, allowing you to use standard library type operations to change the
+//! [`Vector`] data.
 //!
 //! ### [`array`] Representations
 //!
