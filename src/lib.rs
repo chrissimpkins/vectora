@@ -172,6 +172,9 @@
 //! v1_m[10] = 100.0;
 //! ```
 //!
+//! See the [`Vector::get`] and [`Vector::get_mut`] method documentation
+//! for getters that perform bounds checks and do not panic.
+//!
 //! ## Slicing
 //!
 //! Coerce to a read-only [`slice`] of the [`Vector`]:
