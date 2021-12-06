@@ -97,7 +97,7 @@ pub struct Vector<T, const N: usize>
 where
     T: Num + Copy + Sync + Send,
 {
-    /// N-dimensional vector component values.
+    /// N-dimensional vector data component values.
     pub components: [T; N],
 }
 
@@ -110,7 +110,8 @@ impl<T, const N: usize> Vector<T, N>
 where
     T: Num + Copy + Default + Sync + Send,
 {
-    /// Returns a new [`Vector`] filled with default scalar component values.
+    /// Returns a new [`Vector`] initialized with default numeric
+    /// type scalar values.
     ///
     /// # Examples
     ///
@@ -122,11 +123,13 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let vec_2d_i32 = Vector::<i32, 2>::new();
+    ///
     /// assert_eq!(vec_2d_i32.len(), 2);
     /// assert_eq!(vec_2d_i32[0], i32::default());
     /// assert_eq!(vec_2d_i32[1], i32::default());
     ///
     /// let vec_3d_f64 = Vector::<f64, 3>::new();
+    ///
     /// assert_eq!(vec_3d_f64.len(), 3);
     /// assert_eq!(vec_3d_f64[0], f64::default());
     /// assert_eq!(vec_3d_f64[1], f64::default());
@@ -135,10 +138,12 @@ where
     ///
     /// ## Type alias syntax
     ///
-    /// Simplify instantiation with one of the defined type aliases:
+    /// Simplify instantiation with one of the defined 2D or 3D type aliases:
     ///
     /// ```
-    /// # use vectora::types::vector::*;
+    /// # use vectora::Vector;
+    /// use vectora::types::vector::{Vector2d, Vector2dI32, Vector3d, Vector3dF64};
+    ///
     /// let vec_2d_i32_1 = Vector2d::<i32>::new();
     /// let vec_2d_i32_2 = Vector2dI32::new();
     ///
@@ -148,7 +153,7 @@ where
     ///
     /// ## With type inference
     ///
-    /// There is no requirement for additional type data when the type can be inferrred
+    /// There is no requirement for additional data when the type can be inferrred
     /// by the compiler:
     ///
     /// ```
@@ -159,7 +164,8 @@ where
         Self { components: [T::default(); N] }
     }
 
-    /// Returns a new [`Vector`] filled with scalar component values defined as zero.
+    /// Returns a new [`Vector`] initialized with scalar values
+    /// defined as zero for the corresponding numeric type.
     ///
     /// # Examples
     ///
@@ -169,22 +175,24 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::*;
-    /// let vi: Vector<i32, 3> = Vector::zero();
-    /// assert_eq!(vi.len(), 3);
-    /// assert_eq!(vi[0], 0 as i32);
-    /// assert_eq!(vi[1], 0 as i32);
-    /// assert_eq!(vi[2], 0 as i32);
+    /// let v: Vector<i32, 3> = Vector::zero();
+    ///
+    /// assert_eq!(v.len(), 3);
+    /// assert_eq!(v[0], 0 as i32);
+    /// assert_eq!(v[1], 0 as i32);
+    /// assert_eq!(v[2], 0 as i32);
     /// ```
     ///
     /// ## Float types
     ///
     /// ```
     /// # use vectora::types::vector::*;
-    /// let vf: Vector<f64, 3> = Vector::zero();
-    /// assert_eq!(vf.len(), 3);
-    /// assert_eq!(vf[0], 0.0 as f64);
-    /// assert_eq!(vf[1], 0.0 as f64);
-    /// assert_eq!(vf[2], 0.0 as f64);
+    /// let v: Vector<f64, 3> = Vector::zero();
+    ///
+    /// assert_eq!(v.len(), 3);
+    /// assert_eq!(v[0], 0.0 as f64);
+    /// assert_eq!(v[1], 0.0 as f64);
+    /// assert_eq!(v[2], 0.0 as f64);
     /// ```
     pub fn zero() -> Self {
         Self { components: [T::zero(); N] }
@@ -195,7 +203,8 @@ impl<T, const N: usize> Default for Vector<T, N>
 where
     T: Num + Copy + Default + Sync + Send,
 {
-    /// Returns a new [`Vector`] filled with default scalar values for each component.
+    /// Returns a new [`Vector`] initialized with default
+    /// numeric type scalar values.
     ///
     /// # Examples
     ///
@@ -218,8 +227,8 @@ where
     /// Returns a reference to a [`Vector`] index value or range,
     /// or `None` if the index is out of bounds.
     ///
-    /// This method provides safe, bounds checked immutable access to scalar component
-    /// values.
+    /// This method provides safe, bounds checked immutable access to scalar data
+    /// references.
     ///
     /// # Examples
     ///
@@ -227,17 +236,20 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
+    ///
     /// assert_eq!(v.get(0), Some(&1));
     /// assert_eq!(v.get(1), Some(&2));
-    /// assert_eq!(v.get(3), None);
+    /// assert_eq!(v.get(2), Some(&3));
+    /// assert_eq!(v.get(10), None);
     /// ```
     ///
     /// ## With Index Ranges
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<i32, 5>::from(&[1, 2, 3, 4, 5]);
+    /// let v = Vector::<i32, 5>::from([1, 2, 3, 4, 5]);
+    ///
     /// assert_eq!(v.get(0..3).unwrap(), [1, 2, 3]);
     /// assert_eq!(v.get(3..).unwrap(), [4, 5]);
     /// assert_eq!(v.get(..2).unwrap(), [1, 2]);
@@ -255,7 +267,7 @@ where
     /// or `None` if the index is out of bounds.
     ///
     /// This method provides safe, bounds checked mutable access to scalar
-    /// component values.
+    /// data references.
     ///
     /// # Examples
     ///
@@ -263,11 +275,19 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+    ///
+    /// assert_eq!(v.get_mut(0), Some(&mut 1));
+    /// assert_eq!(v.get_mut(1), Some(&mut 2));
+    /// assert_eq!(v.get_mut(2), Some(&mut 3));
+    /// assert_eq!(v.get_mut(10), None);
     ///
     /// let x = v.get_mut(0).unwrap();
+    ///
     /// assert_eq!(x, &mut 1);
+    ///
     /// *x = 10;
+    ///
     /// assert_eq!(v[0], 10);
     /// assert_eq!(v[1], 2);
     /// assert_eq!(v[2], 3);
@@ -277,12 +297,18 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
     ///
-    /// let x = v.get_mut(0..2).unwrap();
-    /// assert_eq!(x, &mut [1, 2]);
-    /// x[0] = 5;
-    /// x[1] = 6;
+    /// assert_eq!(v.get_mut(0..3).unwrap(), [1, 2, 3]);
+    /// assert_eq!(v.get_mut(2..10), None);
+    ///
+    /// let r = v.get_mut(0..2).unwrap();
+    ///
+    /// assert_eq!(r, &mut [1, 2]);
+    ///
+    /// r[0] = 5;
+    /// r[1] = 6;
+    ///
     /// assert_eq!(v[0], 5);
     /// assert_eq!(v[1], 6);
     /// assert_eq!(v[2], 3);
@@ -294,7 +320,7 @@ where
         self.components.get_mut(index)
     }
 
-    /// Returns an iterator over immutable [`Vector`] scalar component references.
+    /// Returns an iterator over immutable [`Vector`] scalar data references.
     ///
     /// # Examples
     ///
@@ -302,8 +328,9 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = &Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let v = &Vector::<i32, 3>::from([1, 2, 3]);
     /// let mut v_iter = v.iter();
+    ///
     /// assert_eq!(v_iter.next(), Some(&1));
     /// assert_eq!(v_iter.next(), Some(&2));
     /// assert_eq!(v_iter.next(), Some(&3));
@@ -313,7 +340,7 @@ where
         self.components.iter()
     }
 
-    /// Returns an iterator over mutable [`Vector`] scalar component references.
+    /// Returns an iterator over mutable [`Vector`] scalar data references.
     ///
     /// # Examples
     ///
@@ -321,7 +348,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+    ///
     /// for x in v.iter_mut() {
     ///     *x += 3;
     /// }
@@ -334,7 +362,7 @@ where
         self.components.iter_mut()
     }
 
-    /// Returns a [`slice`] representation of the [`Vector`] scalar components.
+    /// Returns a [`slice`] representation of the [`Vector`] scalar data.
     ///
     /// # Examples
     ///
@@ -342,15 +370,16 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
     /// let x: &[i32] = v.as_slice();
-    /// assert_eq!(x, &[1, 2, 3]);
+    ///
+    /// assert_eq!(x, &[1, 2, 3][..]);
     /// ```
     pub fn as_slice(&self) -> &[T] {
         &self.components[..]
     }
 
-    /// Returns a mutable [`slice`] representation of the [`Vector`] scalar components.
+    /// Returns a mutable [`slice`] representation of the [`Vector`] scalar data.
     ///
     /// # Examples
     ///
@@ -358,15 +387,17 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
     /// let mut x: &mut [i32] = v.as_mut_slice();
-    /// assert_eq!(x, &[1, 2, 3]);
+    ///
+    /// assert_eq!(x, &[1, 2, 3][..]);
+    ///
     /// x[0] = 10;
-    /// assert_eq!(x, &[10,2,3]);
-    /// # assert_eq!(v[0], 10);
+    ///
+    /// assert_eq!(x, &[10,2,3][..]);
     /// ```
     ///
-    /// Note: The edit above **changes** the [`Vector`] data:
+    /// Note: The assignment above **changes** the [`Vector`] data:
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
@@ -381,7 +412,7 @@ where
         &mut self.components[..]
     }
 
-    /// Returns an [`array`] reference representation of the [`Vector`] scalar components.
+    /// Returns an [`array`] reference representation of the [`Vector`] scalar data.
     ///
     /// # Examples
     ///
@@ -389,15 +420,16 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
     /// let x: &[i32;3] = v.as_array();
+    ///
     /// assert_eq!(x, &[1, 2, 3]);
     /// ```
     pub fn as_array(&self) -> &[T; N] {
         &self.components
     }
 
-    /// Returns a mutable [`array`] reference representation of the [`Vector`] scalar components.
+    /// Returns a mutable [`array`] reference representation of the [`Vector`] scalar data.
     ///
     /// # Examples
     ///
@@ -405,15 +437,17 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
     /// let mut x: &mut [i32;3] = v.as_mut_array();
+    ///
     /// assert_eq!(x, &[1, 2, 3]);
+    ///
     /// x[0] = 10;
+    ///
     /// assert_eq!(x, &[10,2,3]);
-    /// # assert_eq!(v[0], 10);
     /// ```
     ///
-    /// Note: The edit above **changes** the [`Vector`] data:
+    /// Note: The assignment above **changes** the [`Vector`] data:
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
@@ -433,8 +467,7 @@ where
     ///
     /// # Safety
     ///
-    /// The caller is responsible for the safety contract on this numeric
-    /// type cast.  While this method does not use `unsafe` blocks of code
+    /// While this method does not use `unsafe` blocks of code
     /// and returned data *should* be sound, it can lead to information loss
     /// and incorrect programs if return values are unexpected
     /// (e.g., saturating overflows and underflows,
@@ -476,7 +509,7 @@ where
         Vector { components: new_components }
     }
 
-    /// Returns a new, allocated [`array`] representation of the [`Vector`] scalar components
+    /// Returns a new, allocated [`array`] representation of the [`Vector`] scalar data.
     ///
     /// # Examples
     ///
@@ -486,8 +519,11 @@ where
     /// # use vectora::types::vector::Vector;
     /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
     /// let mut x: [i32; 3] = v.to_array();
-    /// assert_eq!(x, [1,2,3]);
+    ///
+    /// assert_eq!(x, [1, 2, 3]);
+    ///
     /// x[0] = 10;
+    ///
     /// assert_eq!(x, [10, 2, 3]);
     /// # assert_eq!(v[0], 1);
     /// ```
@@ -508,7 +544,7 @@ where
         self.components
     }
 
-    /// Returns a new, allocated [`Vec`] representation of the [`Vector`] scalar components.
+    /// Returns a new, allocated [`Vec`] representation of the [`Vector`] scalar data.
     ///
     /// # Examples
     ///
@@ -518,14 +554,17 @@ where
     /// # use vectora::types::vector::Vector;
     /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
     /// let mut x: Vec<i32> = v.to_vec();
-    /// assert_eq!(x, Vec::from([1,2,3]));
+    ///
+    /// assert_eq!(x, Vec::from([1, 2, 3]));
+    ///
     /// x[0] = 10;
+    ///
     /// assert_eq!(x, Vec::from([10, 2, 3]));
     /// # assert_eq!(v[0], 1);
     /// ```
     ///
-    /// Note: The edit above returns a new, owned [`Vec`] and
-    /// **does not change** the [`Vector`] data:
+    /// Note: The assignment above returns a new, owned [`Vec`] with
+    /// copied data and **does not change** the [`Vector`] data:
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
@@ -540,7 +579,7 @@ where
         Vec::from(self.components)
     }
 
-    /// Returns the [`Vector`] component number.
+    /// Returns the length of the [`Vector`] scalar data.
     ///
     /// # Examples
     ///
@@ -549,9 +588,11 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let v2d: Vector<i32, 2> = Vector::new();
+    ///
     /// assert_eq!(v2d.len(), 2);
     ///
     /// let v3d: Vector<f64, 3> = Vector::new();
+    ///
     /// assert_eq!(v3d.len(), 3);
     /// ```
     pub fn len(&self) -> usize {
@@ -565,8 +606,10 @@ where
 
     /// Vector addition with mutation of the calling [`Vector`].
     ///
+    /// Returns a mutable reference to the [`Vector`].
+    ///
     /// Vector addition with the [`+` operator overload](#impl-Add<Vector<T%2C%20N>>) allocates a new [`Vector`].  This method
-    /// supports in-place vector addition mutation of the calling [`Vector`] with data in the
+    /// is an alternative that supports in-place vector addition mutation of the calling [`Vector`] with data in the
     /// parameter [`Vector`].
     ///
     /// # Examples
@@ -575,6 +618,7 @@ where
     /// # use vectora::types::vector::Vector;
     /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
     /// let other = Vector::<i32, 3>::from(&[4, 5, 6]);
+    ///
     /// v.mut_add(&other);
     ///
     /// assert_eq!(v[0], 5);
@@ -589,8 +633,10 @@ where
 
     /// Vector subtraction with mutation of the calling [`Vector`].
     ///
+    /// Returns a mutable reference to the [`Vector`].
+    ///
     /// Vector subtraction with the [`-` operator overload](#impl-Sub<Vector<T%2C%20N>>) allocates a new [`Vector`].  This method
-    /// supports in-place vector subtraction mutation of the calling [`Vector`] with data in the
+    /// is an alternative that supports in-place vector subtraction mutation of the calling [`Vector`] with data in the
     /// parameter [`Vector`].
     ///
     /// # Examples
@@ -599,6 +645,7 @@ where
     /// # use vectora::types::vector::Vector;
     /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
     /// let other = Vector::<i32, 3>::from(&[4, 5, 6]);
+    ///
     /// v.mut_sub(&other);
     ///
     /// assert_eq!(v[0], -3);
@@ -613,15 +660,18 @@ where
 
     /// Scalar multiplication with mutation of the calling [`Vector`].
     ///
+    /// Returns a mutable reference to the [`Vector`].
+    ///
     /// Scalar multiplication with the [`*` operator overload](#impl-Mul<T>) allocates a
-    /// new [`Vector`].  This method supports in-place scalar multiplication mutation of the calling
-    /// [`Vector`] with a scalar parameter value.
+    /// new [`Vector`].  This method is an alternative that supports in-place scalar
+    /// multiplication mutation of the calling [`Vector`] with a scalar parameter value.
     ///
     /// # Examples
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    ///
     /// v.mut_mul(4);
     ///
     /// assert_eq!(v[0], 4);
@@ -636,6 +686,9 @@ where
 
     /// Returns the dot product of two vectors.
     ///
+    /// The return value is a scalar with the [`Vector`] numeric
+    /// type.
+    ///
     /// # Examples
     ///
     /// Basic usage:
@@ -644,8 +697,10 @@ where
     /// # use vectora::types::vector::Vector;
     /// let v1: Vector<i32, 3> = Vector::from([1, 3, -5]);
     /// let v2: Vector<i32, 3> = Vector::from([4, -2, -1]);
+    ///
     /// let x1 = v1 * 3;
     /// let x2 = v2 * 6;
+    ///
     /// assert_eq!(v1.dot(&v2), 3);
     /// assert_eq!(v2.dot(&v1), 3);
     /// assert_eq!(-v1.dot(&-v2), 3);
@@ -669,11 +724,12 @@ where
     /// # use vectora::types::vector::Vector;
     /// let to = Vector::<i32, 3>::from([1, 2, 3]);
     /// let from = Vector::<i32, 3>::from([2, 4, 6]);
-    /// let v_d = to.displacement(&from);
     ///
-    /// assert_eq!(v_d[0], -1);
-    /// assert_eq!(v_d[1], -2);
-    /// assert_eq!(v_d[2], -3);
+    /// let v = to.displacement(&from);
+    ///
+    /// assert_eq!(v[0], -1);
+    /// assert_eq!(v[1], -2);
+    /// assert_eq!(v[2], -3);
     /// ```
     pub fn displacement(&self, from: &Vector<T, N>) -> Self {
         self.sub(*from)
@@ -708,6 +764,7 @@ where
     /// # use vectora::types::vector::Vector;
     /// let v_zero = Vector::<i32, 3>::zero();
     /// let v_zero_o = v_zero.opposite();
+    ///
     /// assert_eq!(v_zero_o, v_zero);
     /// ```
     pub fn opposite(&self) -> Self {
@@ -725,6 +782,7 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+    ///
     /// v.mut_opposite();
     ///
     /// assert_eq!(v[0], -1);
@@ -737,6 +795,7 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let mut v_zero = Vector::<i32, 3>::zero();
+    ///
     /// v_zero.mut_opposite();
     ///
     /// assert_eq!(v_zero[0], 0);
@@ -758,6 +817,7 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let v = Vector::<i32, 3>::from([1, 2, 3]);
+    ///
     /// let v_s = v.scale(10);
     ///
     /// assert_eq!(v_s[0], 10);
@@ -775,6 +835,7 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+    ///
     /// v.mut_scale(10);
     ///
     /// assert_eq!(v[0], 10);
@@ -797,6 +858,7 @@ where
     /// # use vectora::types::vector::Vector;
     /// let v = Vector::<i32, 3>::from([1, 2, 3]);
     /// let translation_vec = Vector::<i32, 3>::from([4, 5, 6]);
+    ///
     /// let v_t = v.translate(&translation_vec);
     ///
     /// assert_eq!(v_t[0], 5);
@@ -816,6 +878,7 @@ where
     /// # use vectora::types::vector::Vector;
     /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
     /// let translation_vec = Vector::<i32, 3>::from([4, 5, 6]);
+    ///
     /// v.mut_translate(&translation_vec);
     ///
     /// assert_eq!(v[0], 5);
@@ -826,11 +889,11 @@ where
         self.mut_add(translation_vector)
     }
 
-    /// Returns a new [`Vector`] with components that are modified
+    /// Returns a new [`Vector`] with scalar data that are modified
     /// according to the definition in a closure parameter.
     ///
     /// Note: the closure must return items of the same numeric
-    /// type as the [`Vector`] components.
+    /// type as the [`Vector`] numeric type.
     ///
     /// # Examples
     ///
@@ -840,6 +903,7 @@ where
     /// # use vectora::types::vector::Vector;
     /// let v = Vector::<i32, 3>::from([1, 2, 3]);
     /// let square = |x: i32| { x.pow(2) };
+    ///
     /// let squared_v = v.map_closure(square);
     ///
     /// assert_eq!(squared_v, Vector::from([1, 4, 9]));
@@ -853,11 +917,11 @@ where
         Self { components: new_components }
     }
 
-    /// Mutates the [`Vector`] components in place according to the
+    /// Mutates the [`Vector`] data in place according to the
     /// definition in a closure parameter.
     ///
     /// Note: the closure must return items of the same numeric
-    /// type as the [`Vector`] components.
+    /// type as the [`Vector`] numeric type.
     ///
     /// # Examples
     ///
@@ -867,6 +931,7 @@ where
     /// # use vectora::types::vector::Vector;
     /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
     /// let square = |x: i32| { x.pow(2) };
+    ///
     /// v.mut_map_closure(square);
     ///
     /// assert_eq!(v, Vector::from([1, 4, 9]));
@@ -879,11 +944,11 @@ where
         self
     }
 
-    /// Returns a new [`Vector`] with components that are modified
+    /// Returns a new [`Vector`] with data that are modified
     /// according to the definition in a function parameter.
     ///
     /// Note: the function must return items of the same numeric
-    /// type as the [`Vector`] components.
+    /// type as the [`Vector`] numeric type.
     ///
     /// # Examples
     ///
@@ -896,6 +961,7 @@ where
     /// }
     ///
     /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+    ///
     /// let squared_v = v.map_fn(square);
     ///
     /// assert_eq!(squared_v, Vector::from([1, 4, 9]));
@@ -906,11 +972,11 @@ where
         Self { components: new_components }
     }
 
-    /// Mutates the [`Vector`] components in place according to
+    /// Mutates the [`Vector`] data in place according to
     /// the definition in a function parameter.
     ///
     /// Note: the function must return items of the same numeric
-    /// type as the [`Vector`] components.
+    /// type as the [`Vector`] numeric type.
     ///
     /// # Examples
     ///
@@ -923,6 +989,7 @@ where
     /// }
     ///
     /// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+    ///
     /// v.mut_map_fn(square);
     ///
     /// assert_eq!(v, Vector::from([1, 4, 9]));
@@ -982,19 +1049,14 @@ where
     /// assert_relative_eq!(v1.distance(&v1), 0.0_f64);
     /// ```
     ///
-    /// Note: This method can be used with a **lossless** integer
-    /// to float [`Vector`] type cast:
+    /// Note: This method can be used on data in integer [`Vector`] types
+    /// with **lossless** integer to float [`Vector`] type casts:
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// use approx::assert_relative_eq;
-    ///
-    /// let v1: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let v1_f: Vector<f64, 2> = v1.into();
+    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
+    /// let vf: Vector<f64, 2> = vi.into();
     /// ```
-    ///
-    /// Lossy integer to float type casts are **not** supported (e.g.,
-    /// `i64` to `f64`).
     pub fn distance(&self, other: &Vector<T, N>) -> T {
         (*self - *other).magnitude()
     }
@@ -1026,6 +1088,15 @@ where
     /// assert_eq!(v1.lerp(&v2, 0.5).unwrap(), Vector::from([5.0, 5.0]));
     /// assert_eq!(v1.lerp(&v2, 0.75).unwrap(), Vector::from([7.5, 7.5]));
     /// assert_eq!(v1.lerp(&v2, 1.0).unwrap(), Vector::from([10.0, 10.0]));
+    /// ```
+    ///
+    /// Note: This method can be used on data in integer [`Vector`] types
+    /// with **lossless** integer to float [`Vector`] type casts:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
+    /// let vf: Vector<f64, 2> = vi.into();
     /// ```
     pub fn lerp(&self, end: &Vector<T, N>, weight: T) -> Result<Self, VectorError>
     where
@@ -1072,6 +1143,15 @@ where
     ///
     /// assert_eq!(mid, Vector::from([5.0, 5.0]));
     /// ```
+    ///
+    /// Note: This method can be used on data in integer [`Vector`] types
+    /// with **lossless** integer to float [`Vector`] type casts:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
+    /// let vf: Vector<f64, 2> = vi.into();
+    /// ```
     pub fn midpoint(&self, end: &Vector<T, N>) -> Self
     where
         T: std::fmt::Debug,
@@ -1101,25 +1181,20 @@ where
     /// assert_relative_eq!(v_zero.magnitude(), 0.0);
     /// ```
     ///
-    /// Note: This method can be used with a **lossless** integer
-    /// to float [`Vector`] type cast:
+    /// Note: This method can be used on data in integer [`Vector`] types
+    /// with **lossless** integer to float [`Vector`] type casts:
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// use approx::assert_relative_eq;
-    ///
-    /// let v1: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let v1_f: Vector<f64, 2> = v1.into();
+    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
+    /// let vf: Vector<f64, 2> = vi.into();
     /// ```
-    ///
-    /// Lossy integer to float type casts are **not** supported (e.g.,
-    /// `i64` to `f64`).
     pub fn magnitude(&self) -> T {
         let x: T = self.components.iter().map(|a| *a * *a).sum();
         x.sqrt()
     }
 
-    /// Returns a new, normalized float [`Vector`].
+    /// Returns a new, normalized unit [`Vector`].
     ///
     /// # Examples
     ///
@@ -1128,24 +1203,20 @@ where
     /// use approx::assert_relative_eq;
     ///
     /// let v: Vector<f64, 2> = Vector::from([25.123, 30.456]);
+    ///
     /// assert_relative_eq!(v.normalize().magnitude(), 1.0);
     /// assert_relative_eq!(v[0], 25.123);
     /// assert_relative_eq!(v[1], 30.456);
     /// ```
     ///
-    /// Note: This method can be used with a **lossless** integer
-    /// to float [`Vector`] type cast:
+    /// Note: This method can be used on data in integer [`Vector`] types
+    /// with **lossless** integer to float [`Vector`] type casts:
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// use approx::assert_relative_eq;
-    ///
-    /// let v1: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let v1_f: Vector<f64, 2> = v1.into();
+    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
+    /// let vf: Vector<f64, 2> = vi.into();
     /// ```
-    ///
-    /// Lossy integer to float type casts are **not** supported (e.g.,
-    /// `i64` to `f64`).
     pub fn normalize(&self) -> Self
     where
         T: Float + Copy + Sync + Send + Sum,
@@ -1161,7 +1232,7 @@ where
         Self { components: new_components }
     }
 
-    /// Normalizes a float [`Vector`] in place.
+    /// Normalizes a float [`Vector`] to a unit [`Vector`] in place.
     ///
     /// # Examples
     ///
@@ -1170,6 +1241,7 @@ where
     /// use approx::assert_relative_eq;
     ///
     /// let mut v: Vector<f64, 2> = Vector::from([25.123, 30.456]);
+    ///
     /// v.mut_normalize();
     ///
     /// assert_relative_eq!(v.magnitude(), 1.0);
@@ -1177,19 +1249,14 @@ where
     /// assert_relative_eq!(v[1], 0.7714130645857428);
     /// ```
     ///
-    /// Note: This method can be used with a **lossless** integer
-    /// to float [`Vector`] type cast:
+    /// Note: This method can be used on data in integer [`Vector`] types
+    /// with **lossless** integer to float [`Vector`] type casts:
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// use approx::assert_relative_eq;
-    ///
-    /// let v1: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let v1_f: Vector<f64, 2> = v1.into();
+    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
+    /// let vf: Vector<f64, 2> = vi.into();
     /// ```
-    ///
-    /// Lossy integer to float type casts are **not** supported (e.g.,
-    /// `i64` to `f64`).
     pub fn mut_normalize(&mut self) -> &mut Self
     where
         T: Float + Copy + Sync + Send + Sum,
@@ -1205,6 +1272,7 @@ where
     //
     // ================================
 
+    // Vector linear interpolation implementation
     fn lerp_impl(&self, end: &Vector<T, N>, weight: T) -> Self {
         let mut new_components = [T::zero(); N];
         self.components
@@ -1229,7 +1297,7 @@ where
     T: Num + Copy + Sync + Send,
 {
     type Output = I::Output;
-    /// Returns [`Vector`] scalar component values by zero-based index.
+    /// Returns [`Vector`] scalar data values by zero-based index.
     ///
     /// # Examples
     ///
@@ -1237,7 +1305,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
+    ///
     /// assert_eq!(v[0], 1);
     /// assert_eq!(v[1], 2);
     /// assert_eq!(v[2], 3);
@@ -1247,7 +1316,8 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
+    ///
     /// let v_slice = &v[..];
     ///
     /// assert_eq!(v_slice, [1, 2, 3]);
@@ -1262,9 +1332,9 @@ impl<T, const N: usize> IndexMut<usize> for Vector<T, N>
 where
     T: Num + Copy + Sync + Send,
 {
-    /// Returns mutable [`Vector`] scalar component values by zero-based index.
+    /// Returns mutable [`Vector`] scalar data values by zero-based index.
     ///
-    /// Supports scalar component value assignment by index.
+    /// Supports scalar value assignment by index.
     ///
     /// # Examples
     ///
@@ -1273,11 +1343,14 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let mut v = Vector::<i32, 3>::from(&[1, 2, 3]);
+    ///
     /// assert_eq!(v[0], 1);
     /// assert_eq!(v[1], 2);
     /// assert_eq!(v[2], 3);
+    ///
     /// v[0] = 5;
     /// v[1] = 6;
+    ///
     /// assert_eq!(v[0], 5);
     /// assert_eq!(v[1], 6);
     /// assert_eq!(v[2], 3);
@@ -1300,7 +1373,7 @@ where
     type Item = T;
     type IntoIter = std::array::IntoIter<Self::Item, N>;
 
-    /// Creates a consuming iterator that iterates over scalar components by value.
+    /// Creates a consuming iterator that iterates over scalar data by value.
     fn into_iter(self) -> Self::IntoIter {
         self.components.into_iter()
     }
@@ -1313,7 +1386,7 @@ where
     type Item = &'a T;
     type IntoIter = std::slice::Iter<'a, T>;
 
-    /// Creates an iterator over immutable scalar component references.
+    /// Creates an iterator over immutable scalar data references.
     fn into_iter(self) -> Self::IntoIter {
         self.components.iter()
     }
@@ -1326,7 +1399,7 @@ where
     type Item = &'a mut T;
     type IntoIter = std::slice::IterMut<'a, T>;
 
-    /// Creates an iterator over mutable scalar component references.
+    /// Creates an iterator over mutable scalar data references.
     fn into_iter(self) -> Self::IntoIter {
         self.components.iter_mut()
     }
@@ -1351,7 +1424,7 @@ where
     /// approaches to underflow and overflow are:
     ///
     /// - On underflow: take all items in the iterator and fill subsequent
-    /// undefined components with the default value for the numeric type
+    /// undefined data components with the default value for the numeric type
     /// (`T::default`)
     /// - On overflow: truncate data after the first N items in the iterator
     ///
@@ -1362,6 +1435,7 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let v: Vector<i32, 3> = [1, 2, 3].into_iter().collect();
+    ///
     /// assert_eq!(v.len(), 3);
     /// assert_eq!(v[0], 1 as i32);
     /// assert_eq!(v[1], 2 as i32);
@@ -1376,6 +1450,7 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let v: Vector<i32, 2> = [1, 2, 3].into_iter().collect();
+    ///
     /// assert_eq!(v.len(), 2);
     /// assert_eq!(v[0], 1 as i32);
     /// assert_eq!(v[1], 2 as i32);
@@ -1390,6 +1465,7 @@ where
     /// ```
     /// # use vectora::types::vector::Vector;
     /// let v: Vector<i32, 3> = [1, 2].into_iter().collect();
+    ///
     /// assert_eq!(v.len(), 3);
     /// assert_eq!(v[0], 1 as i32);
     /// assert_eq!(v[1], 2 as i32);
@@ -1421,7 +1497,7 @@ where
 //
 // ================================
 
-/// PartialEq trait implementation for [`Vector`] with integer component types.
+/// PartialEq trait implementation for [`Vector`] with integer data types.
 ///
 /// These comparisons establish the symmetry and transitivity relationships
 /// required for the partial equivalence relation definition with integer types.
@@ -1622,14 +1698,14 @@ where
     type Error = VectorError;
     /// Returns a new [`Vector`] as defined by the [`Vec`] parameter.
     ///
-    /// [`Vec`] lengths are not known at compile time. Bounds checks are used in
-    /// this approach.  This is slower than instantiation from arrays and will fail
-    /// with overflows and underflows.
+    /// [`Vec`] lengths are not fixed and may not be known at compile time. Bounds
+    /// checks are used in this approach.  This is slower than instantiation from
+    /// arrays and will fail with overflows and underflows.
     ///
     /// # Errors
     ///
     /// Raises [`VectorError::TryFromVecError`] when the [`Vec`] parameter length
-    /// does not equal the expected [`Vector`] component length.
+    /// does not equal the expected [`Vector`] data component length.
     ///
     /// # Examples
     ///
@@ -1642,7 +1718,7 @@ where
     /// ```
     ///
     /// Callers should confirm that the length of the [`Vec`] is
-    /// the same as the number of requested [`Vector`] dimensions.  The following
+    /// the same as the number of requested [`Vector`] data components.  The following
     /// code raises [`VectorError::TryFromVecError`] on an attempt to make a
     /// three dimensional [`Vector`] with two dimensional data:
     ///
@@ -1650,6 +1726,7 @@ where
     ///# use vectora::types::vector::Vector;
     /// let v = vec![1 as i32, 2 as i32];
     /// let e = Vector::<i32, 3>::try_from(v);
+    ///
     /// assert!(e.is_err());
     /// ```
     fn try_from(t_vec: Vec<T>) -> Result<Vector<T, N>, VectorError> {
@@ -1677,9 +1754,9 @@ where
     type Error = VectorError;
     /// Returns a new [`Vector`] as defined by the [`Vec`] reference parameter.
     ///
-    /// [`Vec`] lengths are not known at compile time. Bounds checks are used in
-    /// this approach.  This is slower than instantiation from arrays and will fail
-    /// with overflows and underflows.
+    /// [`Vec`] lengths are not fixed and may not be known at compile time. Bounds
+    /// checks are used in this approach.  This is slower than instantiation from
+    /// arrays and will fail with overflows and underflows.
     ///
     /// # Errors
     ///
@@ -1697,7 +1774,7 @@ where
     /// ```
     ///
     /// Callers should confirm that the length of the [`Vec`] is
-    /// the same as the number of requested [`Vector`] dimensions.  The following
+    /// the same as the number of requested [`Vector`] data dimensions.  The following
     /// code raises [`VectorError::TryFromVecError`] on an attempt to make a
     /// three dimensional [`Vector`] with two dimensional data:
     ///
@@ -1705,6 +1782,7 @@ where
     ///# use vectora::types::vector::Vector;
     /// let v = vec![1 as i32, 2 as i32];
     /// let e = Vector::<i32, 3>::try_from(&v);
+    ///
     /// assert!(e.is_err());
     /// ```
     fn try_from(t_vec: &Vec<T>) -> Result<Vector<T, N>, VectorError> {
@@ -1736,7 +1814,7 @@ where
     /// # Errors
     ///
     /// Raises [`VectorError::TryFromSliceError`] when the [`slice`] parameter length
-    /// is not equal to the requested [`Vector`] component length.
+    /// is not equal to the requested [`Vector`] data component length.
     ///
     /// # Examples
     ///
@@ -1755,10 +1833,21 @@ where
     /// let _: Vector<i32, 3> = Vector::try_from(Vec::from([1, 2, 3]).as_slice()).unwrap();
     /// let _: Vector<f64, 2> = Vector::try_from(Vec::from([1.0, 2.0]).as_slice()).unwrap();
     /// ```
+    ///
+    /// Callers should confirm that the length of the [`slice`] is
+    /// the same as the number of requested [`Vector`] data dimensions.  The following
+    /// code raises [`VectorError::TryFromSliceError`] on an attempt to make a
+    /// three dimensional [`Vector`] with two dimensional data:
+    ///
+    /// ```
+    ///# use vectora::types::vector::Vector;
+    /// let v = vec![1 as i32, 2 as i32];
+    /// let s = &v[..];
+    /// let e = Vector::<i32, 3>::try_from(s);
+    ///
+    /// assert!(e.is_err());
+    /// ```
     fn try_from(t_slice: &[T]) -> Result<Vector<T, N>, VectorError> {
-        // n.b. if the length of the slice is less than the required number
-        // of Vector components, then we raise an error because this does
-        // not meet the requirements of the calling code.
         if t_slice.len() != N {
             return Err(VectorError::TryFromSliceError(format!(
                 "expected slice with {} items, but received slice with {} items",
@@ -1777,7 +1866,7 @@ where
     }
 }
 
-/// Returns a new [`Vector`] with lossless [`Vector`] scalar component numeric type
+/// Returns a new [`Vector`] with lossless [`Vector`] scalar numeric type data
 /// cast support.
 macro_rules! impl_vector_from_vector {
     ($Small: ty, $Large: ty, $doc: expr) => {
