@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.2
+
+### Added
+
+- None
+
+### Changed
+
+- typo fixes in the source documentation
+
 ## v0.1.1
 
 ### Added
