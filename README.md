@@ -29,7 +29,7 @@ Import the library in the `[dependencies]` section of your `Cargo.toml` file:
 
 ```toml
 [dependencies]
-vectora = "0.1.1"
+vectora = "0.1.2"
 ```
 
 ## Developer documentation
