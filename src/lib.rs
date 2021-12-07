@@ -23,8 +23,9 @@
 //!
 //! # About
 //!
-//! Vectora is a library for n-dimensional vector computation. The main library entry point is the [`Vector`] struct.  
-//! Please see the [Gettting Started guide](#getting-started) for a detailed library overview with examples.
+//! Vectora is a library for n-dimensional vector computation. It currently supports scalar integer and floating point data.
+//! The main library entry point is the [`Vector`] struct.  Please see the [Gettting Started guide](#getting-started)
+//! for a detailed library overview with examples.
 //!
 //! # Safety Guarantee
 //!
