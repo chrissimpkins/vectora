@@ -10,6 +10,7 @@
 //! - [Contributing](#contributing)
 //! - [License](#license)
 //! - [Getting Started](#getting-started)
+//!     - [Add Vectora to Your Project](#add-vectora-to-your-project)
 //!     - [Initialization](#initialization)
 //!     - [Access and Assignment with Indexing](#access-and-assignment-with-indexing)
 //!     - [Slicing](#slicing)
