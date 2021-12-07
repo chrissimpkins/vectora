@@ -2,9 +2,9 @@
 
 ## A Rust vector computation library
 
-![Crates.io](https://img.shields.io/crates/v/vectora)
-![docs.rs](https://img.shields.io/docsrs/vectora)
-![GitHub](https://img.shields.io/github/license/chrissimpkins/vectora)
+[![Crates.io](https://img.shields.io/crates/v/vectora)](https://crates.io/crates/vectora)
+[![docs.rs](https://img.shields.io/docsrs/vectora)](https://docs.rs/vectora)
+[![GitHub](https://img.shields.io/github/license/chrissimpkins/vectora)](LICENSE)
 
 ## Test Status
 
@@ -39,7 +39,9 @@ git clone https://github.com/chrissimpkins/vectora.git
 
 #### Testing
 
-Edit the source files, then run the unit tests and doc tests with the command:
+The project is tested with the latest GitHub Actions macOS, Linux (Ubuntu), and Windows environment runners using the stable and beta `rustc` toolchains.
+
+Edit the source files, then run the unit and doc test suite locally with the command:
 
 ```txt
 cargo test
