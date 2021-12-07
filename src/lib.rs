@@ -46,7 +46,10 @@
 //!
 //! # Contributing
 //!
-//! Contributions are welcomed.  Open your change proposal as a GitHub pull request on
+//! Contributions are welcomed.  Developer documentation is available in the source
+//! repository [README](https://github.com/chrissimpkins/vectora).
+//!
+//! Submit your source or documentation changes as a GitHub pull request on
 //! the [source repository](https://github.com/chrissimpkins/vectora).
 //!
 //! # License
