@@ -23,21 +23,21 @@ Vectora is a library for n-dimensional vector computation. The main library entr
 
 ### Contributing
 
-#### Issues
+#### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Issues
 
 The [issue tracker](https://github.com/chrissimpkins/vectora/issues) is available on the GitHub repository. Don't be shy. Please report any issues that you identify so that we can address them.
 
-#### Source contributions
+#### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Source contributions
 
 Contributions are welcomed.  Submit your changes as a GitHub pull request. Please add new tests for source contributions that are not covered by our current test suite.
 
-#### Clone the repository
+#### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Clone the repository
 
 ```txt
 git clone https://github.com/chrissimpkins/vectora.git
 ```
 
-#### Testing
+#### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Testing
 
 The project is tested with the latest GitHub Actions macOS, Linux (Ubuntu), and Windows environment runners using the stable and beta `rustc` toolchains.
 
@@ -53,7 +53,7 @@ Run clippy lints with:
 cargo clippy -- -D warnings
 ```
 
-#### Documentation contributions
+#### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Documentation contributions
 
 The docs.rs documentation is authored in the Rust source files.  Edit the text and build a local version of the project documentation for review with the command:
 
