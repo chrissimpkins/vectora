@@ -1,6 +1,5 @@
 //! Vector types.
 
-// use std::cmp::PartialOrd;
 use std::{
     borrow::{Borrow, BorrowMut},
     iter::{IntoIterator, Sum},
