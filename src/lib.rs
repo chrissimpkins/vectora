@@ -63,9 +63,20 @@
 //! entry point.
 //!
 //! The following section provides an overview of common tasks, and will get you up
-//! and running with the library quickly.  
+//! and running with the library quickly.
 //!
-//! The source examples below assume the following [`Vector`] import:
+//! ## Add Vectora to Your Project
+//!
+//! Import the vectora library in the `[dependencies]` section
+//! of your `Cargo.toml` file:
+//!
+//! ```toml
+//! [dependencies]
+//! vectora = "0.1"
+//! ```
+//!
+//! The examples below assume the following [`Vector`] struct import in
+//! your Rust source files:
 //!
 //! ```
 //! use vectora::Vector;
