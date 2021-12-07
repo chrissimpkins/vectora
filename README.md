@@ -13,11 +13,13 @@
 [![clippy lints](https://github.com/chrissimpkins/vectora/actions/workflows/lints.yml/badge.svg)](https://github.com/chrissimpkins/vectora/actions/workflows/lints.yml)
 [![rustfmt check](https://github.com/chrissimpkins/vectora/actions/workflows/fmt.yml/badge.svg)](https://github.com/chrissimpkins/vectora/actions/workflows/fmt.yml)
 
+## About
+
+Vectora is a library for n-dimensional vector computation. The main library entry point is the [`Vector`](https://docs.rs/vectora/latest/vectora/types/vector/struct.Vector.html) struct.  Please see the [Gettting Started Guide](https://docs.rs/vectora/latest/vectora/#getting-started) for a detailed library API overview with examples.
+
 ## User documentation
 
 User documentation is available at https://docs.rs/vectora.
-
-Vectora is a library for n-dimensional vector computation. The main library entry point is the [`Vector`](https://docs.rs/vectora/latest/vectora/types/vector/struct.Vector.html) struct.  Please see the [Gettting Started Guide](https://docs.rs/vectora/latest/vectora/#getting-started) for a detailed library API overview with examples.
 
 ### Include Vectora in Your Project
 
