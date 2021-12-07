@@ -1,6 +1,6 @@
 <img src="https://raw.githubusercontent.com/chrissimpkins/vectora/img/img/vectora.png" width="350">
 
-## A Rust vector computation library
+## A Rust library for vector computation
 
 [![Crates.io](https://img.shields.io/crates/v/vectora)](https://crates.io/crates/vectora)
 [![docs.rs](https://img.shields.io/docsrs/vectora)](https://docs.rs/vectora)
