@@ -19,6 +19,15 @@ User documentation is available at https://docs.rs/vectora.
 
 Vectora is a library for n-dimensional vector computation. The main library entry point is the [`Vector`](https://docs.rs/vectora/latest/vectora/types/vector/struct.Vector.html) struct.  Please see the [Gettting Started Guide](https://docs.rs/vectora/latest/vectora/#getting-started) for a detailed library API overview with examples.
 
+Import the library in the `[dependencies]` section of your `Cargo.toml` file:
+
+**Cargo.toml**
+
+```toml
+[dependencies]
+vectora = "0.1"
+```
+
 ## Developer documentation
 
 ### Contributing
