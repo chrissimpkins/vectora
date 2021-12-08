@@ -166,7 +166,7 @@
 //! let z = v1[2];
 //! ```
 //!
-//! Attempts to access items beyond the length of the [`Vector`] panics:
+//! Attempts to access items beyond the length of the [`Vector`] panic:
 //!
 //! ```should_panic
 //! # use vectora::Vector;
@@ -186,7 +186,7 @@
 //! v1_m[2] = 30.0;
 //! ```
 //!
-//! Attempts to assign to items beyond the length of the [`Vector`] panics:
+//! Attempts to assign to items beyond the length of the [`Vector`] panic:
 //!
 //! ```should_panic
 //! # use vectora::Vector;
