@@ -21,6 +21,12 @@ Vectora is a library for n-dimensional vector computation. It currently supports
 
 User documentation is available at https://docs.rs/vectora.
 
+### Minimum Rust Version Compatibility Policy
+
+This project parameterizes generics by constants and relies on the [constant generics feature support that was stabilized in Rust v1.51.0](https://github.com/rust-lang/rust/pull/79135).  
+
+The minimum supported `rustc` version is believed to be v1.51.0.
+
 ### Include Vectora in Your Project
 
 Import the library in the `[dependencies]` section of your `Cargo.toml` file:

@@ -5,6 +5,7 @@
 //! - [About](#about)
 //! - [Safety Guarantee](#safety-guarantee)
 //! - [Versioning](#versioning)
+//! - [Minimum Rust Version Compatibility Policy](#minimum-rust-version-compatibility-policy)
 //! - [Source](#source)
 //! - [Issues](#issues)
 //! - [Contributing](#contributing)
@@ -36,6 +37,12 @@
 //! This project uses [semantic versioning](https://semver.org/) and is currently in a pre-v1.0 stage
 //! of development.  The public API should not be considered stable across release versions at this
 //! time.
+//!
+//! # Minimum Rust Version Compatibility Policy
+//!
+//! This project parameterizes generics by constants and relies on the [constant generics feature support
+//! that was stabilized in Rust v1.51](https://github.com/rust-lang/rust/pull/79135).  The minimum
+//! supported `rustc` version is believed to be v1.51.0.
 //!
 //! # Source
 //!
