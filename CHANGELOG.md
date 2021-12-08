@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.3
+
+### Added
+
+- Minimum Rust version compatibility policy added to the `lib.rs` (docs.rs/vectora) and source repository README documentation
+
+### Changed
+
+- None
+
 ## v0.1.2
 
 ### Added
