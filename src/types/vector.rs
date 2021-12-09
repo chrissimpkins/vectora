@@ -1793,13 +1793,7 @@ where
             )));
         }
 
-        match t_vec.clone().try_into() {
-            Ok(s) => Ok(Self { components: s }),
-            Err(err) => Err(VectorError::TryFromVecError(format!(
-                "failed to cast Vec to Vector type: {:?}",
-                err
-            ))),
-        }
+        Self::try_from(&t_vec[..])
     }
 }
 
