@@ -66,6 +66,15 @@ use vectora::types::vector::*;
 //     });
 // }
 
+// fn criterion_benchmark(c: &mut Criterion) {
+//     fn init_with_vec() {
+//         let vect = vec![1, 2, 3];
+//         let _: Vector<i32, 3> = Vector::try_from(black_box(vect)).unwrap();
+//     }
+
+//     c.bench_function("Vector Initialization: i32 3D from Vec", move |b| b.iter(|| init_with_vec()));
+// }
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~
 // f64 3D Vectors
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -109,6 +118,15 @@ use vectora::types::vector::*;
 //     c.bench_function("Vector Initialization: f64 3D from Vec ref", |b| {
 //         b.iter(|| Vector::<f64, 3>::try_from(&vec).unwrap())
 //     });
+// }
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     fn init_with_vec() {
+//         let vect = vec![1.0_f64, 2.0_f64, 3.0_f64];
+//         let _: Vector<f64, 3> = Vector::try_from(black_box(vect)).unwrap();
+//     }
+
+//     c.bench_function("Vector Initialization: f64 3D from Vec", move |b| b.iter(|| init_with_vec()));
 // }
 
 criterion_group!(benches, criterion_benchmark);
