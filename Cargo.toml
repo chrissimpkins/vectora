@@ -24,6 +24,6 @@ pretty_assertions = "1.0.0"
 tempdir = "0.3.7"
 
 
-# [[bench]]
-# name = "vectora_benchmark"
-# harness = false
+[[bench]]
+name = "vectora_benchmarks"
+harness = false
