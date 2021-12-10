@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.2.0
+
+### Added
+
+- customizable f32 and f64 `Vector` absolute epsilon difference partial equivalence relation support (#11)
+- customizable f32 and f64 `Vector` relative epsilon difference partial equivalence relation support (#11)
+- customizable f32 and f64 `Vector` units in last place (ULPs) difference partial equivalence relation support (#11)
+- `Vector` initialization Criterion benchmarks (#6, #9)
+
+### Changed
+
+- `Vector` initialization with std lib `Vec` reference types execution time improvement (#7)
+
 ## v0.1.3
 
 ### Added
