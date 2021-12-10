@@ -212,8 +212,8 @@
 //!
 //! ## Partial Equivalence Testing
 //!
-//! Partial equivalence comparison support is available for integer and
-//! float numeric types with the `==` operator.
+//! Partial equivalence relation support is available with the `==` operator
+//! for integer and float numeric types.
 //!
 //! ### Integer types
 //!
@@ -227,12 +227,15 @@
 //!
 //! ### Float types
 //!
-//! Float comparisons use the [approx](https://docs.rs/approx/latest/approx/) crate
-//! relative epsilon float equivalence relation implementation.
+//! We compare floating point types with the [approx](https://docs.rs/approx/latest/approx/)
+//! crate relative epsilon equivalence relation implementation by default. This includes
+//! fixed definitions of the epsilon and max relative difference values. See
+//! [the section below](#custom-equivalence-relations-for-float-types) for customization
+//! options with methods.
 //!
-//! Why handle these differently than the standard library implementation?
+//! Why a different strategy for floats?
 //!
-//! Some floating point numbers can be defined as different due to
+//! Some floating point numbers are not considered equivalent due to
 //! floating point precision:
 //!
 //! ```should_panic
@@ -240,7 +243,7 @@
 //! assert!(0.15_f64 + 0.15_f64 == 0.1_f64 + 0.2_f64);
 //! ```
 //!
-//! You likely mean for these float sums to compare as approximately equivalent.
+//! You likely want these float sums to compare as approximately equivalent.
 //!
 //! With the [`Vector`] type, they do:
 //!
@@ -253,12 +256,46 @@
 //! ```
 //!
 //! `assert_eq!` and `assert_ne!` macro assertions use the same
-//! partial equivalence testing approach as you'll note throughout these docs.
+//! partial equivalence approach as you'll note throughout these docs.
 //!
 //! You can implement the same equivalence relation approach for float types that
 //! are **not** contained in a [`Vector`] with the [approx crate](https://docs.rs/approx/latest/approx/)
 //! `relative_eq!`, `relative_ne!`, `assert_relative_eq!`, and `assert_relative_ne!`
 //! macros.
+//!
+//! ### Custom equivalence relations for float types
+//!
+//! The library also provides method support for absolute, relative, and units in last place (ULPs)
+//! partial equivalence relations. These methods allow custom epsilon, max relative, and max ULPs
+//! difference toleraances to define relations when float data are near and far apart.  You must
+//! call the method to use them.  It is not possible to modify the default approach used in the
+//! `==` operator overload.
+//!
+//! See the API documentation for [`Vector`] implementations of the `approx` crate `AbsDiffEq`, `RelativeEq`,
+//! `UlpsEq` traits in the links below:
+//!
+//! #### Absolute difference equivalence relation
+//!
+//! Supports custom epsilon tolerance definitions.
+//!
+//! - [`Vector::abs_diff_eq`](types/vector/struct.Vector.html#impl-AbsDiffEq<Vector<f32%2C%20N>>) (`f32`)
+//! - [`Vector::abs_diff_eq`](types/vector/struct.Vector.html#impl-AbsDiffEq<Vector<f64%2C%20N>>) (`f64`)
+//!
+//! #### Relative difference equivalence relation
+//!
+//! Supports custom epsilon (data that are near) and max relative difference
+//! (data that are far apart) tolerance definitions.
+//!
+//! - [`Vector::relative_eq`](types/vector/struct.Vector.html#impl-RelativeEq<Vector<f32%2C%20N>>) (`f32`)
+//! - [`Vector::relative_eq`](types/vector/struct.Vector.html#impl-RelativeEq<Vector<f64%2C%20N>>) (`f64`)
+//!
+//! #### Units in Last Place (ULPs) difference equivalence relation
+//!
+//! Supports custom epsilon (data that are near) and max ULPs difference
+//! (data that are far apart) tolerance definitions.
+//!
+//! - [`Vector::ulps_eq`](types/vector/struct.Vector.html#impl-UlpsEq<Vector<f32%2C%20N>>) (`f32`)
+//! - [`Vector::ulps_eq`](types/vector/struct.Vector.html#impl-UlpsEq<Vector<f64%2C%20N>>) (`f64`)
 //!
 //! ## Iteration and Loops
 //!

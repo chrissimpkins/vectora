@@ -7,7 +7,7 @@ use std::{
     slice::SliceIndex,
 };
 
-use approx::{relative_eq, RelativeEq};
+use approx::{AbsDiffEq, Relative, RelativeEq, UlpsEq};
 use num::{Float, Num};
 
 use crate::errors::VectorError;
@@ -997,28 +997,6 @@ where
         self.components.iter_mut().for_each(|x| *x = func(*x));
         self
     }
-
-    // ================================
-    //
-    // Private methods
-    //
-    // ================================
-    fn partial_eq_int(&self, other: &Self) -> bool {
-        self.components == other.components
-    }
-
-    fn partial_eq_float(&self, other: &Self) -> bool
-    where
-        T: Num + Copy + RelativeEq<T>,
-    {
-        for (i, item) in self.components.iter().enumerate() {
-            if !relative_eq!(*item, other[i]) {
-                return false;
-            }
-        }
-
-        true
-    }
 }
 
 // ================================
@@ -1509,14 +1487,14 @@ macro_rules! impl_vector_int_partialeq_from {
         impl<const N: usize> PartialEq<Vector<$IntTyp, N>> for Vector<$IntTyp, N> {
             #[doc = $doc]
             fn eq(&self, other: &Self) -> bool {
-                self.partial_eq_int(other)
+                self.components == other.components
             }
         }
     };
     ($IntTyp: ty) => {
         impl_vector_int_partialeq_from!(
             $IntTyp,
-            concat!("PartialEq trait implementation for `Vector<", stringify!($IntTyp), ",N>`")
+            concat!("PartialEq trait implementation for `Vector<", stringify!($IntTyp), ", N>`")
         );
     };
 }
@@ -1547,7 +1525,7 @@ impl_vector_int_partialeq_from!(i128);
 /// - Negative infinity to negative infinity comparisons are considered equal.
 /// - NaN comparisons are considered not equal.
 ///
-/// This approach uses the approx library relative epsilon float equality testing implementation.
+/// This approach uses the default approx crate relative epsilon float equality testing implementation.
 /// This equivalence relation implementation is based on the approach described in
 /// [Comparing Floating Point Numbers, 2012 Edition](https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/)
 macro_rules! impl_vector_float_partialeq_from {
@@ -1555,20 +1533,142 @@ macro_rules! impl_vector_float_partialeq_from {
         impl<const N: usize> PartialEq<Vector<$FloatTyp, N>> for Vector<$FloatTyp, N> {
             #[doc = $doc]
             fn eq(&self, other: &Self) -> bool {
-                self.partial_eq_float(other)
+                for (i, item) in self.components.iter().enumerate() {
+                    // uses default approx crate epsilon and max relative
+                    // diff = epsilon value parameter definitions
+                    if !Relative::default().eq(item, &other[i]) {
+                        return false;
+                    }
+                }
+
+                true
             }
         }
     };
     ($FloatTyp: ty) => {
         impl_vector_float_partialeq_from!(
             $FloatTyp,
-            concat!("PartialEq trait implementation for `Vector<", stringify!($FloatTyp), ",N>`")
+            concat!("PartialEq trait implementation for `Vector<", stringify!($FloatTyp), ", N>`")
         );
     };
 }
 
 impl_vector_float_partialeq_from!(f32);
 impl_vector_float_partialeq_from!(f64);
+
+// ======================================================
+//
+// approx crate float approximate equivalence trait impl
+
+// AbsDiffEq, RelativeEq, UlpsEq traits
+//
+// ======================================================
+
+// approx::AbsDifEq trait impl
+macro_rules! impl_vector_float_absdiffeq_from {
+    ($FloatTyp: ty, $doc: expr) => {
+        impl<const N: usize> AbsDiffEq for Vector<$FloatTyp, N> {
+            type Epsilon = $FloatTyp;
+
+            fn default_epsilon() -> $FloatTyp {
+                <$FloatTyp>::default_epsilon()
+            }
+
+            fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+                for (i, item) in self.components.iter().enumerate() {
+                    if !<$FloatTyp>::abs_diff_eq(item, &other[i], epsilon) {
+                        return false;
+                    }
+                }
+                true
+            }
+        }
+    };
+    ($FloatTyp: ty) => {
+        impl_vector_float_absdiffeq_from!(
+            $FloatTyp,
+            concat!(
+                "approx::AbsDiffEq trait implementation for `Vector<",
+                stringify!($FloatTyp),
+                ", N>`"
+            )
+        );
+    };
+}
+
+impl_vector_float_absdiffeq_from!(f32);
+impl_vector_float_absdiffeq_from!(f64);
+
+// approx::RelativeEq trait impl
+macro_rules! impl_vector_float_relativeeq_from {
+    ($FloatTyp: ty, $doc: expr) => {
+        impl<const N: usize> RelativeEq for Vector<$FloatTyp, N> {
+            fn default_max_relative() -> $FloatTyp {
+                <$FloatTyp>::default_max_relative()
+            }
+
+            fn relative_eq(
+                &self,
+                other: &Self,
+                epsilon: Self::Epsilon,
+                max_relative: Self::Epsilon,
+            ) -> bool {
+                for (i, item) in self.components.iter().enumerate() {
+                    if !<$FloatTyp>::relative_eq(item, &other[i], epsilon, max_relative) {
+                        return false;
+                    }
+                }
+                true
+            }
+        }
+    };
+    ($FloatTyp: ty) => {
+        impl_vector_float_relativeeq_from!(
+            $FloatTyp,
+            concat!(
+                "approx::RelativeEq trait implementation for `Vector<",
+                stringify!($FloatTyp),
+                ", N>`"
+            )
+        );
+    };
+}
+
+impl_vector_float_relativeeq_from!(f32);
+impl_vector_float_relativeeq_from!(f64);
+
+// approx::UlpsEq trait impl
+macro_rules! impl_vector_float_ulpseq_from {
+    ($FloatTyp: ty, $doc: expr) => {
+        impl<const N: usize> UlpsEq for Vector<$FloatTyp, N> {
+            fn default_max_ulps() -> u32 {
+                <$FloatTyp>::default_max_ulps()
+            }
+
+            fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
+                for (i, item) in self.components.iter().enumerate() {
+                    if !<$FloatTyp>::ulps_eq(item, &other[i], epsilon, max_ulps) {
+                        return false;
+                    }
+                }
+                true
+            }
+        }
+    };
+    ($FloatTyp: ty) => {
+        impl_vector_float_ulpseq_from!(
+            $FloatTyp,
+            concat!(
+                "approx::UlpsEq trait implementation for `Vector<",
+                stringify!($FloatTyp),
+                ", N>`"
+            )
+        );
+    };
+}
+
+impl_vector_float_ulpseq_from!(f32);
+impl_vector_float_ulpseq_from!(f64);
 
 // ================================
 //
@@ -3539,6 +3639,181 @@ mod tests {
         assert!(v_nan != v_nan_diff); // NaN comparisons are defined as different
         assert!(v_inf_pos == v_inf_pos_eq); // postive infinity comparisons are defined as equivalent
         assert!(v_inf_neg == v_inf_neg_eq); // negative infinity comparisons are defined as equivalent
+    }
+
+    // ======================================================
+    //
+    // approx crate float approximate equivalence trait tests
+    // AbsDiffEq, RelativeEq, UlpsEq traits
+    //
+    // ======================================================
+
+    #[test]
+    fn vector_trait_absdiffeq_f64() {
+        let v1 = Vector::<f64, 3>::from([-1.1, 2.2, 3.3]);
+        let v2 = Vector::<f64, 3>::from([-0.1 - 1.0, 2.2, 3.3]);
+        let v_eq = Vector::<f64, 3>::from([-1.1, 2.2, 3.3]);
+        let v_diff = Vector::<f64, 3>::from([-1.1, 2.2, 4.4]);
+        let v_close = Vector::<f64, 3>::from([-1.1 + (f64::EPSILON), 2.2, 3.3]);
+        let v_not_close_enough = Vector::<f64, 3>::from([-1.1 + (f64::EPSILON * 2.), 2.2, 3.3]);
+
+        let v_zero = Vector::<f64, 3>::zero();
+        let v_zero_eq = Vector::<f64, 3>::zero();
+        let v_zero_neg_eq = Vector::<f64, 3>::from([-0.0, -0.0, -0.0]);
+        let v_zero_close = Vector::<f64, 3>::from([0.0 + f64::EPSILON, 0.0, 0.0]);
+
+        let v_nan = Vector::<f64, 3>::from([f64::NAN, 0.0, 0.0]);
+        let v_nan_diff = Vector::<f64, 3>::from([f64::NAN, 0.0, 0.0]);
+
+        let v_inf_pos = Vector::<f64, 3>::from([f64::INFINITY, 0.0, 0.0]);
+        let v_inf_pos_eq = Vector::<f64, 3>::from([f64::INFINITY, 0.0, 0.0]);
+        let v_inf_neg = Vector::<f64, 3>::from([f64::NEG_INFINITY, 0.0, 0.0]);
+        let v_inf_neg_eq = Vector::<f64, 3>::from([f64::NEG_INFINITY, 0.0, 0.0]);
+
+        assert!(v1.abs_diff_eq(&v_eq, f64::default_epsilon()));
+        assert!(v_eq.abs_diff_eq(&v1, f64::default_epsilon()));
+        assert!(v2.abs_diff_eq(&v_eq, f64::default_epsilon()));
+        assert!(v1.abs_diff_eq(&v2, f64::default_epsilon()));
+        assert!(!v1.abs_diff_eq(&v_diff, f64::default_epsilon()));
+        assert!(v1.abs_diff_eq(&v_close, f64::default_epsilon()));
+        // when difference is epsilon multipled by a factor of 2,
+        // we are outside of the absolute diff bounds
+        assert!(!v1.abs_diff_eq(&v_not_close_enough, f64::default_epsilon()));
+        // unless we adjust the acceptable epsilon threshold, now we consider it eq
+        assert!(v1.abs_diff_eq(&v_not_close_enough, f64::default_epsilon() * 2.));
+
+        assert!(v_zero.abs_diff_eq(&v_zero_eq, f64::default_epsilon()));
+        assert!(v_zero.abs_diff_eq(&v_zero_neg_eq, f64::default_epsilon()));
+        // we are within epsilon of zero, consider this eq
+        assert!(v_zero.abs_diff_eq(&v_zero_close, f64::default_epsilon()));
+        // but is defined as ne when we decrease epsilon value
+        assert!(!v_zero.abs_diff_eq(&v_zero_close, f64::default_epsilon() / 2.));
+
+        assert!(!v_nan.abs_diff_eq(&v_nan_diff, f64::default_epsilon()));
+
+        // note: different result than with relative eq comparison when we test
+        // infinite values
+        assert!(!v_inf_pos.abs_diff_eq(&v_inf_pos_eq, f64::default_epsilon()));
+        assert!(!v_inf_neg.abs_diff_eq(&v_inf_neg_eq, f64::default_epsilon()));
+        assert!(!v_inf_pos.abs_diff_eq(&v_inf_neg, f64::default_epsilon()));
+    }
+
+    #[test]
+    fn vector_trait_relativeeq_f64() {
+        let v1 = Vector::<f64, 3>::from([-1.1, 2.2, 3.3]);
+        let v2 = Vector::<f64, 3>::from([-0.1 - 1.0, 2.2, 3.3]);
+        let v_eq = Vector::<f64, 3>::from([-1.1, 2.2, 3.3]);
+        let v_diff = Vector::<f64, 3>::from([-1.1, 2.2, 4.4]);
+        let v_close = Vector::<f64, 3>::from([-1.1 + (f64::EPSILON), 2.2, 3.3]);
+        let v_not_close_enough = Vector::<f64, 3>::from([-1.1 + (f64::EPSILON * 2.), 2.2, 3.3]);
+
+        let v_zero = Vector::<f64, 3>::zero();
+        let v_zero_eq = Vector::<f64, 3>::zero();
+        let v_zero_neg_eq = Vector::<f64, 3>::from([-0.0, -0.0, -0.0]);
+        let v_zero_close = Vector::<f64, 3>::from([0.0 + f64::EPSILON, 0.0, 0.0]);
+
+        let v_nan = Vector::<f64, 3>::from([f64::NAN, 0.0, 0.0]);
+        let v_nan_diff = Vector::<f64, 3>::from([f64::NAN, 0.0, 0.0]);
+
+        let v_inf_pos = Vector::<f64, 3>::from([f64::INFINITY, 0.0, 0.0]);
+        let v_inf_pos_eq = Vector::<f64, 3>::from([f64::INFINITY, 0.0, 0.0]);
+        let v_inf_neg = Vector::<f64, 3>::from([f64::NEG_INFINITY, 0.0, 0.0]);
+        let v_inf_neg_eq = Vector::<f64, 3>::from([f64::NEG_INFINITY, 0.0, 0.0]);
+
+        assert!(v1.relative_eq(&v_eq, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v_eq.relative_eq(&v1, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v2.relative_eq(&v_eq, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v1.relative_eq(&v2, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(!v1.relative_eq(&v_diff, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v1.relative_eq(&v_close, f64::default_epsilon(), f64::default_epsilon()));
+        // when difference is epsilon multiplied by a factor of 2,
+        // we are outside of the relative diff bounds
+        assert!(!v1.relative_eq(
+            &v_not_close_enough,
+            f64::default_epsilon(),
+            f64::default_epsilon()
+        ));
+        // unless we adjust the acceptable max relative diff
+        assert!(v1.relative_eq(
+            &v_not_close_enough,
+            f64::default_epsilon(),
+            f64::default_epsilon() * 2.
+        ));
+
+        // near zero use the absolute diff vs. epsilon comparisons
+        assert!(v_zero.relative_eq(&v_zero_eq, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v_zero.relative_eq(&v_zero_neg_eq, f64::default_epsilon(), f64::default_epsilon()));
+        // considered eq when within epsilon of zero
+        assert!(v_zero.relative_eq(&v_zero_close, f64::default_epsilon(), f64::default_epsilon()));
+        // considered ne when we decrease the epsilon definition below the diff from zero
+        assert!(!v_zero.relative_eq(
+            &v_zero_close,
+            f64::default_epsilon() / 2.,
+            f64::default_epsilon()
+        ));
+
+        assert!(!v_nan.relative_eq(&v_nan_diff, f64::default_epsilon(), f64::default_epsilon()));
+
+        assert!(v_inf_pos.relative_eq(
+            &v_inf_pos_eq,
+            f64::default_epsilon(),
+            f64::default_epsilon()
+        ));
+        assert!(v_inf_neg.relative_eq(
+            &v_inf_neg_eq,
+            f64::default_epsilon(),
+            f64::default_epsilon()
+        ));
+        assert!(!v_inf_pos.relative_eq(&v_inf_neg, f64::default_epsilon(), f64::default_epsilon()));
+    }
+
+    #[test]
+    fn vector_trait_ulpseq_f64() {
+        let v1 = Vector::<f64, 3>::from([-1.1, 2.2, 3.3]);
+        let v2 = Vector::<f64, 3>::from([-0.1 - 1.0, 2.2, 3.3]);
+        let v_eq = Vector::<f64, 3>::from([-1.1, 2.2, 3.3]);
+        let v_diff = Vector::<f64, 3>::from([-1.1, 2.2, 4.4]);
+        let v_close = Vector::<f64, 3>::from([-1.1 + (f64::EPSILON), 2.2, 3.3]);
+        let v_not_close_enough = Vector::<f64, 3>::from([-1.1 + (f64::EPSILON * 2.), 2.2, 3.3]);
+
+        let v_zero = Vector::<f64, 3>::zero();
+        let v_zero_eq = Vector::<f64, 3>::zero();
+        let v_zero_neg_eq = Vector::<f64, 3>::from([-0.0, -0.0, -0.0]);
+        let v_zero_close = Vector::<f64, 3>::from([0.0 + f64::EPSILON, 0.0, 0.0]);
+
+        let v_nan = Vector::<f64, 3>::from([f64::NAN, 0.0, 0.0]);
+        let v_nan_diff = Vector::<f64, 3>::from([f64::NAN, 0.0, 0.0]);
+
+        let v_inf_pos = Vector::<f64, 3>::from([f64::INFINITY, 0.0, 0.0]);
+        let v_inf_pos_eq = Vector::<f64, 3>::from([f64::INFINITY, 0.0, 0.0]);
+        let v_inf_neg = Vector::<f64, 3>::from([f64::NEG_INFINITY, 0.0, 0.0]);
+        let v_inf_neg_eq = Vector::<f64, 3>::from([f64::NEG_INFINITY, 0.0, 0.0]);
+
+        assert!(v1.ulps_eq(&v_eq, f64::default_epsilon(), 1));
+        assert!(v_eq.ulps_eq(&v1, f64::default_epsilon(), 1));
+        assert!(v2.ulps_eq(&v_eq, f64::default_epsilon(), 1));
+        assert!(v1.ulps_eq(&v2, f64::default_epsilon(), 1));
+        assert!(!v1.ulps_eq(&v_diff, f64::default_epsilon(), 1));
+        assert!(v1.ulps_eq(&v_close, f64::default_epsilon(), 1));
+        // when difference is epsilon multipled by a factor of 2,
+        // we are outside of the diff bounds defined by max ulps = 1
+        assert!(!v1.ulps_eq(&v_not_close_enough, f64::default_epsilon(), 1));
+        // unless we adjust the acceptable ulps threshold
+        assert!(v1.ulps_eq(&v_not_close_enough, f64::default_epsilon(), 2));
+
+        // near zero, use the epsilon value and absolute diff vs. epsilon comparisons
+        assert!(v_zero.ulps_eq(&v_zero_eq, f64::default_epsilon(), 1));
+        assert!(v_zero.ulps_eq(&v_zero_neg_eq, f64::default_epsilon(), 1));
+        // we are within epsilon of zero, consider this eq
+        assert!(v_zero.ulps_eq(&v_zero_close, f64::default_epsilon(), 1));
+        // but is defined as ne when we decrease epsilon value
+        assert!(!v_zero.ulps_eq(&v_zero_close, f64::default_epsilon() / 2., 1));
+
+        assert!(!v_nan.ulps_eq(&v_nan_diff, f64::default_epsilon(), 1));
+
+        assert!(v_inf_pos.ulps_eq(&v_inf_pos_eq, f64::default_epsilon(), 1));
+        assert!(v_inf_neg.ulps_eq(&v_inf_neg_eq, f64::default_epsilon(), 1));
+        assert!(!v_inf_pos.ulps_eq(&v_inf_neg, f64::default_epsilon(), 1));
     }
 
     // ================================
