@@ -84,6 +84,10 @@ The documentation `index.html` page can be found on the following relative path 
 
 Submit your doc edits as a GitHub pull request.
 
+## Changes
+
+Please see [CHANGELOG.md](CHANGELOG.md).
+
 ## License
 
 Vectora is released under the [Apache License, v2.0](LICENSE).

@@ -7,6 +7,7 @@
 //! - [Versioning](#versioning)
 //! - [Minimum Rust Version Compatibility Policy](#minimum-rust-version-compatibility-policy)
 //! - [Source](#source)
+//! - [Changes](#changes)
 //! - [Issues](#issues)
 //! - [Contributing](#contributing)
 //! - [License](#license)
@@ -47,6 +48,10 @@
 //! # Source
 //!
 //! The source files are available at <https://github.com/chrissimpkins/vectora>.
+//!
+//! # Changes
+//!
+//! Please see the [CHANGELOG.md](https://github.com/chrissimpkins/vectora/blob/main/CHANGELOG.md) document in the source repository.
 //!
 //! # Issues
 //!
