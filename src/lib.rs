@@ -272,7 +272,7 @@
 //!
 //! The library also provides method support for absolute, relative, and units in last place (ULPs)
 //! partial equivalence relations. These methods allow custom epsilon, max relative, and max ULPs
-//! difference toleraances to define relations when float data are near and far apart.  You must
+//! difference tolerances to define relations when float data are near and far apart.  You must
 //! call the method to use them.  It is not possible to modify the default approach used in the
 //! `==` operator overload.
 //!
