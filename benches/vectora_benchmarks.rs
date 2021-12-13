@@ -129,5 +129,31 @@ use vectora::types::vector::*;
 //     c.bench_function("Vector Initialization: f64 3D from Vec", move |b| b.iter(|| init_with_vec()));
 // }
 
+// ================================
+//
+// Partial Eq relation testing
+//
+// ================================
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~
+// i32 3D Vectors
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+//     let v2: Vector<i32, 3> = Vector::from([1, 2, 3]);
+//     c.bench_function("PartialEq testing: i32 3D Vector : i32 3D Vector", |b| b.iter(|| v1 == v2));
+// }
+
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~
+// f64 3D Vectors
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v1: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
+//     let v2: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
+//     c.bench_function("PartialEq testing: f64 3D Vector : f64 3D Vector", |b| b.iter(|| v1 == v2));
+// }
+
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
