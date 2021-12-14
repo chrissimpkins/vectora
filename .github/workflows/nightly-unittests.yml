@@ -8,11 +8,11 @@ on:
       - "test-*" # Push events to branches matching refs/heads/test-[ANYTHING]
   pull_request:
 
-name: stable toolchain unit tests
+name: nightly toolchain unit tests
 
 jobs:
   unit-stable:
-    name: stable toolchain unit tests
+    name: nightly toolchain unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
           override: true
       - uses: actions-rs/cargo@v1
         with:
