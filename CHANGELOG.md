@@ -2,9 +2,14 @@
 
 ## v0.2.1
 
-- add integer and float Vector PartialEq testing with `==` operator benchmarks
-- add rustc nightly toolchain CI testing on Ubuntu Linux, macOS, and Windows
-- add scheduled nightly CI testing with rustc stable, beta, and nightly toolchains on Ubuntu Linux, macOS, and Windows
+### Added
+
+- integer and float Vector PartialEq testing with `==` operator benchmarks
+- rustc nightly toolchain CI testing on Ubuntu Linux, macOS, and Windows
+- scheduled nightly CI testing with rustc stable, beta, and nightly toolchains on Ubuntu Linux, macOS, and Windows
+
+### Changed
+
 - minor documentation updates
 
 ## v0.2.0
