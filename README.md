@@ -23,7 +23,7 @@ User documentation is available at https://docs.rs/vectora.
 
 ### Minimum Rust Version Compatibility Policy
 
-This project parameterizes generics by constants and relies on the [constant generics feature support that was stabilized in Rust v1.51.0](https://github.com/rust-lang/rust/pull/79135).  
+This project parameterizes generics by constants and relies on the [constant generics feature support stabilized in Rust v1.51.0](https://github.com/rust-lang/rust/pull/79135).   
 
 The minimum supported `rustc` version is believed to be v1.51.0.
 
@@ -48,7 +48,7 @@ The [issue tracker](https://github.com/chrissimpkins/vectora/issues) is availabl
 
 #### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Source contributions
 
-Contributions are welcomed.  Submit your changes as a GitHub pull request. Please add new tests for source contributions that are not covered by our current test suite.
+Contributions are welcomed.  Submit your changes as a GitHub pull request. Please add new tests for source contributions that our current test suite does not cover.
 
 #### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Clone the repository
 
@@ -80,7 +80,7 @@ The docs.rs documentation is authored in the Rust source files.  Edit the text a
 cargo doc
 ```
 
-The documentation `index.html` page can be found on the following relative path from the root of the repository: `target/doc/vectora/index.html`.
+The documentation `index.html` page can be found on the following relative path from the repository's root: `target/doc/vectora/index.html`.
 
 Submit your doc edits as a GitHub pull request.
 
