@@ -76,7 +76,7 @@
 //! See the [`Vector`] page for detailed API documentation of the main library
 //! entry point.
 //!
-//! The following section provides an overview of common tasks, and will get you up
+//! The following section provides an overview of common tasks and will get you up
 //! and running with the library quickly.
 //!
 //! ## Add Vectora to Your Project
@@ -99,7 +99,7 @@
 //! ## Initialization
 //!
 //! A [`Vector`] can have mutable values, but it cannot grow in length.  The
-//! dimension length is fixed at instantiation and all fields are *initialized*
+//! dimension length is fixed at instantiation, and all fields are *initialized*
 //! at instantiation.
 //!
 //! ### Zero Vector
@@ -261,7 +261,7 @@
 //! ```
 //!
 //! `assert_eq!` and `assert_ne!` macro assertions use the same
-//! partial equivalence approach as you'll note throughout these docs.
+//! partial equivalence approach, as you'll note throughout these docs.
 //!
 //! You can implement the same equivalence relation approach for float types that
 //! are **not** contained in a [`Vector`] with the [approx crate](https://docs.rs/approx/latest/approx/)
@@ -281,23 +281,23 @@
 //!
 //! #### Absolute difference equivalence relation
 //!
-//! Supports custom epsilon tolerance definitions.
+//! The absolute difference equivalence relation approach supports custom epsilon tolerance definitions.
 //!
 //! - [`Vector::abs_diff_eq`](types/vector/struct.Vector.html#impl-AbsDiffEq<Vector<f32%2C%20N>>) (`f32`)
 //! - [`Vector::abs_diff_eq`](types/vector/struct.Vector.html#impl-AbsDiffEq<Vector<f64%2C%20N>>) (`f64`)
 //!
 //! #### Relative difference equivalence relation
 //!
-//! Supports custom epsilon (data that are near) and max relative difference
-//! (data that are far apart) tolerance definitions.
+//! The relative difference equivalence relation approach supports custom epsilon (data that are near)
+//! and max relative difference (data that are far apart) tolerance definitions.
 //!
 //! - [`Vector::relative_eq`](types/vector/struct.Vector.html#impl-RelativeEq<Vector<f32%2C%20N>>) (`f32`)
 //! - [`Vector::relative_eq`](types/vector/struct.Vector.html#impl-RelativeEq<Vector<f64%2C%20N>>) (`f64`)
 //!
 //! #### Units in Last Place (ULPs) difference equivalence relation
 //!
-//! Supports custom epsilon (data that are near) and max ULPs difference
-//! (data that are far apart) tolerance definitions.
+//! The ULPs difference equivalence relation approach supports custom epsilon (data that are near)
+//! and max ULPs difference (data that are far apart) tolerance definitions.
 //!
 //! - [`Vector::ulps_eq`](types/vector/struct.Vector.html#impl-UlpsEq<Vector<f32%2C%20N>>) (`f32`)
 //! - [`Vector::ulps_eq`](types/vector/struct.Vector.html#impl-UlpsEq<Vector<f64%2C%20N>>) (`f64`)
@@ -317,7 +317,7 @@
 //! assert_eq!(iter.next(), None);
 //! ```
 //!
-//! Syntax for a loop over this type:
+//! The syntax for a loop over this type:
 //!
 //! ```
 //! # use vectora::Vector;
@@ -340,7 +340,7 @@
 //! assert_eq!(iter.next(), None);
 //! ```
 //!
-//! Syntax for a loop over this type:
+//! The syntax for a loop over this type:
 //!
 //! ```
 //! # use vectora::Vector;
@@ -363,7 +363,7 @@
 //! assert_eq!(iter.next(), None);
 //! ```
 //!
-//! Syntax for a loop over this type:
+//! The syntax for a loop over this type:
 //!
 //! ```
 //! # use vectora::Vector;
@@ -420,13 +420,13 @@
 //! and twos complement wrapping in release builds.  You will not encounter
 //! undefined behavior with either build type, but this approach
 //! may not be what you want. Avoid these operator overloads if your use
-//! case requires support for integer overflows/underflows and you
+//! case requires support for integer overflows/underflows, and you
 //! prefer to handle it differently.
 //!
 //! ## Methods for Vector Operations
 //!
 //! Method support is available for other common vector calculations.
-//! Examples of some commonly used operations are shown below:
+//! Examples of some frequently used operations are shown below:
 //!
 //! ### Dot product
 //!
@@ -556,10 +556,9 @@
 //!
 //! ## Working with Rust Standard Library Types
 //!
-//! Casting a [`Vector`] to a number of commonly used Rust standard library data collection
-//! types is straightforward.  Note that some of these type casts support mutable [`Vector`]
-//! owned data references, allowing you to use standard library type operations to change the
-//! [`Vector`] data.
+//! Casts to commonly used Rust standard library data collection types are straightforward.  
+//! Note that some of these type casts support mutable [`Vector`] owned data references,
+//! allowing you to use standard library type operations to change the [`Vector`] data.
 //!
 //! ### [`array`] Representations
 //!
@@ -619,8 +618,7 @@
 //!
 //! ### [`Vec`] Representations
 //!
-//! This always allocates a new [`Vec`] with copied data and
-//! does not support mutation of the original [`Vector`] data.
+//! Casts to [`Vec`] always allocate a new [`Vec`] with copied data.
 //!
 //! ```
 //! # use vectora::Vector;
@@ -629,8 +627,8 @@
 //! assert_eq!(v.to_vec(), vec![-1, 2, 3]);
 //! ```
 //!
-//! See the [Initialization](#initialization) section for details on how
-//! to instantiate a [`Vector`] from a standard library [`Vec`] type.
+//! See the [Initialization](#initialization) section for documentation of
+//! the syntax to instantiate a [`Vector`] from a standard library [`Vec`] type.
 
 #![warn(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links, unsafe_code)]
