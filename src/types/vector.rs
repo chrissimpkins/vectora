@@ -2704,6 +2704,17 @@ mod tests {
         handle.join().unwrap();
     }
 
+    #[test]
+    fn vector_send_sync_concurrency_complex_float() {
+        let v = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+
+        let handle = std::thread::spawn(move || {
+            println!("{:?}", v);
+        });
+
+        handle.join().unwrap();
+    }
+
     // ================================
     //
     // get method tests
@@ -2711,8 +2722,8 @@ mod tests {
     // ================================
     #[test]
     fn vector_method_get_with_value() {
-        let v1 = Vector::<u32, 2>::from(&[1, 2]);
-        let v2 = Vector::<f64, 2>::from(&[1.0, 2.0]);
+        let v1 = Vector::<u32, 2>::from([1, 2]);
+        let v2 = Vector::<f64, 2>::from([1.0, 2.0]);
         assert_eq!(v1.get(0).unwrap(), &1);
         assert_eq!(v1.get(1).unwrap(), &2);
         assert_eq!(v1.get(2), None);
