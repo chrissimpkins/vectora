@@ -2923,16 +2923,25 @@ mod tests {
     fn vector_method_as_array() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v4 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let _: &[u32; 3] = v1.as_array();
         let _: &[f64; 3] = v2.as_array();
+        let _: &[Complex<i32>; 2] = v3.as_array();
+        let _: &[Complex<f64>; 2] = v4.as_array();
     }
 
     #[test]
     fn vector_method_as_mut_array() {
         let mut v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let mut v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let mut v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let mut v4 =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let _: &mut [u32; 3] = v1.as_mut_array();
         let _: &mut [f64; 3] = v2.as_mut_array();
+        let _: &mut [Complex<i32>; 2] = v3.as_mut_array();
+        let _: &mut [Complex<f64>; 2] = v4.as_mut_array();
     }
 
     // ================================
