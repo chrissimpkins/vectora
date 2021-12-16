@@ -2817,6 +2817,31 @@ mod tests {
     }
 
     #[test]
+    fn vector_method_get_mut_with_value_complex() {
+        let mut v1 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let mut v2 =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+
+        let c1 = v1.get_mut(0).unwrap();
+        assert_eq!(c1.re, 1);
+        assert_eq!(c1.im, 2);
+        c1.re = 5;
+        c1.im = 6;
+        assert_eq!(v1[0], Complex::new(5, 6));
+        assert_eq!(v1[1], Complex::new(3, 4));
+
+        let c2 = v2.get_mut(0).unwrap();
+        assert_relative_eq!(c2.re, 1.0);
+        assert_relative_eq!(c2.im, 2.0);
+        c2.re = 5.0;
+        c2.im = 6.0;
+        assert_relative_eq!(v2[0].re, 5.0);
+        assert_relative_eq!(v2[0].im, 6.0);
+        assert_relative_eq!(v2[1].re, 3.0);
+        assert_relative_eq!(v2[1].im, 4.0);
+    }
+
+    #[test]
     fn vector_method_get_mut_with_range() {
         let mut v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let mut v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
@@ -2837,6 +2862,31 @@ mod tests {
         assert_relative_eq!(v2.components[0], 5.0);
         assert_relative_eq!(v2.components[1], 6.0);
         assert_relative_eq!(v2.components[2], 3.0);
+    }
+
+    #[test]
+    fn vector_method_get_mut_with_range_complex() {
+        let mut v1 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let mut v2 =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+
+        let r1 = v1.get_mut(0..2).unwrap();
+        assert_eq!(r1, [Complex::new(1, 2), Complex::new(3, 4)]);
+        r1[0].re = 5;
+        r1[0].im = 6;
+        assert_eq!(v1.components, [Complex::new(5, 6), Complex::new(3, 4)]);
+
+        let r2 = v2.get_mut(0..2).unwrap();
+        assert_relative_eq!(r2[0].re, 1.0);
+        assert_relative_eq!(r2[0].im, 2.0);
+        assert_relative_eq!(r2[1].re, 3.0);
+        assert_relative_eq!(r2[1].im, 4.0);
+        r2[0].re = 5.0;
+        r2[0].im = 6.0;
+        assert_relative_eq!(v2[0].re, 5.0);
+        assert_relative_eq!(v2[0].im, 6.0);
+        assert_relative_eq!(v2[1].re, 3.0);
+        assert_relative_eq!(v2[1].im, 4.0);
     }
 
     // ================================
