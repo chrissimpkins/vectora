@@ -2123,6 +2123,7 @@ mod tests {
     use super::*;
     #[allow(unused_imports)]
     use approx::{assert_relative_eq, assert_relative_ne};
+    use num::complex::Complex;
     #[allow(unused_imports)]
     use pretty_assertions::{assert_eq, assert_ne};
 
@@ -2578,6 +2579,28 @@ mod tests {
             assert_eq!(v[2], 0 as isize);
             assert_eq!(v.components.len(), 3);
         }
+    }
+
+    #[test]
+    fn vector_instantiation_complex_i32() {
+        let c1 = Complex::new(10_i32, 20_i32);
+        let c2 = Complex::new(3_i32, -4_i32);
+        let v: Vector<Complex<i32>, 2> = Vector::from([c1, c2]);
+        assert_eq!(v[0].re, 10_i32);
+        assert_eq!(v[0].im, 20_i32);
+        assert_eq!(v[1].re, 3_i32);
+        assert_eq!(v[1].im, -4_i32);
+    }
+
+    #[test]
+    fn vector_instantiation_complex_f64() {
+        let c1 = Complex::new(10.0_f64, 20.0_f64);
+        let c2 = Complex::new(3.1_f64, -4.2_f64);
+        let v: Vector<Complex<f64>, 2> = Vector::from([c1, c2]);
+        assert_relative_eq!(v[0].re, 10.0_f64);
+        assert_relative_eq!(v[0].im, 20.0_f64);
+        assert_relative_eq!(v[1].re, 3.1_f64);
+        assert_relative_eq!(v[1].im, -4.2_f64);
     }
 
     #[test]
