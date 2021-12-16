@@ -2733,6 +2733,23 @@ mod tests {
     }
 
     #[test]
+    fn vector_method_get_with_value_complex() {
+        let v1 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v2 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        assert_eq!(v1.get(0).unwrap().re, 1);
+        assert_eq!(v1.get(0).unwrap().im, 2);
+        assert_eq!(v1.get(1).unwrap().re, 3);
+        assert_eq!(v1.get(1).unwrap().im, 4);
+        assert_eq!(v1.get(2), None);
+
+        assert_relative_eq!(v2.get(0).unwrap().re, 1.0);
+        assert_relative_eq!(v2.get(0).unwrap().im, 2.0);
+        assert_relative_eq!(v2.get(1).unwrap().re, 3.0);
+        assert_relative_eq!(v2.get(1).unwrap().im, 4.0);
+        assert_eq!(v2.get(2), None);
+    }
+
+    #[test]
     fn vector_method_get_with_range() {
         let v1 = Vector::<u32, 5>::from(&[1, 2, 3, 4, 5]);
         let v2 = Vector::<f64, 5>::from(&[1.0, 2.0, 3.0, 4.0, 5.0]);
@@ -2747,6 +2764,32 @@ mod tests {
         assert_eq!(v2.get(..2).unwrap(), &[1.0, 2.0]);
         assert_eq!(v2.get(2..).unwrap(), &[3.0, 4.0, 5.0]);
         assert_eq!(v2.get(..).unwrap(), &[1.0, 2.0, 3.0, 4.0, 5.0]);
+        assert_eq!(v2.get(4..8), None);
+    }
+
+    #[test]
+    fn vector_method_get_with_range_complex() {
+        let v1 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v2 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        assert_eq!(v1.get(0..2).unwrap(), [Complex::new(1_i32, 2_i32), Complex::new(3_i32, 4_i32)]);
+        assert_eq!(v1.get(..2).unwrap(), [Complex::new(1_i32, 2_i32), Complex::new(3_i32, 4_i32)]);
+        assert_eq!(v1.get(1..).unwrap(), [Complex::new(3_i32, 4_i32)]);
+        assert_eq!(v1.get(..).unwrap(), [Complex::new(1_i32, 2_i32), Complex::new(3_i32, 4_i32)]);
+        assert_eq!(v1.get(4..8), None);
+
+        assert_eq!(
+            v2.get(0..2).unwrap(),
+            [Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)]
+        );
+        assert_eq!(
+            v2.get(..2).unwrap(),
+            [Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)]
+        );
+        assert_eq!(v2.get(1..).unwrap(), [Complex::new(3.0_f64, 4.0_f64)]);
+        assert_eq!(
+            v2.get(..).unwrap(),
+            [Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)]
+        );
         assert_eq!(v2.get(4..8), None);
     }
 
