@@ -2636,6 +2636,20 @@ mod tests {
     }
 
     #[test]
+    fn vector_instantiation_complex_i32_default() {
+        let v = Vector::<Complex<i32>, 2>::default();
+        assert_eq!(v[0].re, 0_i32);
+        assert_eq!(v[0].im, 0_i32);
+    }
+
+    #[test]
+    fn vector_instantiation_complex_f64_default() {
+        let v = Vector::<Complex<f64>, 2>::default();
+        assert_relative_eq!(v[0].re, 0.0_f64);
+        assert_relative_eq!(v[0].im, 0.0_f64);
+    }
+
+    #[test]
     fn vector_instantiation_from_array() {
         // Two dimension
         let v1 = Vector::<u32, 2>::from(&[1, 2]);
