@@ -2953,16 +2953,24 @@ mod tests {
     fn vector_method_to_array() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v4 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let _: [u32; 3] = v1.to_array();
         let _: [f64; 3] = v2.to_array();
+        let _: [Complex<i32>; 2] = v3.to_array();
+        let _: [Complex<f64>; 2] = v4.to_array();
     }
 
     #[test]
     fn vector_method_to_vec() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v4 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let _: Vec<u32> = v1.to_vec();
         let _: Vec<f64> = v2.to_vec();
+        let _: Vec<Complex<i32>> = v3.to_vec();
+        let _: Vec<Complex<f64>> = v4.to_vec();
     }
 
     #[test]
