@@ -4762,6 +4762,11 @@ mod tests {
         assert_eq!(test_vector[0], 10);
         assert_eq!(test_vector[1], 2);
         assert_eq!(test_vector[2], 3);
+
+        assert_eq!(test_slice.len(), 3);
+        assert_eq!(test_slice[0], 10);
+        assert_eq!(test_slice[1], 2);
+        assert_eq!(test_slice[2], 3);
     }
 
     // ================================
