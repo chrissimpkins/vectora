@@ -3381,6 +3381,8 @@ mod tests {
     fn vector_method_map_fn() {
         let v1 = Vector::<i32, 2>::from([-1, 2]);
         let v2 = Vector::<f64, 2>::from([-1.0, 2.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v4 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
 
         fn square_int(x: i32) -> i32 {
             x.pow(2)
@@ -3390,20 +3392,46 @@ mod tests {
             x.powi(2)
         }
 
+        fn square_complex_int(x: Complex<i32>) -> Complex<i32> {
+            x.powi(2)
+        }
+
+        fn square_complex_float(x: Complex<f64>) -> Complex<f64> {
+            x.powi(2)
+        }
+
         let v1_squared = v1.map_fn(square_int);
         let v2_squared = v2.map_fn(square_float);
+        let v3_squared = v3.map_fn(square_complex_int);
+        let v4_squared = v4.map_fn(square_complex_float);
 
         assert_eq!(v1_squared, Vector::<i32, 2>::from([1, 4]));
         assert_eq!(v2_squared, Vector::<f64, 2>::from([1.0, 4.0]));
 
         assert_eq!(v1, Vector::<i32, 2>::from([-1, 2]));
         assert_eq!(v2, Vector::<f64, 2>::from([-1.0, 2.0]));
+
+        // Expacted values for complex multiplication
+        // real part = (ac - bd)
+        // imaginary part = (ad + bc)
+        assert_eq!(v3_squared[0].re, -3);
+        assert_eq!(v3_squared[0].im, 4);
+        assert_eq!(v3_squared[1].re, -7);
+        assert_eq!(v3_squared[1].im, 24);
+
+        assert_relative_eq!(v4_squared[0].re, -3.0);
+        assert_relative_eq!(v4_squared[0].im, 4.0);
+        assert_relative_eq!(v4_squared[1].re, -7.0);
+        assert_relative_eq!(v4_squared[1].im, 24.0);
     }
 
     #[test]
     fn vector_method_mut_map_fn() {
         let mut v1 = Vector::<i32, 2>::from([-1, 2]);
         let mut v2 = Vector::<f64, 2>::from([-1.0, 2.0]);
+        let mut v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let mut v4 =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
 
         fn square_int(x: i32) -> i32 {
             x.pow(2)
@@ -3413,11 +3441,34 @@ mod tests {
             x.powi(2)
         }
 
+        fn square_complex_int(x: Complex<i32>) -> Complex<i32> {
+            x.powi(2)
+        }
+
+        fn square_complex_float(x: Complex<f64>) -> Complex<f64> {
+            x.powi(2)
+        }
+
         v1.mut_map_fn(square_int);
         v2.mut_map_fn(square_float);
+        v3.mut_map_fn(square_complex_int);
+        v4.mut_map_fn(square_complex_float);
 
         assert_eq!(v1, Vector::<i32, 2>::from([1, 4]));
         assert_eq!(v2, Vector::<f64, 2>::from([1.0, 4.0]));
+
+        // Expacted values for complex multiplication
+        // real part = (ac - bd)
+        // imaginary part = (ad + bc)
+        assert_eq!(v3[0].re, -3);
+        assert_eq!(v3[0].im, 4);
+        assert_eq!(v3[1].re, -7);
+        assert_eq!(v3[1].im, 24);
+
+        assert_relative_eq!(v4[0].re, -3.0);
+        assert_relative_eq!(v4[0].im, 4.0);
+        assert_relative_eq!(v4[1].re, -7.0);
+        assert_relative_eq!(v4[1].im, 24.0);
     }
 
     // ================================
