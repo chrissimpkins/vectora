@@ -3011,6 +3011,20 @@ mod tests {
     }
 
     #[test]
+    fn vector_to_num_cast_complex() {
+        let v = Vector::<Complex<i32>, 2>::from([Complex::new(1, 0), Complex::new(3, 4)]);
+
+        let v_i64: Vector<Complex<i64>, 2> =
+            v.to_num_cast(|x| Complex { re: x.re as i64, im: x.im as i64 });
+
+        assert!(v_i64.len() == 2);
+        assert_eq!(v_i64[0].re, 1_i64);
+        assert_eq!(v_i64[0].im, 0_i64);
+        assert_eq!(v_i64[1].re, 3_i64);
+        assert_eq!(v_i64[1].im, 4_i64);
+    }
+
+    #[test]
     fn vector_to_num_cast_safety() {
         let v = Vector::<f64, 2>::from([f64::MAX, 1.00]);
         let i8_v = v.to_num_cast(|x| x as i8);
@@ -3044,9 +3058,9 @@ mod tests {
     // ================================
     #[test]
     fn vector_method_len_is_empty() {
-        let v3 = Vector::<u32, 3>::from(&[1, 2, 3]);
+        let v = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v_empty = Vector::<u32, 0>::from(&[]);
-        assert_eq!(v3.len(), 3);
+        assert_eq!(v.len(), 3);
         assert_eq!(v_empty.len(), 0);
         assert!(v_empty.is_empty());
     }
