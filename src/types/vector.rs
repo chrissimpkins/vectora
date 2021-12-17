@@ -738,42 +738,6 @@ where
         self.sub(*from)
     }
 
-    /// Returns a [`Vector`] with the same magnitude and opposite direction for
-    /// a non-zero [`Vector`].
-    ///
-    /// This operation does not change zero vectors.
-    ///
-    /// Note: This is an alias for the unary [`Vector::neg`] operation
-    /// and can be performed with the overloaded unary `-` operator.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
-    /// let v_o = v.opposite();
-    ///
-    /// assert_eq!(v_o[0], -1);
-    /// assert_eq!(v_o[1], -2);
-    /// assert_eq!(v_o[2], -3);
-    /// assert_eq!(v + v_o, Vector::zero());
-    /// ```
-    ///
-    /// The zero vector case:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let v_zero = Vector::<i32, 3>::zero();
-    /// let v_zero_o = v_zero.opposite();
-    ///
-    /// assert_eq!(v_zero_o, v_zero);
-    /// ```
-    pub fn opposite(&self) -> Self {
-        -*self
-    }
-
     /// Mutates a non-zero [`Vector`] in place to one with the same magnitude and opposite direction.
     ///
     /// This operation returns a zero vector when the calling vector is a zero vector.
@@ -1000,6 +964,47 @@ where
     pub fn mut_map_fn(&mut self, func: fn(T) -> T) -> &mut Self {
         self.components.iter_mut().for_each(|x| *x = func(*x));
         self
+    }
+}
+
+impl<T, const N: usize> Vector<T, N>
+where
+    T: Num + Neg<Output = T> + Default + Copy + Sync + Send,
+{
+    /// Returns a [`Vector`] with the same magnitude and opposite direction for
+    /// a non-zero [`Vector`].
+    ///
+    /// This operation does not change zero vectors.
+    ///
+    /// Note: This is an alias for the unary [`Vector::neg`] operation
+    /// and can be performed with the overloaded unary `-` operator.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
+    /// let v_o = v.opposite();
+    ///
+    /// assert_eq!(v_o[0], -1);
+    /// assert_eq!(v_o[1], -2);
+    /// assert_eq!(v_o[2], -3);
+    /// assert_eq!(v + v_o, Vector::zero());
+    /// ```
+    ///
+    /// The zero vector case:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v_zero = Vector::<i32, 3>::zero();
+    /// let v_zero_o = v_zero.opposite();
+    ///
+    /// assert_eq!(v_zero_o, v_zero);
+    /// ```
+    pub fn opposite(&self) -> Self {
+        -*self
     }
 }
 
@@ -2363,15 +2368,15 @@ impl_complex_vector_from_complex_vector!(f32, f64);
 
 impl<T, const N: usize> Neg for Vector<T, N>
 where
-    T: Num + Copy + Sync + Send,
+    T: Num + Neg<Output = T> + Copy + Default + Sync + Send,
 {
     type Output = Self;
 
     /// Unary negation operator overload implementation.
     fn neg(self) -> Self::Output {
-        let new_components = &mut [T::zero(); N];
+        let new_components = &mut [T::default(); N];
         for (i, x) in new_components.iter_mut().enumerate() {
-            *x = T::zero() - self[i];
+            *x = -self.components[i];
         }
         Self { components: *new_components }
     }
@@ -5359,13 +5364,23 @@ mod tests {
         let v2: Vector<i32, 3> = Vector::from([-1, -2, -3]);
         let v3: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
         let v4: Vector<f64, 3> = Vector::from([-1.0, -2.0, -3.0]);
+        let v5: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let v6: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]);
 
         assert_eq!(-v1, -v1);
         assert_eq!(-v1, v2);
         assert_eq!(-v2, v1);
+        assert_eq!(v1 + -v1, Vector::<i32, 3>::zero());
         assert_eq!(-v3, -v3);
         assert_eq!(-v3, v4);
         assert_eq!(-v4, v3);
+        assert_eq!(v3 + -v3, Vector::<f64, 3>::zero());
+        assert_eq!(-v5, -v5);
+        assert_eq!(-v5, v6);
+        assert_eq!(-v6, v5);
+        assert_eq!(v5 + -v5, Vector::<Complex<f64>, 2>::zero());
     }
 
     #[test]
