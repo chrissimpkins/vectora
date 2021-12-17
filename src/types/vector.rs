@@ -1013,7 +1013,8 @@ where
     T: Float + Copy + Sync + Send + Sum,
 {
     /// Returns the magnitude of the displacement vector between the
-    /// calling float [`Vector`] and a float [`Vector`] parameter.
+    /// calling real, floating point number [`Vector`] and a real, floating
+    /// point number [`Vector`] parameter.
     ///
     /// # Examples
     ///
@@ -1042,7 +1043,7 @@ where
         (*self - *other).magnitude()
     }
 
-    /// Returns the linear interpolant between a float [`Vector`] and a
+    /// Returns the linear interpolant between a real, floating point number [`Vector`] and a
     /// parameter [`Vector`] given a parametric line equation `weight` parameter.
     ///
     /// Calculated with the parametric line equation `(1 - t)A + tB`
@@ -1106,7 +1107,7 @@ where
         Ok(self.lerp_impl(end, weight))
     }
 
-    /// Returns the midpoint between a float [`Vector`] and a parameter [`Vector`].
+    /// Returns the midpoint between a real, floating point number [`Vector`] and a parameter [`Vector`].
     ///
     /// This vector is defined as the [linear interpolant](#method.lerp) with `weight` = 0.5.
     ///
@@ -1143,7 +1144,7 @@ where
         self.lerp_impl(end, num::cast(0.5).unwrap())
     }
 
-    /// Returns the vector magnitude for a float [`Vector`].
+    /// Returns the vector magnitude for a real, floating point number [`Vector`].
     ///
     /// # Examples
     ///
@@ -1175,7 +1176,8 @@ where
         x.sqrt()
     }
 
-    /// Returns a new, normalized unit [`Vector`].
+    /// Returns a new, normalized unit [`Vector`] from a real,
+    /// floating point number calling [`Vector`].
     ///
     /// # Examples
     ///
@@ -1213,7 +1215,7 @@ where
         Self { components: new_components }
     }
 
-    /// Normalizes a float [`Vector`] to a unit [`Vector`] in place.
+    /// Normalizes a real, floating point number [`Vector`] to a unit [`Vector`] in place.
     ///
     /// # Examples
     ///
