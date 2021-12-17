@@ -1664,7 +1664,6 @@ impl_vector_complex_float_partialeq_from!(f64);
 // ======================================================
 //
 // approx crate float approximate equivalence trait impl
-
 // AbsDiffEq, RelativeEq, UlpsEq traits
 //
 // ======================================================
@@ -1743,7 +1742,7 @@ macro_rules! impl_vector_complex_float_absdiffeq_from {
 impl_vector_complex_float_absdiffeq_from!(f32);
 impl_vector_complex_float_absdiffeq_from!(f64);
 
-// approx::RelativeEq trait impl
+// approx::RelativeEq trait impl for floating point data types
 macro_rules! impl_vector_float_relativeeq_from {
     ($FloatTyp: ty, $doc: expr) => {
         impl<const N: usize> RelativeEq for Vector<$FloatTyp, N> {
@@ -1780,6 +1779,47 @@ macro_rules! impl_vector_float_relativeeq_from {
 
 impl_vector_float_relativeeq_from!(f32);
 impl_vector_float_relativeeq_from!(f64);
+
+// approx::RelativeEq trait impl for floating point data types
+macro_rules! impl_vector_complex_float_relativeeq_from {
+    ($FloatTyp: ty, $doc: expr) => {
+        impl<const N: usize> RelativeEq for Vector<Complex<$FloatTyp>, N> {
+            fn default_max_relative() -> $FloatTyp {
+                <$FloatTyp>::default_max_relative()
+            }
+
+            fn relative_eq(
+                &self,
+                other: &Self,
+                epsilon: Self::Epsilon,
+                max_relative: Self::Epsilon,
+            ) -> bool {
+                for (i, item) in self.components.iter().enumerate() {
+                    // compare the real and imaginary parts for eq
+                    if !<$FloatTyp>::relative_eq(&item.re, &other[i].re, epsilon, max_relative)
+                        || !<$FloatTyp>::relative_eq(&item.im, &other[i].im, epsilon, max_relative)
+                    {
+                        return false;
+                    }
+                }
+                true
+            }
+        }
+    };
+    ($FloatTyp: ty) => {
+        impl_vector_complex_float_relativeeq_from!(
+            $FloatTyp,
+            concat!(
+                "approx::RelativeEq trait implementation for `Vector<Complex<",
+                stringify!($FloatTyp),
+                ">, N>`"
+            )
+        );
+    };
+}
+
+impl_vector_complex_float_relativeeq_from!(f32);
+impl_vector_complex_float_relativeeq_from!(f64);
 
 // approx::UlpsEq trait impl
 macro_rules! impl_vector_float_ulpseq_from {
@@ -4373,6 +4413,119 @@ mod tests {
         // unless we adjust the acceptable max relative diff
         assert!(v1.relative_eq(
             &v_not_close_enough,
+            f64::default_epsilon(),
+            f64::default_epsilon() * 2.
+        ));
+
+        // near zero use the absolute diff vs. epsilon comparisons
+        assert!(v_zero.relative_eq(&v_zero_eq, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v_zero.relative_eq(&v_zero_neg_eq, f64::default_epsilon(), f64::default_epsilon()));
+        // considered eq when within epsilon of zero
+        assert!(v_zero.relative_eq(&v_zero_close, f64::default_epsilon(), f64::default_epsilon()));
+        // considered ne when we decrease the epsilon definition below the diff from zero
+        assert!(!v_zero.relative_eq(
+            &v_zero_close,
+            f64::default_epsilon() / 2.,
+            f64::default_epsilon()
+        ));
+
+        assert!(!v_nan.relative_eq(&v_nan_diff, f64::default_epsilon(), f64::default_epsilon()));
+
+        assert!(v_inf_pos.relative_eq(
+            &v_inf_pos_eq,
+            f64::default_epsilon(),
+            f64::default_epsilon()
+        ));
+        assert!(v_inf_neg.relative_eq(
+            &v_inf_neg_eq,
+            f64::default_epsilon(),
+            f64::default_epsilon()
+        ));
+        assert!(!v_inf_pos.relative_eq(&v_inf_neg, f64::default_epsilon(), f64::default_epsilon()));
+    }
+
+    #[test]
+    fn vector_trait_relativeeq_complex_f64() {
+        let v1 = Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 1.1), Complex::new(3.3, 4.4)]);
+        let v2 = Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 1.1), Complex::new(3.3, 4.4)]);
+        let v_eq =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 1.1), Complex::new(3.3, 4.4)]);
+        let v_diff_re =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.3, 1.1), Complex::new(3.3, 4.4)]);
+        let v_diff_im =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.4), Complex::new(3.3, 4.4)]);
+        let v_close = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1 + (f64::EPSILON), 1.1),
+            Complex::new(3.3, 4.4),
+        ]);
+        let v_not_close_enough_re = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1 + (f64::EPSILON * 2.), 1.1),
+            Complex::new(3.3, 4.4),
+        ]);
+
+        let v_not_close_enough_im = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1, 1.1 - (f64::EPSILON * 2.)),
+            Complex::new(3.3, 4.4),
+        ]);
+
+        let v_zero = Vector::<Complex<f64>, 2>::zero();
+        let v_zero_eq = Vector::<Complex<f64>, 2>::zero();
+        let v_zero_neg_eq =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-0.0, -0.0), Complex::new(-0.0, -0.0)]);
+        let v_zero_close = Vector::<Complex<f64>, 2>::from([
+            Complex::new(0.0 + f64::EPSILON, -0.0),
+            Complex::new(-0.0, -0.0),
+        ]);
+
+        let v_nan =
+            Vector::<Complex<f64>, 2>::from([Complex::new(f64::NAN, 0.0), Complex::new(1.0, 2.0)]);
+        let v_nan_diff =
+            Vector::<Complex<f64>, 2>::from([Complex::new(f64::NAN, 0.0), Complex::new(1.0, 2.0)]);
+
+        let v_inf_pos = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::INFINITY, 0.0),
+            Complex::new(0.0, f64::INFINITY),
+        ]);
+        let v_inf_pos_eq = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::INFINITY, 0.0),
+            Complex::new(0.0, f64::INFINITY),
+        ]);
+        let v_inf_neg = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::NEG_INFINITY, 0.0),
+            Complex::new(0.0, f64::NEG_INFINITY),
+        ]);
+        let v_inf_neg_eq = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::NEG_INFINITY, 0.0),
+            Complex::new(0.0, f64::NEG_INFINITY),
+        ]);
+
+        assert!(v1.relative_eq(&v_eq, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v_eq.relative_eq(&v1, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v2.relative_eq(&v_eq, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v1.relative_eq(&v2, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(!v1.relative_eq(&v_diff_re, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(!v1.relative_eq(&v_diff_im, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v1.relative_eq(&v_close, f64::default_epsilon(), f64::default_epsilon()));
+        // when difference is epsilon multiplied by a factor of 2,
+        // we are outside of the relative diff bounds
+        assert!(!v1.relative_eq(
+            &v_not_close_enough_re,
+            f64::default_epsilon(),
+            f64::default_epsilon()
+        ));
+        assert!(!v1.relative_eq(
+            &v_not_close_enough_im,
+            f64::default_epsilon(),
+            f64::default_epsilon()
+        ));
+        // unless we adjust the acceptable max relative diff
+        assert!(v1.relative_eq(
+            &v_not_close_enough_re,
+            f64::default_epsilon(),
+            f64::default_epsilon() * 2.
+        ));
+        assert!(v1.relative_eq(
+            &v_not_close_enough_im,
             f64::default_epsilon(),
             f64::default_epsilon() * 2.
         ));
