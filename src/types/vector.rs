@@ -3480,10 +3480,15 @@ mod tests {
     fn vector_trait_index_access() {
         let v1 = Vector::<u32, 2>::from(&[1, 2]);
         let v2 = Vector::<f64, 2>::from(&[1.0, 2.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
         assert_eq!(v1[0], 1);
         assert_eq!(v1[1], 2);
         assert_relative_eq!(v2[0], 1.0);
         assert_relative_eq!(v2[1], 2.0);
+        assert_eq!(v3[0].re, 1);
+        assert_eq!(v3[0].im, 2);
+        assert_eq!(v3[1].re, 3);
+        assert_eq!(v3[1].im, 4);
     }
 
     #[test]
@@ -3516,14 +3521,19 @@ mod tests {
     fn vector_trait_index_assignment() {
         let mut v1 = Vector::<u32, 2>::from(&[1, 2]);
         let mut v2 = Vector::<f64, 2>::from(&[1.0, 2.0]);
+        let mut v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
         v1[0] = 5;
         v1[1] = 6;
         v2[0] = 5.0;
         v2[1] = 6.0;
+        v3[0].re = 4;
+        v3[0].im = 5;
         assert_eq!(v1[0], 5);
         assert_eq!(v1[1], 6);
         assert_relative_eq!(v2[0], 5.0);
         assert_relative_eq!(v2[1], 6.0);
+        assert_eq!(v3[0].re, 4);
+        assert_eq!(v3[0].im, 5);
     }
 
     // ===================================
