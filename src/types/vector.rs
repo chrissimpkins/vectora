@@ -3721,12 +3721,17 @@ mod tests {
         assert_eq!(v4[1], 4);
         assert_eq!(v4[2], 6);
 
-        // empty iterable test
+        // empty iterable tests
         let v5: Vector<i32, 3> = [].into_iter().collect();
         assert_eq!(v5.components.len(), 3);
         assert_eq!(v5[0], 0 as i32);
         assert_eq!(v5[1], 0 as i32);
         assert_eq!(v5[2], 0 as i32);
+
+        let v6: Vector<Complex<i32>, 2> = [].into_iter().collect();
+        assert_eq!(v6.components.len(), 2);
+        assert_eq!(v6[0], Complex::new(0 as i32, 0 as i32));
+        assert_eq!(v6[1], Complex::new(0 as i32, 0 as i32));
     }
 
     // ================================
