@@ -1608,6 +1608,59 @@ impl_vector_complex_int_partialeq_from!(i32);
 impl_vector_complex_int_partialeq_from!(i64);
 impl_vector_complex_int_partialeq_from!(i128);
 
+/// PartialEq trait implementation for [`Vector`] of [`Complex`] numbers with
+/// floating point real and imaginary parts.
+///
+/// These comparisons establish the symmetry and transitivity relationships
+/// required for the partial equivalence relation definition with floating point
+/// types.  
+///
+/// Note:
+///
+/// - Negative zero to positive zero comparisons are considered equal.
+/// - Positive infinity to positive infinity comparisons are considered equal.
+/// - Negative infinity to negative infinity comparisons are considered equal.
+/// - NaN comparisons are considered not equal.
+///
+/// This approach uses the default approx crate relative epsilon float equality testing implementation.
+/// This equivalence relation implementation is based on the approach described in
+/// [Comparing Floating Point Numbers, 2012 Edition](https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/)
+macro_rules! impl_vector_complex_float_partialeq_from {
+    ($FloatTyp: ty, $doc: expr) => {
+        impl<const N: usize> PartialEq<Vector<Complex<$FloatTyp>, N>>
+            for Vector<Complex<$FloatTyp>, N>
+        {
+            #[doc = $doc]
+            fn eq(&self, other: &Self) -> bool {
+                for (i, item) in self.components.iter().enumerate() {
+                    // uses default approx crate epsilon and max relative
+                    // diff = epsilon value parameter definitions
+                    if !Relative::default().eq(&item.re, &other[i].re)
+                        || !Relative::default().eq(&item.im, &other[i].im)
+                    {
+                        return false;
+                    }
+                }
+
+                true
+            }
+        }
+    };
+    ($FloatTyp: ty) => {
+        impl_vector_complex_float_partialeq_from!(
+            $FloatTyp,
+            concat!(
+                "PartialEq trait implementation for `Vector<Complex<",
+                stringify!($FloatTyp),
+                ">, N>`"
+            )
+        );
+    };
+}
+
+impl_vector_complex_float_partialeq_from!(f32);
+impl_vector_complex_float_partialeq_from!(f64);
+
 // ======================================================
 //
 // approx crate float approximate equivalence trait impl
@@ -4038,6 +4091,66 @@ mod tests {
         assert!(v2 == v_eq);
         assert!(v1 == v2); // transitivity
         assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_trait_partial_eq_complex_f64() {
+        let v1 = Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(2.2, 3.3)]);
+        let v2 = Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(2.2, 3.3)]);
+        let v_eq =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(2.2, 3.3)]);
+        let v_diff_re =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(3.3, 3.3)]);
+        let v_diff_im =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(2.2, 4.4)]);
+        let v_diff_re_im =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(3.3, 4.4)]);
+
+        let v_close = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1 + (f64::EPSILON * 2.), 2.2),
+            Complex::new(2.2, 3.3),
+        ]);
+
+        let v_zero = Vector::<Complex<f64>, 2>::zero();
+        let v_zero_eq = Vector::<Complex<f64>, 2>::zero();
+        let v_zero_neg_eq =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-0.0, -0.0), Complex::new(-0.0, -0.0)]);
+
+        let v_nan =
+            Vector::<Complex<f64>, 2>::from([Complex::new(f64::NAN, 1.0), Complex::new(2.0, 3.0)]);
+        let v_nan_diff =
+            Vector::<Complex<f64>, 2>::from([Complex::new(f64::NAN, 1.0), Complex::new(2.0, 3.0)]);
+
+        let v_inf_pos = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::INFINITY, 0.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let v_inf_pos_eq = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::INFINITY, 0.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let v_inf_neg = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::NEG_INFINITY, 0.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let v_inf_neg_eq = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::NEG_INFINITY, 0.0),
+            Complex::new(3.0, 4.0),
+        ]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff_re);
+        assert!(v1 != v_diff_im);
+        assert!(v1 != v_diff_re_im);
+        assert!(v1 != v_close);
+        assert!(v_zero == v_zero_eq);
+        assert!(v_zero == v_zero_neg_eq); // zero and neg zero are defined as equivalent
+        assert!(v_nan != v_nan_diff); // NaN comparisons are defined as different
+        assert!(v_inf_pos == v_inf_pos_eq); // postive infinity comparisons are defined as equivalent
+        assert!(v_inf_neg == v_inf_neg_eq); // negative infinity comparisons are defined as equivalent
     }
 
     // ======================================================
