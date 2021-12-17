@@ -3545,6 +3545,7 @@ mod tests {
     fn vector_trait_intoiterator_ref() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
 
         let mut i: usize = 0;
         for x in &v1 {
@@ -3567,12 +3568,23 @@ mod tests {
             }
             i += 1;
         }
+
+        let mut i: usize = 0;
+        for x in &v3 {
+            match i {
+                0 => assert_eq!(x, &Complex::new(1, 2)),
+                1 => assert_eq!(x, &Complex::new(3, 4)),
+                _ => unimplemented!(),
+            }
+            i += 1;
+        }
     }
 
     #[test]
     fn vector_trait_intoiterator_mut_ref() {
         let mut v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let mut v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let mut v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
 
         let mut i: usize = 0;
         for x in &mut v1 {
@@ -3595,12 +3607,23 @@ mod tests {
             }
             i += 1;
         }
+
+        let mut i: usize = 0;
+        for x in &mut v3 {
+            match i {
+                0 => assert_eq!(x, &mut Complex::new(1, 2)),
+                1 => assert_eq!(x, &mut Complex::new(3, 4)),
+                _ => unimplemented!(),
+            }
+            i += 1;
+        }
     }
 
     #[test]
     fn vector_trait_intoiterator_owned() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
 
         let mut i: usize = 0;
         for x in v1 {
@@ -3623,14 +3646,27 @@ mod tests {
             }
             i += 1;
         }
+
+        let mut i: usize = 0;
+        for x in v3 {
+            match i {
+                0 => assert_eq!(x, Complex::new(1, 2)),
+                1 => assert_eq!(x, Complex::new(3, 4)),
+                _ => unimplemented!(),
+            }
+            i += 1;
+        }
     }
 
     #[test]
     fn vector_method_iter() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
         let mut v1_iter = v1.iter();
         let mut v2_iter = v2.iter();
+        let mut v3_iter = v3.iter();
 
         assert_eq!(v1_iter.next().unwrap(), &1);
         assert_eq!(v1_iter.next().unwrap(), &2);
@@ -3641,6 +3677,10 @@ mod tests {
         assert_relative_eq!(v2_iter.next().unwrap(), &2.0);
         assert_relative_eq!(v2_iter.next().unwrap(), &3.0);
         assert_eq!(v2_iter.next(), None);
+
+        assert_eq!(v3_iter.next().unwrap(), &Complex::new(1, 2));
+        assert_eq!(v3_iter.next().unwrap(), &Complex::new(3, 4));
+        assert_eq!(v3_iter.next(), None);
     }
 
     // ==================================
