@@ -8,7 +8,7 @@ use std::{
 };
 
 use approx::{AbsDiffEq, Relative, RelativeEq, UlpsEq};
-use num::{Float, Num};
+use num::{Complex, Float, Num};
 
 use crate::errors::VectorError;
 
@@ -1561,6 +1561,52 @@ macro_rules! impl_vector_float_partialeq_from {
 
 impl_vector_float_partialeq_from!(f32);
 impl_vector_float_partialeq_from!(f64);
+
+/// PartialEq trait implementation for [`Vector`] of [`num:Complex`] filled with
+/// integer real and imaginary part data.
+///
+/// These comparisons establish the symmetry and transitivity relationships
+/// required for the partial equivalence relation definition with complex numbers
+/// with integer real and imaginary part types.
+///
+/// Note:
+///
+/// - Negative zero to positive zero comparisons are considered equal.
+macro_rules! impl_vector_complex_int_partialeq_from {
+    ($IntTyp: ty, $doc: expr) => {
+        impl<const N: usize> PartialEq<Vector<Complex<$IntTyp>, N>>
+            for Vector<Complex<$IntTyp>, N>
+        {
+            #[doc = $doc]
+            fn eq(&self, other: &Self) -> bool {
+                self.components == other.components
+            }
+        }
+    };
+    ($IntTyp: ty) => {
+        impl_vector_complex_int_partialeq_from!(
+            $IntTyp,
+            concat!(
+                "PartialEq trait implementation for `Vector<Complex<",
+                stringify!($IntTyp),
+                ">, N>`"
+            )
+        );
+    };
+}
+
+impl_vector_complex_int_partialeq_from!(usize);
+impl_vector_complex_int_partialeq_from!(u8);
+impl_vector_complex_int_partialeq_from!(u16);
+impl_vector_complex_int_partialeq_from!(u32);
+impl_vector_complex_int_partialeq_from!(u64);
+impl_vector_complex_int_partialeq_from!(u128);
+impl_vector_complex_int_partialeq_from!(isize);
+impl_vector_complex_int_partialeq_from!(i8);
+impl_vector_complex_int_partialeq_from!(i16);
+impl_vector_complex_int_partialeq_from!(i32);
+impl_vector_complex_int_partialeq_from!(i64);
+impl_vector_complex_int_partialeq_from!(i128);
 
 // ======================================================
 //
@@ -3977,6 +4023,21 @@ mod tests {
         assert!(v_nan != v_nan_diff); // NaN comparisons are defined as different
         assert!(v_inf_pos == v_inf_pos_eq); // postive infinity comparisons are defined as equivalent
         assert!(v_inf_neg == v_inf_neg_eq); // negative infinity comparisons are defined as equivalent
+    }
+
+    #[test]
+    fn vector_trait_partial_eq_complex_i32() {
+        // Note: Complex types with integer real and imaginary parts are only tested with i32 data types
+        let v1 = Vector::<Complex<i32>, 2>::from([Complex::new(1, -2), Complex::new(3, 4)]);
+        let v2 = Vector::<Complex<i32>, 2>::from([Complex::new(1, -2), Complex::new(3, 4)]);
+        let v_eq = Vector::<Complex<i32>, 2>::from([Complex::new(1, -2), Complex::new(3, 4)]);
+        let v_diff = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
     }
 
     // ======================================================
