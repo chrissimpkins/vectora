@@ -683,10 +683,14 @@ where
         self
     }
 
-    /// Returns the dot product of two vectors.
+    /// Returns the dot product of two real number [`Vector`] types.
     ///
     /// The return value is a scalar with the [`Vector`] numeric
     /// type.
+    ///
+    /// Note: This method is not intended for use with [`Vector`]
+    /// **of** [`num::complex::Complex`] number types.
+    ///
     ///
     /// # Examples
     ///
@@ -3072,6 +3076,12 @@ mod tests {
     // ================================
     #[test]
     fn vector_method_dot() {
+        // Note: this method *should* support valid dot products
+        // with 2-length Vector *as* complex numbers, where item
+        // 0 is the real part and item 1 is the imaginary part;
+        // however it is not appropriate for use with Vector
+        // of complex number types (i.e. each item in the Vector
+        // is a complex number).
         let v1: Vector<i32, 3> = Vector::from([1, 3, -5]);
         let v2: Vector<i32, 3> = Vector::from([4, -2, -1]);
         let x1 = v1 * 3;
