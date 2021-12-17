@@ -2264,6 +2264,95 @@ impl_vector_from_vector!(u16, f32);
 impl_vector_from_vector!(u16, f64);
 impl_vector_from_vector!(u32, f64);
 
+/// Returns a new [`Vector`] with lossless [`Vector`] complex scalar numeric type data
+/// cast support.
+macro_rules! impl_complex_vector_from_complex_vector {
+    ($Small: ty, $Large: ty, $doc: expr) => {
+        impl<const N: usize> From<Vector<Complex<$Small>, N>> for Vector<Complex<$Large>, N> {
+            #[doc = $doc]
+            fn from(small: Vector<Complex<$Small>, N>) -> Vector<Complex<$Large>, N> {
+                let mut new_components =
+                    [Complex { re: <$Large>::default(), im: <$Large>::default() }; N];
+                let mut i = 0;
+                for small_complex_num in &small.components {
+                    new_components[i].re = small_complex_num.re as $Large;
+                    new_components[i].im = small_complex_num.im as $Large;
+                    i += 1;
+                }
+                Vector { components: new_components }
+            }
+        }
+    };
+    ($Small: ty, $Large: ty) => {
+        impl_complex_vector_from_complex_vector!(
+            $Small,
+            $Large,
+            concat!(
+                "Converts [`Complex<",
+                stringify!($Small),
+                ">`] scalar components to [`Complex<",
+                stringify!($Large),
+                ">`] losslessly."
+            )
+        );
+    };
+}
+
+// Unsigned to Unsigned
+impl_complex_vector_from_complex_vector!(u8, u16);
+impl_complex_vector_from_complex_vector!(u8, u32);
+impl_complex_vector_from_complex_vector!(u8, u64);
+impl_complex_vector_from_complex_vector!(u8, u128);
+impl_complex_vector_from_complex_vector!(u8, usize);
+impl_complex_vector_from_complex_vector!(u16, u32);
+impl_complex_vector_from_complex_vector!(u16, u64);
+impl_complex_vector_from_complex_vector!(u16, u128);
+impl_complex_vector_from_complex_vector!(u32, u64);
+impl_complex_vector_from_complex_vector!(u32, u128);
+impl_complex_vector_from_complex_vector!(u64, u128);
+
+// Signed to Signed
+impl_complex_vector_from_complex_vector!(i8, i16);
+impl_complex_vector_from_complex_vector!(i8, i32);
+impl_complex_vector_from_complex_vector!(i8, i64);
+impl_complex_vector_from_complex_vector!(i8, i128);
+impl_complex_vector_from_complex_vector!(i8, isize);
+impl_complex_vector_from_complex_vector!(i16, i32);
+impl_complex_vector_from_complex_vector!(i16, i64);
+impl_complex_vector_from_complex_vector!(i16, i128);
+impl_complex_vector_from_complex_vector!(i32, i64);
+impl_complex_vector_from_complex_vector!(i32, i128);
+impl_complex_vector_from_complex_vector!(i64, i128);
+
+// Unsigned to Signed
+impl_complex_vector_from_complex_vector!(u8, i16);
+impl_complex_vector_from_complex_vector!(u8, i32);
+impl_complex_vector_from_complex_vector!(u8, i64);
+impl_complex_vector_from_complex_vector!(u8, i128);
+impl_complex_vector_from_complex_vector!(u16, i32);
+impl_complex_vector_from_complex_vector!(u16, i64);
+impl_complex_vector_from_complex_vector!(u16, i128);
+impl_complex_vector_from_complex_vector!(u32, i64);
+impl_complex_vector_from_complex_vector!(u32, i128);
+impl_complex_vector_from_complex_vector!(u64, i128);
+
+// Signed to Float
+impl_complex_vector_from_complex_vector!(i8, f32);
+impl_complex_vector_from_complex_vector!(i8, f64);
+impl_complex_vector_from_complex_vector!(i16, f32);
+impl_complex_vector_from_complex_vector!(i16, f64);
+impl_complex_vector_from_complex_vector!(i32, f64);
+
+// Unsigned to Float
+impl_complex_vector_from_complex_vector!(u8, f32);
+impl_complex_vector_from_complex_vector!(u8, f64);
+impl_complex_vector_from_complex_vector!(u16, f32);
+impl_complex_vector_from_complex_vector!(u16, f64);
+impl_complex_vector_from_complex_vector!(u32, f64);
+
+// Float to Float
+impl_complex_vector_from_complex_vector!(f32, f64);
+
 // ================================
 //
 // Operator overloads
@@ -4861,6 +4950,49 @@ mod tests {
     }
 
     #[test]
+    fn vector_trait_from_into_complex_uint_to_complex_uint() {
+        let v_u8 = Vector::<Complex<u8>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u16 = Vector::<Complex<u16>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u32 = Vector::<Complex<u32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u64 = Vector::<Complex<u64>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
+        let v_new_16: Vector<Complex<u16>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<u16>, 2> = v_u8.into();
+        assert_eq!(v_new_16.components.len(), 2);
+        assert_eq!(v_new_16[0].re, 1 as u16);
+        assert_eq!(v_new_16[1].re, 3 as u16);
+        assert_eq!(v_new_16[0].im, 2 as u16);
+        assert_eq!(v_new_16[1].im, 4 as u16);
+
+        let _: Vector<Complex<u32>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<u32>, 2> = v_u8.into();
+
+        let _: Vector<Complex<u64>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<u64>, 2> = v_u8.into();
+
+        let _: Vector<Complex<u128>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<u128>, 2> = v_u8.into();
+
+        let _: Vector<Complex<u32>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<u32>, 2> = v_u16.into();
+
+        let _: Vector<Complex<u64>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<u64>, 2> = v_u16.into();
+
+        let _: Vector<Complex<u128>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<u128>, 2> = v_u16.into();
+
+        let _: Vector<Complex<u64>, 2> = Vector::from(v_u32);
+        let _: Vector<Complex<u64>, 2> = v_u32.into();
+
+        let _: Vector<Complex<u128>, 2> = Vector::from(v_u32);
+        let _: Vector<Complex<u128>, 2> = v_u32.into();
+
+        let _: Vector<Complex<u128>, 2> = Vector::from(v_u64);
+        let _: Vector<Complex<u128>, 2> = v_u64.into();
+    }
+
+    #[test]
     fn vector_trait_from_into_iint_to_iint() {
         let v_i8 = Vector::<i8, 3>::from(&[1, 2, 3]);
         let v_i16 = Vector::<i16, 3>::new();
@@ -4900,6 +5032,49 @@ mod tests {
 
         let _: Vector<i128, 3> = Vector::<i128, 3>::from(v_i64);
         let _: Vector<i128, 3> = v_i64.into();
+    }
+
+    #[test]
+    fn vector_trait_from_into_complex_iint_to_complex_iint() {
+        let v_i8 = Vector::<Complex<i8>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_i16 = Vector::<Complex<i16>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_i32 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_i64 = Vector::<Complex<i64>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
+        let v_new_16: Vector<Complex<i16>, 2> = Vector::from(v_i8);
+        let _: Vector<Complex<i16>, 2> = v_i8.into();
+        assert_eq!(v_new_16.components.len(), 2);
+        assert_eq!(v_new_16[0].re, 1 as i16);
+        assert_eq!(v_new_16[1].re, 3 as i16);
+        assert_eq!(v_new_16[0].im, 2 as i16);
+        assert_eq!(v_new_16[1].im, 4 as i16);
+
+        let _: Vector<Complex<i32>, 2> = Vector::from(v_i8);
+        let _: Vector<Complex<i32>, 2> = v_i8.into();
+
+        let _: Vector<Complex<i64>, 2> = Vector::from(v_i8);
+        let _: Vector<Complex<i64>, 2> = v_i8.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_i8);
+        let _: Vector<Complex<i128>, 2> = v_i8.into();
+
+        let _: Vector<Complex<i32>, 2> = Vector::from(v_i16);
+        let _: Vector<Complex<i32>, 2> = v_i16.into();
+
+        let _: Vector<Complex<i64>, 2> = Vector::from(v_i16);
+        let _: Vector<Complex<i64>, 2> = v_i16.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_i16);
+        let _: Vector<Complex<i128>, 2> = v_i16.into();
+
+        let _: Vector<Complex<i64>, 2> = Vector::from(v_i32);
+        let _: Vector<Complex<i64>, 2> = v_i32.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_i32);
+        let _: Vector<Complex<i128>, 2> = v_i32.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_i64);
+        let _: Vector<Complex<i128>, 2> = v_i64.into();
     }
 
     #[test]
@@ -4948,6 +5123,49 @@ mod tests {
     }
 
     #[test]
+    fn vector_trait_from_into_complex_uint_to_complex_iint() {
+        let v_u8 = Vector::<Complex<u8>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u16 = Vector::<Complex<u16>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u32 = Vector::<Complex<u32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u64 = Vector::<Complex<u64>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
+        let v_new_16: Vector<Complex<i16>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<i16>, 2> = v_u8.into();
+        assert_eq!(v_new_16.components.len(), 2);
+        assert_eq!(v_new_16[0].re, 1 as i16);
+        assert_eq!(v_new_16[1].re, 3 as i16);
+        assert_eq!(v_new_16[0].im, 2 as i16);
+        assert_eq!(v_new_16[1].im, 4 as i16);
+
+        let _: Vector<Complex<i32>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<i32>, 2> = v_u8.into();
+
+        let _: Vector<Complex<i64>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<i64>, 2> = v_u8.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<i128>, 2> = v_u8.into();
+
+        let _: Vector<Complex<i32>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<i32>, 2> = v_u16.into();
+
+        let _: Vector<Complex<i64>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<i64>, 2> = v_u16.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<i128>, 2> = v_u16.into();
+
+        let _: Vector<Complex<i64>, 2> = Vector::from(v_u32);
+        let _: Vector<Complex<i64>, 2> = v_u32.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_u32);
+        let _: Vector<Complex<i128>, 2> = v_u32.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_u64);
+        let _: Vector<Complex<i128>, 2> = v_u64.into();
+    }
+
+    #[test]
     fn vector_trait_from_into_uint_to_float() {
         let v_u8 = Vector::<u8, 3>::from(&[1, 2, 3]);
         let v_u16 = Vector::<u16, 3>::new();
@@ -4974,6 +5192,33 @@ mod tests {
     }
 
     #[test]
+    fn vector_trait_from_into_complex_uint_to_complex_float() {
+        let v_u8 = Vector::<Complex<u8>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u16 = Vector::<Complex<u16>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u32 = Vector::<Complex<u32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
+        let v_new_32: Vector<Complex<f32>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<f32>, 2> = v_u8.into();
+        assert_eq!(v_new_32.components.len(), 2);
+        assert_relative_eq!(v_new_32[0].re, 1.0 as f32);
+        assert_relative_eq!(v_new_32[0].im, 2.0 as f32);
+        assert_relative_eq!(v_new_32[1].re, 3.0 as f32);
+        assert_relative_eq!(v_new_32[1].im, 4.0 as f32);
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<f64>, 2> = v_u8.into();
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<f64>, 2> = v_u16.into();
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<f64>, 2> = v_u16.into();
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_u32);
+        let _: Vector<Complex<f64>, 2> = v_u32.into();
+    }
+
+    #[test]
     fn vector_trait_from_into_iint_to_float() {
         let v_i8 = Vector::<i8, 3>::from(&[1, 2, 3]);
         let v_i16 = Vector::<i16, 3>::new();
@@ -4997,6 +5242,46 @@ mod tests {
 
         let _: Vector<f64, 3> = Vector::<f64, 3>::from(v_i32);
         let _: Vector<f64, 3> = v_i32.into();
+    }
+
+    #[test]
+    fn vector_trait_from_into_complex_iint_to_complex_float() {
+        let v_i8 = Vector::<Complex<i8>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_i16 = Vector::<Complex<i16>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_i32 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
+        let v_new_32: Vector<Complex<f32>, 2> = Vector::from(v_i8);
+        let _: Vector<Complex<f32>, 2> = v_i8.into();
+        assert_eq!(v_new_32.components.len(), 2);
+        assert_relative_eq!(v_new_32[0].re, 1.0 as f32);
+        assert_relative_eq!(v_new_32[0].im, 2.0 as f32);
+        assert_relative_eq!(v_new_32[1].re, 3.0 as f32);
+        assert_relative_eq!(v_new_32[1].im, 4.0 as f32);
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_i8);
+        let _: Vector<Complex<f64>, 2> = v_i8.into();
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_i16);
+        let _: Vector<Complex<f64>, 2> = v_i16.into();
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_i16);
+        let _: Vector<Complex<f64>, 2> = v_i16.into();
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_i32);
+        let _: Vector<Complex<f64>, 2> = v_i32.into();
+    }
+
+    #[test]
+    fn vector_trait_from_into_complex_float_to_complex_float() {
+        let v_f32 =
+            Vector::<Complex<f32>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+
+        let v_new_f32: Vector<Complex<f64>, 2> = Vector::from(v_f32);
+        let _: Vector<Complex<f64>, 2> = v_f32.into();
+        assert_relative_eq!(v_new_f32[0].re, 1.0 as f64);
+        assert_relative_eq!(v_new_f32[0].im, 2.0 as f64);
+        assert_relative_eq!(v_new_f32[1].re, 3.0 as f64);
+        assert_relative_eq!(v_new_f32[1].im, 4.0 as f64);
     }
 
     #[test]
