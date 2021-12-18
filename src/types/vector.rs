@@ -5573,6 +5573,36 @@ mod tests {
         assert_eq!(v1 - (-v_zero), v1);
         assert_eq!(v_zero - v1, -v1);
         assert_eq!(-v_zero - v1, -v1);
+
+        let v1: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let v2: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(5.0, -6.0), Complex::new(-7.0, 8.0)]);
+        let v3: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]);
+        let v_zero = Vector::<Complex<f64>, 2>::zero();
+
+        assert_eq!(
+            v1 - v2,
+            Vector::<Complex<f64>, 2>::from([Complex::new(-4.0, 4.0), Complex::new(4.0, -4.0)])
+        );
+        assert_eq!(
+            v2 - v3,
+            Vector::<Complex<f64>, 2>::from([Complex::new(6.0, -8.0), Complex::new(-10.0, 12.0)])
+        );
+        assert_eq!(
+            v1 - v2 - v3,
+            Vector::<Complex<f64>, 2>::from([Complex::new(-3.0, 2.0), Complex::new(1.0, 0.0)])
+        );
+        assert_eq!((v1 - v2) - v3, v1 - v2 - v3);
+        assert_eq!(
+            v1 - (v2 - v3),
+            Vector::<Complex<f64>, 2>::from([Complex::new(-5.0, 6.0), Complex::new(7.0, -8.0)])
+        );
+        assert_eq!(v1 - v_zero, v1);
+        assert_eq!(v1 - (-v_zero), v1);
+        assert_eq!(v_zero - v1, -v1);
+        assert_eq!(-v_zero - v1, -v1);
     }
 
     #[test]
@@ -5633,6 +5663,16 @@ mod tests {
         v_zero.mut_sub(&v1);
 
         assert_eq!(v_zero, Vector::<i32, 3>::from([-1, -2, -3]));
+
+        // reset
+        let mut v1: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let v2: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(-2.0, 3.0), Complex::new(2.0, -3.0)]);
+
+        v1.mut_sub(&v2);
+
+        assert_eq!(v1, Vector::from([Complex::new(3.0, -5.0), Complex::new(-5.0, 7.0)]));
     }
 
     #[test]
