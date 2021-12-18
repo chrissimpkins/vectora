@@ -2269,6 +2269,9 @@ impl_vector_from_vector!(u16, f32);
 impl_vector_from_vector!(u16, f64);
 impl_vector_from_vector!(u32, f64);
 
+// Float to Float
+impl_vector_from_vector!(f32, f64);
+
 /// Returns a new [`Vector`] with lossless [`Vector`] complex scalar numeric type data
 /// cast support.
 macro_rules! impl_complex_vector_from_complex_vector {
@@ -5277,16 +5280,27 @@ mod tests {
     }
 
     #[test]
+    fn vector_trait_from_into_float_to_float() {
+        let v_f32 = Vector::<f32, 3>::from([1.0, 2.0, 3.0]);
+
+        let v_new_f64: Vector<f64, 3> = Vector::from(v_f32);
+        let _: Vector<f64, 3> = v_f32.into();
+        assert_relative_eq!(v_new_f64[0], 1.0 as f64);
+        assert_relative_eq!(v_new_f64[1], 2.0 as f64);
+        assert_relative_eq!(v_new_f64[2], 3.0 as f64);
+    }
+
+    #[test]
     fn vector_trait_from_into_complex_float_to_complex_float() {
         let v_f32 =
             Vector::<Complex<f32>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
 
-        let v_new_f32: Vector<Complex<f64>, 2> = Vector::from(v_f32);
+        let v_new_f64: Vector<Complex<f64>, 2> = Vector::from(v_f32);
         let _: Vector<Complex<f64>, 2> = v_f32.into();
-        assert_relative_eq!(v_new_f32[0].re, 1.0 as f64);
-        assert_relative_eq!(v_new_f32[0].im, 2.0 as f64);
-        assert_relative_eq!(v_new_f32[1].re, 3.0 as f64);
-        assert_relative_eq!(v_new_f32[1].im, 4.0 as f64);
+        assert_relative_eq!(v_new_f64[0].re, 1.0 as f64);
+        assert_relative_eq!(v_new_f64[0].im, 2.0 as f64);
+        assert_relative_eq!(v_new_f64[1].re, 3.0 as f64);
+        assert_relative_eq!(v_new_f64[1].im, 4.0 as f64);
     }
 
     #[test]
