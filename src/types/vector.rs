@@ -5442,8 +5442,10 @@ mod tests {
         assert_eq!(v1 + v2, v2 + v1);
         assert_eq!((v1 + v2) + v3, v1 + (v2 + v3));
         assert_eq!(v1 + (-v1), v_zero);
-        // TODO: uncomment when Mul trait is implemented for complex numbers
-        // assert_eq!((v1 + v2) * 10.0, (v1 * 10.0) + (v2 * 10.0));
+        assert_eq!(
+            (v1 + v2) * Complex::new(10.0, 0.0),
+            (v1 * Complex::new(10.0, 0.0)) + (v2 * Complex::new(10.0, 0.0))
+        );
     }
 
     #[test]
@@ -5716,6 +5718,15 @@ mod tests {
         assert_eq!(v1 * 1.0, v1);
         assert_eq!(v1 * -1.0, -v1);
         assert_eq!(v1 * 10.0 + v1 * 5.0, v1 * (10.0 + 5.0));
+
+        let v: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(3.0, 2.0), Complex::new(-3.0, -2.0)]);
+        let c1: Complex<f64> = Complex::new(1.0, 7.0);
+        let c2: Complex<f64> = Complex::new(0.0, 7.0);
+        let c3: Complex<f64> = Complex::new(1.0, 0.0);
+        assert_eq!(v * c1, Vector::from([Complex::new(-11.0, 23.0), Complex::new(11.0, -23.0)]));
+        assert_eq!(v * c2, Vector::from([Complex::new(-14.0, 21.0), Complex::new(14.0, -21.0)]));
+        assert_eq!(v * c3, Vector::from([Complex::new(3.0, 2.0), Complex::new(-3.0, -2.0)]));
     }
 
     #[test]
