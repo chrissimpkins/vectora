@@ -5778,6 +5778,15 @@ mod tests {
         v1.mut_mul(-1);
 
         assert_eq!(v1, -v2);
+
+        // reset
+        let mut v1: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(3.0, 2.0), Complex::new(-3.0, -2.0)]);
+        let c1: Complex<f64> = Complex::new(1.0, 7.0);
+        v1.mut_mul(c1);
+        assert_eq!(v1, Vector::from([Complex::new(-11.0, 23.0), Complex::new(11.0, -23.0)]));
+        // num::Complex supports Copy and we can use it again
+        v1.mut_mul(c1);
     }
 
     #[test]
