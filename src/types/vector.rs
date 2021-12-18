@@ -5415,6 +5415,35 @@ mod tests {
         assert_eq!((v1 + v2) + v3, v1 + (v2 + v3));
         assert_eq!(v1 + (-v1), v_zero);
         assert_eq!((v1 + v2) * 10.0, (v1 * 10.0) + (v2 * 10.0));
+
+        let v1: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let v2: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(5.0, -6.0), Complex::new(-7.0, 8.0)]);
+        let v3: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]);
+        let v_zero = Vector::<Complex<f64>, 2>::zero();
+
+        assert_eq!(
+            v1 + v2,
+            Vector::<Complex<f64>, 2>::from([Complex::new(6.0, -8.0), Complex::new(-10.0, 12.0)])
+        );
+        assert_eq!(
+            v2 + v3,
+            Vector::<Complex<f64>, 2>::from([Complex::new(4.0, -4.0), Complex::new(-4.0, 4.0)])
+        );
+        assert_eq!(
+            v1 + v2 + v3,
+            Vector::<Complex<f64>, 2>::from([Complex::new(5.0, -6.0), Complex::new(-7.0, 8.0)])
+        );
+        assert_eq!(v1 + v_zero, v1);
+        assert_eq!(v_zero + v1, v1);
+        assert_eq!(-v_zero + v1, v1);
+        assert_eq!(v1 + v2, v2 + v1);
+        assert_eq!((v1 + v2) + v3, v1 + (v2 + v3));
+        assert_eq!(v1 + (-v1), v_zero);
+        // TODO: uncomment when Mul trait is implemented for complex numbers
+        // assert_eq!((v1 + v2) * 10.0, (v1 * 10.0) + (v2 * 10.0));
     }
 
     #[test]
@@ -5488,6 +5517,13 @@ mod tests {
         let v4: Vector<i32, 3> = Vector::from([4, 5, 6]);
         v1.mut_add(&v2);
         assert_eq!(v1 * 10, *(v3 * 10).mut_add(&(v4 * 10)));
+
+        // reset
+        let mut v1: Vector<Complex<i32>, 2> =
+            Vector::from([Complex::new(1, -2), Complex::new(-3, 4)]);
+        let v2: Vector<Complex<i32>, 2> = Vector::from([Complex::new(5, -6), Complex::new(-7, 8)]);
+        v1.mut_add(&v2);
+        assert_eq!(v1, Vector::from([Complex::new(6, -8), Complex::new(-10, 12)]));
     }
 
     #[test]
