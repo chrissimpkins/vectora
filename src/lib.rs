@@ -13,6 +13,7 @@
 //! - [License](#license)
 //! - [Getting Started](#getting-started)
 //!     - [Add Vectora to Your Project](#add-vectora-to-your-project)
+//!     - [Numeric Type Support](#numeric-type-support)
 //!     - [Initialization](#initialization)
 //!     - [Access and Assignment with Indexing](#access-and-assignment-with-indexing)
 //!     - [Slicing](#slicing)
@@ -25,7 +26,7 @@
 //!
 //! # About
 //!
-//! Vectora is a library for n-dimensional vector computation. It currently supports scalar integer and floating point data.
+//! Vectora is a library for n-dimensional vector computation with real and complex scalar types.
 //! The main library entry point is the [`Vector`] struct.  Please see the [Gettting Started guide](#getting-started)
 //! for a detailed library overview with examples.
 //!
@@ -96,6 +97,59 @@
 //! use vectora::Vector;
 //! ```
 //!
+//! ## Numeric Type Support
+//!
+//! This library supports computation with real and complex scalar number types.
+//!
+//! ### Integers
+//!
+//! Support is available for the following primitive integer data types:
+//!
+//! - [`i8`]
+//! - [`i16`]
+//! - [`i32`]
+//! - [`i64`]
+//! - [`i128`]
+//! - [`u8`]
+//! - [`u16`]
+//! - [`u32`]
+//! - [`u64`]
+//! - [`u128`]
+//! - [`usize`]
+//! - [`isize`]
+//!
+//! **Note**: overflowing integer arithmetic uses the default
+//! Rust standard library approach of panics in debug builds
+//! and twos complement wrapping in release builds.  You will not encounter
+//! undefined behavior with either build type, but this approach
+//! may not be what you want. Avoid these operator overloads if your use
+//! case requires support for integer overflows/underflows, and you
+//! prefer to handle it differently.
+//!
+//! ### Floating Point Numbers
+//!
+//! Support is available for the following primitive IEEE 754-2008 floating point types:
+//!
+//! - [`f32`]
+//! - [`f64`]
+//!
+//! ### Complex Numbers
+//!
+//! A 2-[`Vector`] can be used **as a** complex number with real and imaginary
+//! integer or floating point parts at indices 0 and 1.
+//!
+//! The [`Vector`] type also supports **collections of** complex numbers as
+//! represented by the [`num::Complex`] type.
+//!
+//! **Note**: This guide will not provide detailed examples with [`num::Complex`] data in order to
+//! remain as concise as possible. With the notable exception of some
+//! floating point only [`Vector`] methods, most of the public API supports
+//! the [`num::Complex`] type.  These areas should be evident in the
+//! [`Vector`] API descriptions and source trait bounds.  [`num::Complex`] support
+//! *should* be available when a general [`num::Num`] trait bound is used in
+//! implementations. In these cases, you can replace the integer or floating point
+//!  numbers in the following examples with [`num::Complex`] types.
+//!
 //! ## Initialization
 //!
 //! A [`Vector`] can have mutable values, but it cannot grow in length.  The
@@ -111,6 +165,11 @@
 //! # use vectora::Vector;
 //! let v_zero_int: Vector<i32, 3> = Vector::zero();
 //! let v_zero_float: Vector<f64, 2> = Vector::zero();
+//!
+//! // Note: the following complex number example requires an import of the `num::Complex` type!
+//! use num::Complex;
+//!
+//! let v_zero_complex: Vector<Complex<f64>, 2> = Vector::zero();
 //! ```
 //!
 //! ### With Predefined Data in Other Types
@@ -121,15 +180,21 @@
 //! ```
 //! # use vectora::Vector;
 //! // example three dimensional f64 Vector
-//! let v1: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
+//! let v: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
 //!
 //! // example two dimensional i32 Vector
-//! let v2: Vector<i32, 2> = Vector::from([4, -5]);
+//! let v: Vector<i32, 2> = Vector::from([4, -5]);
+//!
+//! // with num crate Complex numbers
+//! // Note: the following complex number example requires an import of the `num::Complex` type!
+//! use num::Complex;
+//!
+//! let v: Vector<Complex<f64>, 2> = Vector::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
 //!
 //! // with a library type alias
 //! use vectora::types::vector::Vector3dF64;
 //!
-//! let v3: Vector3dF64 = Vector::from([1.0, 2.0, 3.0]);
+//! let v: Vector3dF64 = Vector::from([1.0, 2.0, 3.0]);
 //! ```
 //!
 //! or use one of the alternate initialization approaches with data
@@ -138,23 +203,23 @@
 //! ```
 //! # use vectora::Vector;
 //! // from an iterator over an array or Vec with collect
-//! let v4: Vector<i32, 3> = [1, 2, 3].into_iter().collect();
-//! let v5: Vector<f64, 2> = vec![1.0, 2.0].into_iter().collect();
+//! let v: Vector<i32, 3> = [1, 2, 3].into_iter().collect();
+//! let v: Vector<f64, 2> = vec![1.0, 2.0].into_iter().collect();
 //!
 //! // from a slice with try_from
 //! let arr = [1, 2, 3];
 //! let vec = vec![1.0, 2.0, 3.0];
-//! let v6: Vector<i32, 3> = Vector::try_from(&arr[..]).unwrap();
-//! let v7: Vector<f64, 3> = Vector::try_from(&vec[..]).unwrap();
+//! let v: Vector<i32, 3> = Vector::try_from(&arr[..]).unwrap();
+//! let v: Vector<f64, 3> = Vector::try_from(&vec[..]).unwrap();
 //!
 //! // from a Vec with try_from
 //! let vec = vec![1, 2, 3];
-//! let v8: Vector<i32, 3> = Vector::try_from(&vec).unwrap();
+//! let v: Vector<i32, 3> = Vector::try_from(&vec).unwrap();
 //! ```
 //!
 //! Please see the API docs for the approach to overflows and underflows with the
 //! [`FromIterator`](types/vector/struct.Vector.html#impl-FromIterator<T>)
-//! implementation that supports the `collect` approach.
+//! trait implementation that supports the `collect` approach.
 //!
 //! ## Access and Assignment with Indexing
 //!
@@ -218,16 +283,30 @@
 //! ## Partial Equivalence Testing
 //!
 //! Partial equivalence relation support is available with the `==` operator
-//! for integer and float numeric types.
+//! for integer, floating point, and [`num::Complex`] numeric types.
 //!
 //! ### Integer types
 //!
+//! [`Vector`] of real integer values:
+//!
 //! ```
 //! # use vectora::Vector;
-//! let a: Vector<i32, 3> = Vector::from([10, 50, 100]);
-//! let b: Vector<i32, 3> = Vector::from([5*2, 25+25, 10_i32.pow(2)]);
+//! let v1: Vector<i32, 3> = Vector::from([10, 50, 100]);
+//! let v2: Vector<i32, 3> = Vector::from([5*2, 25+25, 10_i32.pow(2)]);
 //!
-//! assert!(a == b);
+//! assert!(v1 == v2);
+//! ```
+//!
+//! [`Vector`] of [`num::Complex`] numbers with integer real and imaginary parts:
+//!
+//! ```
+//! # use vectora::Vector;
+//! use num::Complex;
+//!
+//! let v1: Vector<Complex<i32>, 2> = Vector::from([Complex::new(1, 2), Complex::new(3, 4)]);
+//! let v2: Vector<Complex<i32>, 2> = Vector::from([Complex::new(1, 2), Complex::new(3, 4)]);
+//!
+//! assert!(v1 == v2);
 //! ```
 //!
 //! ### Float types
@@ -248,16 +327,30 @@
 //! assert!(0.15_f64 + 0.15_f64 == 0.1_f64 + 0.2_f64);
 //! ```
 //!
-//! You likely want these float sums to compare as approximately equivalent.
+//! You likely want these floating point sums to compare as approximately equivalent.
 //!
-//! With the [`Vector`] type, they do:
+//! With the [`Vector`] type, they do.
+//!
+//! [`Vector`] of floating point values:
 //!
 //! ```
 //! # use vectora::Vector;
-//! let a: Vector<f64, 1> = Vector::from([0.15 + 0.15]);
-//! let b: Vector<f64, 1> = Vector::from([0.1 + 0.2]);
+//! let v1: Vector<f64, 1> = Vector::from([0.15 + 0.15]);
+//! let v2: Vector<f64, 1> = Vector::from([0.1 + 0.2]);
 //!
-//! assert!(a == b);
+//! assert!(v1 == v2);
+//! ```
+//!
+//! [`Vector`] of [`num::Complex`] numbers with floating point real and imaginary parts:
+//!
+//! ```
+//! # use vectora::Vector;
+//! use num::Complex;
+//!
+//! let v1: Vector<Complex<f64>, 2> = Vector::from([Complex::new(0.15 + 0.15, 2.0), Complex::new(3.0, 4.0)]);
+//! let v2: Vector<Complex<f64>, 2> = Vector::from([Complex::new(0.1 + 0.2, 2.0), Complex::new(3.0, 4.0)]);
+//!
+//! assert!(v1 == v2);
 //! ```
 //!
 //! `assert_eq!` and `assert_ne!` macro assertions use the same
@@ -268,12 +361,12 @@
 //! `relative_eq!`, `relative_ne!`, `assert_relative_eq!`, and `assert_relative_ne!`
 //! macros.
 //!
-//! ### Custom equivalence relations for float types
+//! ### Custom equivalence relations for floating point types
 //!
 //! The library also provides method support for absolute, relative, and units in last place (ULPs)
-//! partial equivalence relations. These methods allow custom epsilon, max relative, and max ULPs
-//! difference tolerances to define relations when float data are near and far apart.  You must
-//! call the method to use them.  It is not possible to modify the default approach used in the
+//! approximate floating point equivalence relations. These methods allow custom epsilon, max relative,
+//! and max ULPs difference tolerances to define relations when float data are near and far apart.  You
+//! must call the method to use them.  It is not possible to modify the default approach used in the
 //! `==` operator overload.
 //!
 //! See the API documentation for [`Vector`] implementations of the `approx` crate `AbsDiffEq`, `RelativeEq`,
@@ -285,6 +378,8 @@
 //!
 //! - [`Vector::abs_diff_eq`](types/vector/struct.Vector.html#impl-AbsDiffEq<Vector<f32%2C%20N>>) (`f32`)
 //! - [`Vector::abs_diff_eq`](types/vector/struct.Vector.html#impl-AbsDiffEq<Vector<f64%2C%20N>>) (`f64`)
+//! - [`Vector::abs_diff_eq`](types/vector/struct.Vector.html#impl-AbsDiffEq<Vector<Complex<f32>%2C%20N>>) (`Complex<f32>`)
+//! - [`Vector::abs_diff_eq`](types/vector/struct.Vector.html#impl-AbsDiffEq<Vector<Complex<f64>%2C%20N>>) (`Complex<f64>`)
 //!
 //! #### Relative difference equivalence relation
 //!
@@ -293,6 +388,8 @@
 //!
 //! - [`Vector::relative_eq`](types/vector/struct.Vector.html#impl-RelativeEq<Vector<f32%2C%20N>>) (`f32`)
 //! - [`Vector::relative_eq`](types/vector/struct.Vector.html#impl-RelativeEq<Vector<f64%2C%20N>>) (`f64`)
+//! - [`Vector::relative_eq`](types/vector/struct.Vector.html#impl-RelativeEq<Vector<Complex<f32>%2C%20N>>) (`Complex<f32>`)
+//! - [`Vector::relative_eq`](types/vector/struct.Vector.html#impl-RelativeEq<Vector<Complex<f64>%2C%20N>>) (`Complex<f64>`)
 //!
 //! #### Units in Last Place (ULPs) difference equivalence relation
 //!
@@ -301,10 +398,12 @@
 //!
 //! - [`Vector::ulps_eq`](types/vector/struct.Vector.html#impl-UlpsEq<Vector<f32%2C%20N>>) (`f32`)
 //! - [`Vector::ulps_eq`](types/vector/struct.Vector.html#impl-UlpsEq<Vector<f64%2C%20N>>) (`f64`)
+//! - [`Vector::ulps_eq`](types/vector/struct.Vector.html#impl-UlpsEq<Vector<Complex<f32>%2C%20N>>) (`Complex<f32>`)
+//! - [`Vector::ulps_eq`](types/vector/struct.Vector.html#impl-UlpsEq<Vector<Complex<f64>%2C%20N>>) (`Complex<f64>`)
 //!
 //! ## Iteration and Loops
 //!
-//! ### Over immutable scalar component references
+//! ### Over immutable scalar references
 //!
 //! ```
 //! # use vectora::Vector;
@@ -327,7 +426,7 @@
 //! }
 //! ```
 //!
-//! ### Over mutable scalar component references
+//! ### Over mutable scalar references
 //!
 //! ```
 //! # use vectora::Vector;
@@ -350,7 +449,7 @@
 //! }
 //! ```
 //!
-//! ### Over mutable scalar component values
+//! ### Over mutable scalar values
 //!
 //! ```
 //! # use vectora::Vector;
@@ -428,17 +527,37 @@
 //! assert_eq!(v4, Vector::from([-4.0, -5.0, -6.0]));
 //! ```
 //!
-//! Please note that overflowing integer arithmetic uses the default
-//! Rust standard library approach of panics in debug builds
-//! and twos complement wrapping in release builds.  You will not encounter
-//! undefined behavior with either build type, but this approach
-//! may not be what you want. Avoid these operator overloads if your use
-//! case requires support for integer overflows/underflows, and you
-//! prefer to handle it differently.
+//! #### Scalar multiplication with [`num::Complex`] numbers
+//!
+//! [`Vector`] of [`num::Complex`] types support multiplication with
+//! real and complex numbers.
+//!
+//! ##### [`num::Complex`] * real
+//!
+//! ```
+//! # use vectora::Vector;
+//! use num::Complex;
+//!
+//! let v: Vector<Complex<i32>, 2> = Vector::from([Complex::new(1, 2), Complex::new(3, 4)]);
+//!
+//! assert_eq!(v * 10, Vector::<Complex<i32>, 2>::from([Complex::new(10, 20), Complex::new(30, 40)]));
+//! ```
+//!
+//! ##### [`num::Complex`] * [`num::Complex`]
+//!
+//! ```
+//! # use vectora::Vector;
+//! use num::Complex;
+//!
+//! let v: Vector<Complex<f64>, 2> = Vector::from([Complex::new(3.0, 2.0), Complex::new(-3.0, -2.0)]);
+//! let c: Complex<f64> = Complex::new(1.0, 7.0);
+//!
+//! assert_eq!(v * c, Vector::from([Complex::new(-11.0, 23.0), Complex::new(11.0, -23.0)]));
+//! ```
 //!
 //! ## Methods for Vector Operations
 //!
-//! Method support is available for other common vector calculations.
+//! Method support is available for common vector calculations.
 //! Examples of some frequently used operations are shown below:
 //!
 //! ### Dot product
