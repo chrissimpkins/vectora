@@ -377,6 +377,19 @@
 //!
 //! Use operator overloads for vector arithmetic:
 //!
+//! ### Unary Negation
+//!
+//! The unary negation operator yields the additive inverse
+//! [`Vector`]:
+//!
+//! ```
+//! # use vectora::Vector;
+//! let v: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
+//!
+//! assert_eq!(-v, Vector::from([-1.0, -2.0, -3.0]));
+//! assert_eq!(v + -v, Vector::<f64, 3>::zero());
+//! ```
+//!
 //! ### Vector Addition
 //!
 //! ```

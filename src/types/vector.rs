@@ -8,7 +8,7 @@ use std::{
 };
 
 use approx::{AbsDiffEq, Relative, RelativeEq, UlpsEq};
-use num::{Float, Num};
+use num::{Complex, Float, Num};
 
 use crate::errors::VectorError;
 
@@ -683,10 +683,14 @@ where
         self
     }
 
-    /// Returns the dot product of two vectors.
+    /// Returns the dot product of two real number [`Vector`] types.
     ///
     /// The return value is a scalar with the [`Vector`] numeric
     /// type.
+    ///
+    /// Note: This method is not intended for use with [`Vector`]
+    /// **of** [`num::complex::Complex`] number types.
+    ///
     ///
     /// # Examples
     ///
@@ -732,42 +736,6 @@ where
     /// ```
     pub fn displacement(&self, from: &Vector<T, N>) -> Self {
         self.sub(*from)
-    }
-
-    /// Returns a [`Vector`] with the same magnitude and opposite direction for
-    /// a non-zero [`Vector`].
-    ///
-    /// This operation does not change zero vectors.
-    ///
-    /// Note: This is an alias for the unary [`Vector::neg`] operation
-    /// and can be performed with the overloaded unary `-` operator.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
-    /// let v_o = v.opposite();
-    ///
-    /// assert_eq!(v_o[0], -1);
-    /// assert_eq!(v_o[1], -2);
-    /// assert_eq!(v_o[2], -3);
-    /// assert_eq!(v + v_o, Vector::zero());
-    /// ```
-    ///
-    /// The zero vector case:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let v_zero = Vector::<i32, 3>::zero();
-    /// let v_zero_o = v_zero.opposite();
-    ///
-    /// assert_eq!(v_zero_o, v_zero);
-    /// ```
-    pub fn opposite(&self) -> Self {
-        -*self
     }
 
     /// Mutates a non-zero [`Vector`] in place to one with the same magnitude and opposite direction.
@@ -999,6 +967,47 @@ where
     }
 }
 
+impl<T, const N: usize> Vector<T, N>
+where
+    T: Num + Neg<Output = T> + Default + Copy + Sync + Send,
+{
+    /// Returns a [`Vector`] with the same magnitude and opposite direction for
+    /// a non-zero [`Vector`].
+    ///
+    /// This operation does not change zero vectors.
+    ///
+    /// Note: This is an alias for the unary [`Vector::neg`] operation
+    /// and can be performed with the overloaded unary `-` operator.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
+    /// let v_o = v.opposite();
+    ///
+    /// assert_eq!(v_o[0], -1);
+    /// assert_eq!(v_o[1], -2);
+    /// assert_eq!(v_o[2], -3);
+    /// assert_eq!(v + v_o, Vector::zero());
+    /// ```
+    ///
+    /// The zero vector case:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v_zero = Vector::<i32, 3>::zero();
+    /// let v_zero_o = v_zero.opposite();
+    ///
+    /// assert_eq!(v_zero_o, v_zero);
+    /// ```
+    pub fn opposite(&self) -> Self {
+        -*self
+    }
+}
+
 // ================================
 //
 // Numeric type specific methods
@@ -1009,7 +1018,8 @@ where
     T: Float + Copy + Sync + Send + Sum,
 {
     /// Returns the magnitude of the displacement vector between the
-    /// calling float [`Vector`] and a float [`Vector`] parameter.
+    /// calling real, floating point number [`Vector`] and a real, floating
+    /// point number [`Vector`] parameter.
     ///
     /// # Examples
     ///
@@ -1038,7 +1048,7 @@ where
         (*self - *other).magnitude()
     }
 
-    /// Returns the linear interpolant between a float [`Vector`] and a
+    /// Returns the linear interpolant between a real, floating point number [`Vector`] and a
     /// parameter [`Vector`] given a parametric line equation `weight` parameter.
     ///
     /// Calculated with the parametric line equation `(1 - t)A + tB`
@@ -1102,7 +1112,7 @@ where
         Ok(self.lerp_impl(end, weight))
     }
 
-    /// Returns the midpoint between a float [`Vector`] and a parameter [`Vector`].
+    /// Returns the midpoint between a real, floating point number [`Vector`] and a parameter [`Vector`].
     ///
     /// This vector is defined as the [linear interpolant](#method.lerp) with `weight` = 0.5.
     ///
@@ -1139,7 +1149,7 @@ where
         self.lerp_impl(end, num::cast(0.5).unwrap())
     }
 
-    /// Returns the vector magnitude for a float [`Vector`].
+    /// Returns the vector magnitude for a real, floating point number [`Vector`].
     ///
     /// # Examples
     ///
@@ -1171,7 +1181,8 @@ where
         x.sqrt()
     }
 
-    /// Returns a new, normalized unit [`Vector`].
+    /// Returns a new, normalized unit [`Vector`] from a real,
+    /// floating point number calling [`Vector`].
     ///
     /// # Examples
     ///
@@ -1209,7 +1220,7 @@ where
         Self { components: new_components }
     }
 
-    /// Normalizes a float [`Vector`] to a unit [`Vector`] in place.
+    /// Normalizes a real, floating point number [`Vector`] to a unit [`Vector`] in place.
     ///
     /// # Examples
     ///
@@ -1556,15 +1567,113 @@ macro_rules! impl_vector_float_partialeq_from {
 impl_vector_float_partialeq_from!(f32);
 impl_vector_float_partialeq_from!(f64);
 
+/// PartialEq trait implementation for [`Vector`] of [`num:Complex`] filled with
+/// integer real and imaginary part data.
+///
+/// These comparisons establish the symmetry and transitivity relationships
+/// required for the partial equivalence relation definition with complex numbers
+/// with integer real and imaginary part types.
+///
+/// Note:
+///
+/// - Negative zero to positive zero comparisons are considered equal.
+macro_rules! impl_vector_complex_int_partialeq_from {
+    ($IntTyp: ty, $doc: expr) => {
+        impl<const N: usize> PartialEq<Vector<Complex<$IntTyp>, N>>
+            for Vector<Complex<$IntTyp>, N>
+        {
+            #[doc = $doc]
+            fn eq(&self, other: &Self) -> bool {
+                self.components == other.components
+            }
+        }
+    };
+    ($IntTyp: ty) => {
+        impl_vector_complex_int_partialeq_from!(
+            $IntTyp,
+            concat!(
+                "PartialEq trait implementation for `Vector<Complex<",
+                stringify!($IntTyp),
+                ">, N>`"
+            )
+        );
+    };
+}
+
+impl_vector_complex_int_partialeq_from!(usize);
+impl_vector_complex_int_partialeq_from!(u8);
+impl_vector_complex_int_partialeq_from!(u16);
+impl_vector_complex_int_partialeq_from!(u32);
+impl_vector_complex_int_partialeq_from!(u64);
+impl_vector_complex_int_partialeq_from!(u128);
+impl_vector_complex_int_partialeq_from!(isize);
+impl_vector_complex_int_partialeq_from!(i8);
+impl_vector_complex_int_partialeq_from!(i16);
+impl_vector_complex_int_partialeq_from!(i32);
+impl_vector_complex_int_partialeq_from!(i64);
+impl_vector_complex_int_partialeq_from!(i128);
+
+/// PartialEq trait implementation for [`Vector`] of [`Complex`] numbers with
+/// floating point real and imaginary parts.
+///
+/// These comparisons establish the symmetry and transitivity relationships
+/// required for the partial equivalence relation definition with floating point
+/// types.  
+///
+/// Note:
+///
+/// - Negative zero to positive zero comparisons are considered equal.
+/// - Positive infinity to positive infinity comparisons are considered equal.
+/// - Negative infinity to negative infinity comparisons are considered equal.
+/// - NaN comparisons are considered not equal.
+///
+/// This approach uses the default approx crate relative epsilon float equality testing implementation.
+/// This equivalence relation implementation is based on the approach described in
+/// [Comparing Floating Point Numbers, 2012 Edition](https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/)
+macro_rules! impl_vector_complex_float_partialeq_from {
+    ($FloatTyp: ty, $doc: expr) => {
+        impl<const N: usize> PartialEq<Vector<Complex<$FloatTyp>, N>>
+            for Vector<Complex<$FloatTyp>, N>
+        {
+            #[doc = $doc]
+            fn eq(&self, other: &Self) -> bool {
+                for (i, item) in self.components.iter().enumerate() {
+                    // uses default approx crate epsilon and max relative
+                    // diff = epsilon value parameter definitions
+                    if !Relative::default().eq(&item.re, &other[i].re)
+                        || !Relative::default().eq(&item.im, &other[i].im)
+                    {
+                        return false;
+                    }
+                }
+
+                true
+            }
+        }
+    };
+    ($FloatTyp: ty) => {
+        impl_vector_complex_float_partialeq_from!(
+            $FloatTyp,
+            concat!(
+                "PartialEq trait implementation for `Vector<Complex<",
+                stringify!($FloatTyp),
+                ">, N>`"
+            )
+        );
+    };
+}
+
+impl_vector_complex_float_partialeq_from!(f32);
+impl_vector_complex_float_partialeq_from!(f64);
+
 // ======================================================
 //
 // approx crate float approximate equivalence trait impl
-
 // AbsDiffEq, RelativeEq, UlpsEq traits
 //
 // ======================================================
 
-// approx::AbsDifEq trait impl
+// approx::AbsDiffEq trait impl for floating point data types
 macro_rules! impl_vector_float_absdiffeq_from {
     ($FloatTyp: ty, $doc: expr) => {
         impl<const N: usize> AbsDiffEq for Vector<$FloatTyp, N> {
@@ -1599,7 +1708,46 @@ macro_rules! impl_vector_float_absdiffeq_from {
 impl_vector_float_absdiffeq_from!(f32);
 impl_vector_float_absdiffeq_from!(f64);
 
-// approx::RelativeEq trait impl
+// approx::AbsDiffEq trait impl for complex numbers with floating point
+// real and imaginary part data types
+macro_rules! impl_vector_complex_float_absdiffeq_from {
+    ($FloatTyp: ty, $doc: expr) => {
+        impl<const N: usize> AbsDiffEq for Vector<Complex<$FloatTyp>, N> {
+            type Epsilon = $FloatTyp;
+
+            fn default_epsilon() -> $FloatTyp {
+                <$FloatTyp>::default_epsilon()
+            }
+
+            fn abs_diff_eq(&self, other: &Self, epsilon: Self::Epsilon) -> bool {
+                for (i, item) in self.components.iter().enumerate() {
+                    // compare the real and imaginary parts for eq
+                    if !<$FloatTyp>::abs_diff_eq(&item.re, &other[i].re, epsilon)
+                        || !<$FloatTyp>::abs_diff_eq(&item.im, &other[i].im, epsilon)
+                    {
+                        return false;
+                    }
+                }
+                true
+            }
+        }
+    };
+    ($FloatTyp: ty) => {
+        impl_vector_complex_float_absdiffeq_from!(
+            $FloatTyp,
+            concat!(
+                "approx::AbsDiffEq trait implementation for `Vector<Complex<",
+                stringify!($FloatTyp),
+                ">, N>`"
+            )
+        );
+    };
+}
+
+impl_vector_complex_float_absdiffeq_from!(f32);
+impl_vector_complex_float_absdiffeq_from!(f64);
+
+// approx::RelativeEq trait impl for floating point data types
 macro_rules! impl_vector_float_relativeeq_from {
     ($FloatTyp: ty, $doc: expr) => {
         impl<const N: usize> RelativeEq for Vector<$FloatTyp, N> {
@@ -1637,7 +1785,48 @@ macro_rules! impl_vector_float_relativeeq_from {
 impl_vector_float_relativeeq_from!(f32);
 impl_vector_float_relativeeq_from!(f64);
 
-// approx::UlpsEq trait impl
+// approx::RelativeEq trait impl for floating point data types
+macro_rules! impl_vector_complex_float_relativeeq_from {
+    ($FloatTyp: ty, $doc: expr) => {
+        impl<const N: usize> RelativeEq for Vector<Complex<$FloatTyp>, N> {
+            fn default_max_relative() -> $FloatTyp {
+                <$FloatTyp>::default_max_relative()
+            }
+
+            fn relative_eq(
+                &self,
+                other: &Self,
+                epsilon: Self::Epsilon,
+                max_relative: Self::Epsilon,
+            ) -> bool {
+                for (i, item) in self.components.iter().enumerate() {
+                    // compare the real and imaginary parts for eq
+                    if !<$FloatTyp>::relative_eq(&item.re, &other[i].re, epsilon, max_relative)
+                        || !<$FloatTyp>::relative_eq(&item.im, &other[i].im, epsilon, max_relative)
+                    {
+                        return false;
+                    }
+                }
+                true
+            }
+        }
+    };
+    ($FloatTyp: ty) => {
+        impl_vector_complex_float_relativeeq_from!(
+            $FloatTyp,
+            concat!(
+                "approx::RelativeEq trait implementation for `Vector<Complex<",
+                stringify!($FloatTyp),
+                ">, N>`"
+            )
+        );
+    };
+}
+
+impl_vector_complex_float_relativeeq_from!(f32);
+impl_vector_complex_float_relativeeq_from!(f64);
+
+// approx::UlpsEq trait impl for floating point types
 macro_rules! impl_vector_float_ulpseq_from {
     ($FloatTyp: ty, $doc: expr) => {
         impl<const N: usize> UlpsEq for Vector<$FloatTyp, N> {
@@ -1669,6 +1858,43 @@ macro_rules! impl_vector_float_ulpseq_from {
 
 impl_vector_float_ulpseq_from!(f32);
 impl_vector_float_ulpseq_from!(f64);
+
+// approx::UlpsEq trait impl for complex numbers with floating point
+// real and imaginary parts
+macro_rules! impl_vector_complex_float_ulpseq_from {
+    ($FloatTyp: ty, $doc: expr) => {
+        impl<const N: usize> UlpsEq for Vector<Complex<$FloatTyp>, N> {
+            fn default_max_ulps() -> u32 {
+                <$FloatTyp>::default_max_ulps()
+            }
+
+            fn ulps_eq(&self, other: &Self, epsilon: Self::Epsilon, max_ulps: u32) -> bool {
+                for (i, item) in self.components.iter().enumerate() {
+                    // compare the real and imaginary parts for eq
+                    if !<$FloatTyp>::ulps_eq(&item.re, &other[i].re, epsilon, max_ulps)
+                        || !<$FloatTyp>::ulps_eq(&item.im, &other[i].im, epsilon, max_ulps)
+                    {
+                        return false;
+                    }
+                }
+                true
+            }
+        }
+    };
+    ($FloatTyp: ty) => {
+        impl_vector_complex_float_ulpseq_from!(
+            $FloatTyp,
+            concat!(
+                "approx::UlpsEq trait implementation for `Vector<Complex<",
+                stringify!($FloatTyp),
+                ">, N>`"
+            )
+        );
+    };
+}
+
+impl_vector_complex_float_ulpseq_from!(f32);
+impl_vector_complex_float_ulpseq_from!(f64);
 
 // ================================
 //
@@ -2043,6 +2269,95 @@ impl_vector_from_vector!(u16, f32);
 impl_vector_from_vector!(u16, f64);
 impl_vector_from_vector!(u32, f64);
 
+/// Returns a new [`Vector`] with lossless [`Vector`] complex scalar numeric type data
+/// cast support.
+macro_rules! impl_complex_vector_from_complex_vector {
+    ($Small: ty, $Large: ty, $doc: expr) => {
+        impl<const N: usize> From<Vector<Complex<$Small>, N>> for Vector<Complex<$Large>, N> {
+            #[doc = $doc]
+            fn from(small: Vector<Complex<$Small>, N>) -> Vector<Complex<$Large>, N> {
+                let mut new_components =
+                    [Complex { re: <$Large>::default(), im: <$Large>::default() }; N];
+                let mut i = 0;
+                for small_complex_num in &small.components {
+                    new_components[i].re = small_complex_num.re as $Large;
+                    new_components[i].im = small_complex_num.im as $Large;
+                    i += 1;
+                }
+                Vector { components: new_components }
+            }
+        }
+    };
+    ($Small: ty, $Large: ty) => {
+        impl_complex_vector_from_complex_vector!(
+            $Small,
+            $Large,
+            concat!(
+                "Converts [`Complex<",
+                stringify!($Small),
+                ">`] scalar components to [`Complex<",
+                stringify!($Large),
+                ">`] losslessly."
+            )
+        );
+    };
+}
+
+// Unsigned to Unsigned
+impl_complex_vector_from_complex_vector!(u8, u16);
+impl_complex_vector_from_complex_vector!(u8, u32);
+impl_complex_vector_from_complex_vector!(u8, u64);
+impl_complex_vector_from_complex_vector!(u8, u128);
+impl_complex_vector_from_complex_vector!(u8, usize);
+impl_complex_vector_from_complex_vector!(u16, u32);
+impl_complex_vector_from_complex_vector!(u16, u64);
+impl_complex_vector_from_complex_vector!(u16, u128);
+impl_complex_vector_from_complex_vector!(u32, u64);
+impl_complex_vector_from_complex_vector!(u32, u128);
+impl_complex_vector_from_complex_vector!(u64, u128);
+
+// Signed to Signed
+impl_complex_vector_from_complex_vector!(i8, i16);
+impl_complex_vector_from_complex_vector!(i8, i32);
+impl_complex_vector_from_complex_vector!(i8, i64);
+impl_complex_vector_from_complex_vector!(i8, i128);
+impl_complex_vector_from_complex_vector!(i8, isize);
+impl_complex_vector_from_complex_vector!(i16, i32);
+impl_complex_vector_from_complex_vector!(i16, i64);
+impl_complex_vector_from_complex_vector!(i16, i128);
+impl_complex_vector_from_complex_vector!(i32, i64);
+impl_complex_vector_from_complex_vector!(i32, i128);
+impl_complex_vector_from_complex_vector!(i64, i128);
+
+// Unsigned to Signed
+impl_complex_vector_from_complex_vector!(u8, i16);
+impl_complex_vector_from_complex_vector!(u8, i32);
+impl_complex_vector_from_complex_vector!(u8, i64);
+impl_complex_vector_from_complex_vector!(u8, i128);
+impl_complex_vector_from_complex_vector!(u16, i32);
+impl_complex_vector_from_complex_vector!(u16, i64);
+impl_complex_vector_from_complex_vector!(u16, i128);
+impl_complex_vector_from_complex_vector!(u32, i64);
+impl_complex_vector_from_complex_vector!(u32, i128);
+impl_complex_vector_from_complex_vector!(u64, i128);
+
+// Signed to Float
+impl_complex_vector_from_complex_vector!(i8, f32);
+impl_complex_vector_from_complex_vector!(i8, f64);
+impl_complex_vector_from_complex_vector!(i16, f32);
+impl_complex_vector_from_complex_vector!(i16, f64);
+impl_complex_vector_from_complex_vector!(i32, f64);
+
+// Unsigned to Float
+impl_complex_vector_from_complex_vector!(u8, f32);
+impl_complex_vector_from_complex_vector!(u8, f64);
+impl_complex_vector_from_complex_vector!(u16, f32);
+impl_complex_vector_from_complex_vector!(u16, f64);
+impl_complex_vector_from_complex_vector!(u32, f64);
+
+// Float to Float
+impl_complex_vector_from_complex_vector!(f32, f64);
+
 // ================================
 //
 // Operator overloads
@@ -2053,15 +2368,15 @@ impl_vector_from_vector!(u32, f64);
 
 impl<T, const N: usize> Neg for Vector<T, N>
 where
-    T: Num + Copy + Sync + Send,
+    T: Num + Neg<Output = T> + Copy + Default + Sync + Send,
 {
     type Output = Self;
 
     /// Unary negation operator overload implementation.
     fn neg(self) -> Self::Output {
-        let new_components = &mut [T::zero(); N];
+        let new_components = &mut [T::default(); N];
         for (i, x) in new_components.iter_mut().enumerate() {
-            *x = T::zero() - self[i];
+            *x = -self.components[i];
         }
         Self { components: *new_components }
     }
@@ -2123,6 +2438,7 @@ mod tests {
     use super::*;
     #[allow(unused_imports)]
     use approx::{assert_relative_eq, assert_relative_ne};
+    use num::complex::Complex;
     #[allow(unused_imports)]
     use pretty_assertions::{assert_eq, assert_ne};
 
@@ -2581,6 +2897,28 @@ mod tests {
     }
 
     #[test]
+    fn vector_instantiation_complex_i32() {
+        let c1 = Complex::new(10_i32, 20_i32);
+        let c2 = Complex::new(3_i32, -4_i32);
+        let v: Vector<Complex<i32>, 2> = Vector::from([c1, c2]);
+        assert_eq!(v[0].re, 10_i32);
+        assert_eq!(v[0].im, 20_i32);
+        assert_eq!(v[1].re, 3_i32);
+        assert_eq!(v[1].im, -4_i32);
+    }
+
+    #[test]
+    fn vector_instantiation_complex_f64() {
+        let c1 = Complex::new(10.0_f64, 20.0_f64);
+        let c2 = Complex::new(3.1_f64, -4.2_f64);
+        let v: Vector<Complex<f64>, 2> = Vector::from([c1, c2]);
+        assert_relative_eq!(v[0].re, 10.0_f64);
+        assert_relative_eq!(v[0].im, 20.0_f64);
+        assert_relative_eq!(v[1].re, 3.1_f64);
+        assert_relative_eq!(v[1].im, -4.2_f64);
+    }
+
+    #[test]
     fn vector_instantiation_default_u32() {
         // Two dimension
         let v = Vector::<u32, 2>::default();
@@ -2610,6 +2948,20 @@ mod tests {
         assert_relative_eq!(v[1], 0.0 as f64);
         assert_relative_eq!(v[2], 0.0 as f64);
         assert_eq!(v.components.len(), 3);
+    }
+
+    #[test]
+    fn vector_instantiation_complex_i32_default() {
+        let v = Vector::<Complex<i32>, 2>::default();
+        assert_eq!(v[0].re, 0_i32);
+        assert_eq!(v[0].im, 0_i32);
+    }
+
+    #[test]
+    fn vector_instantiation_complex_f64_default() {
+        let v = Vector::<Complex<f64>, 2>::default();
+        assert_relative_eq!(v[0].re, 0.0_f64);
+        assert_relative_eq!(v[0].im, 0.0_f64);
     }
 
     #[test]
@@ -2667,6 +3019,17 @@ mod tests {
         handle.join().unwrap();
     }
 
+    #[test]
+    fn vector_send_sync_concurrency_complex_float() {
+        let v = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+
+        let handle = std::thread::spawn(move || {
+            println!("{:?}", v);
+        });
+
+        handle.join().unwrap();
+    }
+
     // ================================
     //
     // get method tests
@@ -2674,13 +3037,30 @@ mod tests {
     // ================================
     #[test]
     fn vector_method_get_with_value() {
-        let v1 = Vector::<u32, 2>::from(&[1, 2]);
-        let v2 = Vector::<f64, 2>::from(&[1.0, 2.0]);
+        let v1 = Vector::<u32, 2>::from([1, 2]);
+        let v2 = Vector::<f64, 2>::from([1.0, 2.0]);
         assert_eq!(v1.get(0).unwrap(), &1);
         assert_eq!(v1.get(1).unwrap(), &2);
         assert_eq!(v1.get(2), None);
         assert_relative_eq!(v2.get(0).unwrap(), &1.0);
         assert_relative_eq!(v2.get(1).unwrap(), &2.0);
+        assert_eq!(v2.get(2), None);
+    }
+
+    #[test]
+    fn vector_method_get_with_value_complex() {
+        let v1 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v2 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        assert_eq!(v1.get(0).unwrap().re, 1);
+        assert_eq!(v1.get(0).unwrap().im, 2);
+        assert_eq!(v1.get(1).unwrap().re, 3);
+        assert_eq!(v1.get(1).unwrap().im, 4);
+        assert_eq!(v1.get(2), None);
+
+        assert_relative_eq!(v2.get(0).unwrap().re, 1.0);
+        assert_relative_eq!(v2.get(0).unwrap().im, 2.0);
+        assert_relative_eq!(v2.get(1).unwrap().re, 3.0);
+        assert_relative_eq!(v2.get(1).unwrap().im, 4.0);
         assert_eq!(v2.get(2), None);
     }
 
@@ -2699,6 +3079,32 @@ mod tests {
         assert_eq!(v2.get(..2).unwrap(), &[1.0, 2.0]);
         assert_eq!(v2.get(2..).unwrap(), &[3.0, 4.0, 5.0]);
         assert_eq!(v2.get(..).unwrap(), &[1.0, 2.0, 3.0, 4.0, 5.0]);
+        assert_eq!(v2.get(4..8), None);
+    }
+
+    #[test]
+    fn vector_method_get_with_range_complex() {
+        let v1 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v2 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        assert_eq!(v1.get(0..2).unwrap(), [Complex::new(1_i32, 2_i32), Complex::new(3_i32, 4_i32)]);
+        assert_eq!(v1.get(..2).unwrap(), [Complex::new(1_i32, 2_i32), Complex::new(3_i32, 4_i32)]);
+        assert_eq!(v1.get(1..).unwrap(), [Complex::new(3_i32, 4_i32)]);
+        assert_eq!(v1.get(..).unwrap(), [Complex::new(1_i32, 2_i32), Complex::new(3_i32, 4_i32)]);
+        assert_eq!(v1.get(4..8), None);
+
+        assert_eq!(
+            v2.get(0..2).unwrap(),
+            [Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)]
+        );
+        assert_eq!(
+            v2.get(..2).unwrap(),
+            [Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)]
+        );
+        assert_eq!(v2.get(1..).unwrap(), [Complex::new(3.0_f64, 4.0_f64)]);
+        assert_eq!(
+            v2.get(..).unwrap(),
+            [Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)]
+        );
         assert_eq!(v2.get(4..8), None);
     }
 
@@ -2726,6 +3132,31 @@ mod tests {
     }
 
     #[test]
+    fn vector_method_get_mut_with_value_complex() {
+        let mut v1 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let mut v2 =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+
+        let c1 = v1.get_mut(0).unwrap();
+        assert_eq!(c1.re, 1);
+        assert_eq!(c1.im, 2);
+        c1.re = 5;
+        c1.im = 6;
+        assert_eq!(v1[0], Complex::new(5, 6));
+        assert_eq!(v1[1], Complex::new(3, 4));
+
+        let c2 = v2.get_mut(0).unwrap();
+        assert_relative_eq!(c2.re, 1.0);
+        assert_relative_eq!(c2.im, 2.0);
+        c2.re = 5.0;
+        c2.im = 6.0;
+        assert_relative_eq!(v2[0].re, 5.0);
+        assert_relative_eq!(v2[0].im, 6.0);
+        assert_relative_eq!(v2[1].re, 3.0);
+        assert_relative_eq!(v2[1].im, 4.0);
+    }
+
+    #[test]
     fn vector_method_get_mut_with_range() {
         let mut v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let mut v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
@@ -2748,6 +3179,31 @@ mod tests {
         assert_relative_eq!(v2.components[2], 3.0);
     }
 
+    #[test]
+    fn vector_method_get_mut_with_range_complex() {
+        let mut v1 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let mut v2 =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+
+        let r1 = v1.get_mut(0..2).unwrap();
+        assert_eq!(r1, [Complex::new(1, 2), Complex::new(3, 4)]);
+        r1[0].re = 5;
+        r1[0].im = 6;
+        assert_eq!(v1.components, [Complex::new(5, 6), Complex::new(3, 4)]);
+
+        let r2 = v2.get_mut(0..2).unwrap();
+        assert_relative_eq!(r2[0].re, 1.0);
+        assert_relative_eq!(r2[0].im, 2.0);
+        assert_relative_eq!(r2[1].re, 3.0);
+        assert_relative_eq!(r2[1].im, 4.0);
+        r2[0].re = 5.0;
+        r2[0].im = 6.0;
+        assert_relative_eq!(v2[0].re, 5.0);
+        assert_relative_eq!(v2[0].im, 6.0);
+        assert_relative_eq!(v2[1].re, 3.0);
+        assert_relative_eq!(v2[1].im, 4.0);
+    }
+
     // ================================
     //
     // as_* method tests
@@ -2757,32 +3213,50 @@ mod tests {
     fn vector_method_as_slice() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v4 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let _: &[u32] = v1.as_slice();
         let _: &[f64] = v2.as_slice();
+        let _: &[Complex<i32>] = v3.as_slice();
+        let _: &[Complex<f64>] = v4.as_slice();
     }
 
     #[test]
     fn vector_method_as_mut_slice() {
         let mut v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let mut v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let mut v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let mut v4 =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let _: &mut [u32] = v1.as_mut_slice();
         let _: &mut [f64] = v2.as_mut_slice();
+        let _: &mut [Complex<i32>] = v3.as_mut_slice();
+        let _: &mut [Complex<f64>] = v4.as_mut_slice();
     }
 
     #[test]
     fn vector_method_as_array() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v4 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let _: &[u32; 3] = v1.as_array();
         let _: &[f64; 3] = v2.as_array();
+        let _: &[Complex<i32>; 2] = v3.as_array();
+        let _: &[Complex<f64>; 2] = v4.as_array();
     }
 
     #[test]
     fn vector_method_as_mut_array() {
         let mut v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let mut v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let mut v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let mut v4 =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let _: &mut [u32; 3] = v1.as_mut_array();
         let _: &mut [f64; 3] = v2.as_mut_array();
+        let _: &mut [Complex<i32>; 2] = v3.as_mut_array();
+        let _: &mut [Complex<f64>; 2] = v4.as_mut_array();
     }
 
     // ================================
@@ -2794,16 +3268,24 @@ mod tests {
     fn vector_method_to_array() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v4 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let _: [u32; 3] = v1.to_array();
         let _: [f64; 3] = v2.to_array();
+        let _: [Complex<i32>; 2] = v3.to_array();
+        let _: [Complex<f64>; 2] = v4.to_array();
     }
 
     #[test]
     fn vector_method_to_vec() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v4 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let _: Vec<u32> = v1.to_vec();
         let _: Vec<f64> = v2.to_vec();
+        let _: Vec<Complex<i32>> = v3.to_vec();
+        let _: Vec<Complex<f64>> = v4.to_vec();
     }
 
     #[test]
@@ -2844,6 +3326,20 @@ mod tests {
     }
 
     #[test]
+    fn vector_to_num_cast_complex() {
+        let v = Vector::<Complex<i32>, 2>::from([Complex::new(1, 0), Complex::new(3, 4)]);
+
+        let v_i64: Vector<Complex<i64>, 2> =
+            v.to_num_cast(|x| Complex { re: x.re as i64, im: x.im as i64 });
+
+        assert!(v_i64.len() == 2);
+        assert_eq!(v_i64[0].re, 1_i64);
+        assert_eq!(v_i64[0].im, 0_i64);
+        assert_eq!(v_i64[1].re, 3_i64);
+        assert_eq!(v_i64[1].im, 4_i64);
+    }
+
+    #[test]
     fn vector_to_num_cast_safety() {
         let v = Vector::<f64, 2>::from([f64::MAX, 1.00]);
         let i8_v = v.to_num_cast(|x| x as i8);
@@ -2877,9 +3373,9 @@ mod tests {
     // ================================
     #[test]
     fn vector_method_len_is_empty() {
-        let v3 = Vector::<u32, 3>::from(&[1, 2, 3]);
+        let v = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v_empty = Vector::<u32, 0>::from(&[]);
-        assert_eq!(v3.len(), 3);
+        assert_eq!(v.len(), 3);
         assert_eq!(v_empty.len(), 0);
         assert!(v_empty.is_empty());
     }
@@ -2891,6 +3387,12 @@ mod tests {
     // ================================
     #[test]
     fn vector_method_dot() {
+        // Note: this method *should* support valid dot products
+        // with 2-length Vector *as* complex numbers, where item
+        // 0 is the real part and item 1 is the imaginary part;
+        // however it is not appropriate for use with Vector
+        // of complex number types (i.e. each item in the Vector
+        // is a complex number).
         let v1: Vector<i32, 3> = Vector::from([1, 3, -5]);
         let v2: Vector<i32, 3> = Vector::from([4, -2, -1]);
         let x1 = v1 * 3;
@@ -3116,39 +3618,80 @@ mod tests {
     fn vector_method_map_closure() {
         let v1 = Vector::<i32, 2>::from([-1, 2]);
         let v2 = Vector::<f64, 2>::from([-1.0, 2.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v4 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
 
         let square_int = |x: i32| x.pow(2);
         let square_float = |x: f64| x.powi(2);
+        let square_complex_i32 = |x: Complex<i32>| x.powi(2);
+        let square_complex_f64 = |x: Complex<f64>| x.powi(2);
 
         let v1_squared = v1.map_closure(square_int);
         let v2_squared = v2.map_closure(square_float);
+        let v3_squared = v3.map_closure(square_complex_i32);
+        let v4_squared = v4.map_closure(square_complex_f64);
 
         assert_eq!(v1_squared, Vector::<i32, 2>::from([1, 4]));
         assert_eq!(v2_squared, Vector::<f64, 2>::from([1.0, 4.0]));
 
         assert_eq!(v1, Vector::<i32, 2>::from([-1, 2]));
         assert_eq!(v2, Vector::<f64, 2>::from([-1.0, 2.0]));
+
+        // Expacted values for complex multiplication
+        // real part = (ac - bd)
+        // imaginary part = (ad + bc)
+        assert_eq!(v3_squared[0].re, -3);
+        assert_eq!(v3_squared[0].im, 4);
+        assert_eq!(v3_squared[1].re, -7);
+        assert_eq!(v3_squared[1].im, 24);
+
+        assert_relative_eq!(v4_squared[0].re, -3.0);
+        assert_relative_eq!(v4_squared[0].im, 4.0);
+        assert_relative_eq!(v4_squared[1].re, -7.0);
+        assert_relative_eq!(v4_squared[1].im, 24.0);
     }
 
     #[test]
     fn vector_method_mut_map_closure() {
         let mut v1 = Vector::<i32, 2>::from([-1, 2]);
         let mut v2 = Vector::<f64, 2>::from([-1.0, 2.0]);
+        let mut v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let mut v4 =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
 
         let square_int = |x: i32| x.pow(2);
         let square_float = |x: f64| x.powi(2);
+        let square_complex_i32 = |x: Complex<i32>| x.powi(2);
+        let square_complex_f64 = |x: Complex<f64>| x.powi(2);
 
         v1.mut_map_closure(square_int);
         v2.mut_map_closure(square_float);
+        v3.mut_map_closure(square_complex_i32);
+        v4.mut_map_closure(square_complex_f64);
 
         assert_eq!(v1, Vector::<i32, 2>::from([1, 4]));
         assert_eq!(v2, Vector::<f64, 2>::from([1.0, 4.0]));
+
+        // Expacted values for complex multiplication
+        // real part = (ac - bd)
+        // imaginary part = (ad + bc)
+        assert_eq!(v3[0].re, -3);
+        assert_eq!(v3[0].im, 4);
+        assert_eq!(v3[1].re, -7);
+        assert_eq!(v3[1].im, 24);
+
+        assert_relative_eq!(v4[0].re, -3.0);
+        assert_relative_eq!(v4[0].im, 4.0);
+        assert_relative_eq!(v4[1].re, -7.0);
+        assert_relative_eq!(v4[1].im, 24.0);
     }
 
     #[test]
     fn vector_method_map_fn() {
         let v1 = Vector::<i32, 2>::from([-1, 2]);
         let v2 = Vector::<f64, 2>::from([-1.0, 2.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v4 = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
 
         fn square_int(x: i32) -> i32 {
             x.pow(2)
@@ -3158,20 +3701,46 @@ mod tests {
             x.powi(2)
         }
 
+        fn square_complex_int(x: Complex<i32>) -> Complex<i32> {
+            x.powi(2)
+        }
+
+        fn square_complex_float(x: Complex<f64>) -> Complex<f64> {
+            x.powi(2)
+        }
+
         let v1_squared = v1.map_fn(square_int);
         let v2_squared = v2.map_fn(square_float);
+        let v3_squared = v3.map_fn(square_complex_int);
+        let v4_squared = v4.map_fn(square_complex_float);
 
         assert_eq!(v1_squared, Vector::<i32, 2>::from([1, 4]));
         assert_eq!(v2_squared, Vector::<f64, 2>::from([1.0, 4.0]));
 
         assert_eq!(v1, Vector::<i32, 2>::from([-1, 2]));
         assert_eq!(v2, Vector::<f64, 2>::from([-1.0, 2.0]));
+
+        // Expacted values for complex multiplication
+        // real part = (ac - bd)
+        // imaginary part = (ad + bc)
+        assert_eq!(v3_squared[0].re, -3);
+        assert_eq!(v3_squared[0].im, 4);
+        assert_eq!(v3_squared[1].re, -7);
+        assert_eq!(v3_squared[1].im, 24);
+
+        assert_relative_eq!(v4_squared[0].re, -3.0);
+        assert_relative_eq!(v4_squared[0].im, 4.0);
+        assert_relative_eq!(v4_squared[1].re, -7.0);
+        assert_relative_eq!(v4_squared[1].im, 24.0);
     }
 
     #[test]
     fn vector_method_mut_map_fn() {
         let mut v1 = Vector::<i32, 2>::from([-1, 2]);
         let mut v2 = Vector::<f64, 2>::from([-1.0, 2.0]);
+        let mut v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let mut v4 =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
 
         fn square_int(x: i32) -> i32 {
             x.pow(2)
@@ -3181,11 +3750,34 @@ mod tests {
             x.powi(2)
         }
 
+        fn square_complex_int(x: Complex<i32>) -> Complex<i32> {
+            x.powi(2)
+        }
+
+        fn square_complex_float(x: Complex<f64>) -> Complex<f64> {
+            x.powi(2)
+        }
+
         v1.mut_map_fn(square_int);
         v2.mut_map_fn(square_float);
+        v3.mut_map_fn(square_complex_int);
+        v4.mut_map_fn(square_complex_float);
 
         assert_eq!(v1, Vector::<i32, 2>::from([1, 4]));
         assert_eq!(v2, Vector::<f64, 2>::from([1.0, 4.0]));
+
+        // Expacted values for complex multiplication
+        // real part = (ac - bd)
+        // imaginary part = (ad + bc)
+        assert_eq!(v3[0].re, -3);
+        assert_eq!(v3[0].im, 4);
+        assert_eq!(v3[1].re, -7);
+        assert_eq!(v3[1].im, 24);
+
+        assert_relative_eq!(v4[0].re, -3.0);
+        assert_relative_eq!(v4[0].im, 4.0);
+        assert_relative_eq!(v4[1].re, -7.0);
+        assert_relative_eq!(v4[1].im, 24.0);
     }
 
     // ================================
@@ -3197,10 +3789,15 @@ mod tests {
     fn vector_trait_index_access() {
         let v1 = Vector::<u32, 2>::from(&[1, 2]);
         let v2 = Vector::<f64, 2>::from(&[1.0, 2.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
         assert_eq!(v1[0], 1);
         assert_eq!(v1[1], 2);
         assert_relative_eq!(v2[0], 1.0);
         assert_relative_eq!(v2[1], 2.0);
+        assert_eq!(v3[0].re, 1);
+        assert_eq!(v3[0].im, 2);
+        assert_eq!(v3[1].re, 3);
+        assert_eq!(v3[1].im, 4);
     }
 
     #[test]
@@ -3233,14 +3830,19 @@ mod tests {
     fn vector_trait_index_assignment() {
         let mut v1 = Vector::<u32, 2>::from(&[1, 2]);
         let mut v2 = Vector::<f64, 2>::from(&[1.0, 2.0]);
+        let mut v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
         v1[0] = 5;
         v1[1] = 6;
         v2[0] = 5.0;
         v2[1] = 6.0;
+        v3[0].re = 4;
+        v3[0].im = 5;
         assert_eq!(v1[0], 5);
         assert_eq!(v1[1], 6);
         assert_relative_eq!(v2[0], 5.0);
         assert_relative_eq!(v2[1], 6.0);
+        assert_eq!(v3[0].re, 4);
+        assert_eq!(v3[0].im, 5);
     }
 
     // ===================================
@@ -3252,6 +3854,7 @@ mod tests {
     fn vector_trait_intoiterator_ref() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
 
         let mut i: usize = 0;
         for x in &v1 {
@@ -3274,12 +3877,23 @@ mod tests {
             }
             i += 1;
         }
+
+        let mut i: usize = 0;
+        for x in &v3 {
+            match i {
+                0 => assert_eq!(x, &Complex::new(1, 2)),
+                1 => assert_eq!(x, &Complex::new(3, 4)),
+                _ => unimplemented!(),
+            }
+            i += 1;
+        }
     }
 
     #[test]
     fn vector_trait_intoiterator_mut_ref() {
         let mut v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let mut v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let mut v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
 
         let mut i: usize = 0;
         for x in &mut v1 {
@@ -3302,12 +3916,23 @@ mod tests {
             }
             i += 1;
         }
+
+        let mut i: usize = 0;
+        for x in &mut v3 {
+            match i {
+                0 => assert_eq!(x, &mut Complex::new(1, 2)),
+                1 => assert_eq!(x, &mut Complex::new(3, 4)),
+                _ => unimplemented!(),
+            }
+            i += 1;
+        }
     }
 
     #[test]
     fn vector_trait_intoiterator_owned() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
 
         let mut i: usize = 0;
         for x in v1 {
@@ -3330,14 +3955,27 @@ mod tests {
             }
             i += 1;
         }
+
+        let mut i: usize = 0;
+        for x in v3 {
+            match i {
+                0 => assert_eq!(x, Complex::new(1, 2)),
+                1 => assert_eq!(x, Complex::new(3, 4)),
+                _ => unimplemented!(),
+            }
+            i += 1;
+        }
     }
 
     #[test]
     fn vector_method_iter() {
         let v1 = Vector::<u32, 3>::from(&[1, 2, 3]);
         let v2 = Vector::<f64, 3>::from(&[1.0, 2.0, 3.0]);
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
         let mut v1_iter = v1.iter();
         let mut v2_iter = v2.iter();
+        let mut v3_iter = v3.iter();
 
         assert_eq!(v1_iter.next().unwrap(), &1);
         assert_eq!(v1_iter.next().unwrap(), &2);
@@ -3348,6 +3986,10 @@ mod tests {
         assert_relative_eq!(v2_iter.next().unwrap(), &2.0);
         assert_relative_eq!(v2_iter.next().unwrap(), &3.0);
         assert_eq!(v2_iter.next(), None);
+
+        assert_eq!(v3_iter.next().unwrap(), &Complex::new(1, 2));
+        assert_eq!(v3_iter.next().unwrap(), &Complex::new(3, 4));
+        assert_eq!(v3_iter.next(), None);
     }
 
     // ==================================
@@ -3388,12 +4030,17 @@ mod tests {
         assert_eq!(v4[1], 4);
         assert_eq!(v4[2], 6);
 
-        // empty iterable test
+        // empty iterable tests
         let v5: Vector<i32, 3> = [].into_iter().collect();
         assert_eq!(v5.components.len(), 3);
         assert_eq!(v5[0], 0 as i32);
         assert_eq!(v5[1], 0 as i32);
         assert_eq!(v5[2], 0 as i32);
+
+        let v6: Vector<Complex<i32>, 2> = [].into_iter().collect();
+        assert_eq!(v6.components.len(), 2);
+        assert_eq!(v6[0], Complex::new(0 as i32, 0 as i32));
+        assert_eq!(v6[1], Complex::new(0 as i32, 0 as i32));
     }
 
     // ================================
@@ -3641,6 +4288,81 @@ mod tests {
         assert!(v_inf_neg == v_inf_neg_eq); // negative infinity comparisons are defined as equivalent
     }
 
+    #[test]
+    fn vector_trait_partial_eq_complex_i32() {
+        // Note: Complex types with integer real and imaginary parts are only tested with i32 data types
+        let v1 = Vector::<Complex<i32>, 2>::from([Complex::new(1, -2), Complex::new(3, 4)]);
+        let v2 = Vector::<Complex<i32>, 2>::from([Complex::new(1, -2), Complex::new(3, 4)]);
+        let v_eq = Vector::<Complex<i32>, 2>::from([Complex::new(1, -2), Complex::new(3, 4)]);
+        let v_diff = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff);
+    }
+
+    #[test]
+    fn vector_trait_partial_eq_complex_f64() {
+        let v1 = Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(2.2, 3.3)]);
+        let v2 = Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(2.2, 3.3)]);
+        let v_eq =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(2.2, 3.3)]);
+        let v_diff_re =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(3.3, 3.3)]);
+        let v_diff_im =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(2.2, 4.4)]);
+        let v_diff_re_im =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(3.3, 4.4)]);
+
+        let v_close = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1 + (f64::EPSILON * 2.), 2.2),
+            Complex::new(2.2, 3.3),
+        ]);
+
+        let v_zero = Vector::<Complex<f64>, 2>::zero();
+        let v_zero_eq = Vector::<Complex<f64>, 2>::zero();
+        let v_zero_neg_eq =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-0.0, -0.0), Complex::new(-0.0, -0.0)]);
+
+        let v_nan =
+            Vector::<Complex<f64>, 2>::from([Complex::new(f64::NAN, 1.0), Complex::new(2.0, 3.0)]);
+        let v_nan_diff =
+            Vector::<Complex<f64>, 2>::from([Complex::new(f64::NAN, 1.0), Complex::new(2.0, 3.0)]);
+
+        let v_inf_pos = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::INFINITY, 0.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let v_inf_pos_eq = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::INFINITY, 0.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let v_inf_neg = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::NEG_INFINITY, 0.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let v_inf_neg_eq = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::NEG_INFINITY, 0.0),
+            Complex::new(3.0, 4.0),
+        ]);
+
+        assert!(v1 == v_eq);
+        assert!(v_eq == v1); // symmetry
+        assert!(v2 == v_eq);
+        assert!(v1 == v2); // transitivity
+        assert!(v1 != v_diff_re);
+        assert!(v1 != v_diff_im);
+        assert!(v1 != v_diff_re_im);
+        assert!(v1 != v_close);
+        assert!(v_zero == v_zero_eq);
+        assert!(v_zero == v_zero_neg_eq); // zero and neg zero are defined as equivalent
+        assert!(v_nan != v_nan_diff); // NaN comparisons are defined as different
+        assert!(v_inf_pos == v_inf_pos_eq); // postive infinity comparisons are defined as equivalent
+        assert!(v_inf_neg == v_inf_neg_eq); // negative infinity comparisons are defined as equivalent
+    }
+
     // ======================================================
     //
     // approx crate float approximate equivalence trait tests
@@ -3681,6 +4403,92 @@ mod tests {
         assert!(!v1.abs_diff_eq(&v_not_close_enough, f64::default_epsilon()));
         // unless we adjust the acceptable epsilon threshold, now we consider it eq
         assert!(v1.abs_diff_eq(&v_not_close_enough, f64::default_epsilon() * 2.));
+
+        assert!(v_zero.abs_diff_eq(&v_zero_eq, f64::default_epsilon()));
+        assert!(v_zero.abs_diff_eq(&v_zero_neg_eq, f64::default_epsilon()));
+        // we are within epsilon of zero, consider this eq
+        assert!(v_zero.abs_diff_eq(&v_zero_close, f64::default_epsilon()));
+        // but is defined as ne when we decrease epsilon value
+        assert!(!v_zero.abs_diff_eq(&v_zero_close, f64::default_epsilon() / 2.));
+
+        assert!(!v_nan.abs_diff_eq(&v_nan_diff, f64::default_epsilon()));
+
+        // note: different result than with relative eq comparison when we test
+        // infinite values
+        assert!(!v_inf_pos.abs_diff_eq(&v_inf_pos_eq, f64::default_epsilon()));
+        assert!(!v_inf_neg.abs_diff_eq(&v_inf_neg_eq, f64::default_epsilon()));
+        assert!(!v_inf_pos.abs_diff_eq(&v_inf_neg, f64::default_epsilon()));
+    }
+
+    #[test]
+    fn vector_trait_absdiffeq_complex_f64() {
+        let v1 = Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(3.3, 4.4)]);
+        let v2 = Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(3.3, 4.4)]);
+        let v_eq =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.2), Complex::new(3.3, 4.4)]);
+        let v_diff_re =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.3, 2.2), Complex::new(3.3, 4.4)]);
+        let v_diff_im =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.4), Complex::new(3.3, 4.4)]);
+        let v_close = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1 + (f64::EPSILON), 2.2),
+            Complex::new(3.3, 4.4),
+        ]);
+        let v_not_close_enough_re = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1 + (f64::EPSILON * 2.), 2.2),
+            Complex::new(3.3, 4.4),
+        ]);
+
+        let v_not_close_enough_im = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1, 2.2 + (f64::EPSILON * 2.)),
+            Complex::new(3.3, 4.4),
+        ]);
+
+        let v_zero = Vector::<Complex<f64>, 2>::zero();
+        let v_zero_eq = Vector::<Complex<f64>, 2>::zero();
+        let v_zero_neg_eq =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-0.0, -0.0), Complex::new(-0.0, -0.0)]);
+        let v_zero_close = Vector::<Complex<f64>, 2>::from([
+            Complex::new(0.0 + f64::EPSILON, -0.0),
+            Complex::new(-0.0, -0.0),
+        ]);
+
+        let v_nan =
+            Vector::<Complex<f64>, 2>::from([Complex::new(f64::NAN, 0.0), Complex::new(1.0, 2.0)]);
+        let v_nan_diff =
+            Vector::<Complex<f64>, 2>::from([Complex::new(f64::NAN, 0.0), Complex::new(1.0, 2.0)]);
+
+        let v_inf_pos = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::INFINITY, 0.0),
+            Complex::new(0.0, f64::INFINITY),
+        ]);
+        let v_inf_pos_eq = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::INFINITY, 0.0),
+            Complex::new(0.0, f64::INFINITY),
+        ]);
+        let v_inf_neg = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::NEG_INFINITY, 0.0),
+            Complex::new(0.0, f64::NEG_INFINITY),
+        ]);
+        let v_inf_neg_eq = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::NEG_INFINITY, 0.0),
+            Complex::new(0.0, f64::NEG_INFINITY),
+        ]);
+
+        assert!(v1.abs_diff_eq(&v_eq, f64::default_epsilon()));
+        assert!(v_eq.abs_diff_eq(&v1, f64::default_epsilon()));
+        assert!(v2.abs_diff_eq(&v_eq, f64::default_epsilon()));
+        assert!(v1.abs_diff_eq(&v2, f64::default_epsilon()));
+        assert!(!v1.abs_diff_eq(&v_diff_re, f64::default_epsilon()));
+        assert!(!v1.abs_diff_eq(&v_diff_im, f64::default_epsilon()));
+        assert!(v1.abs_diff_eq(&v_close, f64::default_epsilon()));
+        // when difference is epsilon multipled by a factor of 2,
+        // we are outside of the absolute diff bounds
+        assert!(!v1.abs_diff_eq(&v_not_close_enough_re, f64::default_epsilon()));
+        assert!(!v1.abs_diff_eq(&v_not_close_enough_im, f64::default_epsilon()));
+        // unless we adjust the acceptable epsilon threshold, now we consider it eq
+        assert!(v1.abs_diff_eq(&v_not_close_enough_re, f64::default_epsilon() * 2.));
+        assert!(v1.abs_diff_eq(&v_not_close_enough_im, f64::default_epsilon() * 2.));
 
         assert!(v_zero.abs_diff_eq(&v_zero_eq, f64::default_epsilon()));
         assert!(v_zero.abs_diff_eq(&v_zero_neg_eq, f64::default_epsilon()));
@@ -3768,6 +4576,119 @@ mod tests {
     }
 
     #[test]
+    fn vector_trait_relativeeq_complex_f64() {
+        let v1 = Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 1.1), Complex::new(3.3, 4.4)]);
+        let v2 = Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 1.1), Complex::new(3.3, 4.4)]);
+        let v_eq =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 1.1), Complex::new(3.3, 4.4)]);
+        let v_diff_re =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.3, 1.1), Complex::new(3.3, 4.4)]);
+        let v_diff_im =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.4), Complex::new(3.3, 4.4)]);
+        let v_close = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1 + (f64::EPSILON), 1.1),
+            Complex::new(3.3, 4.4),
+        ]);
+        let v_not_close_enough_re = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1 + (f64::EPSILON * 2.), 1.1),
+            Complex::new(3.3, 4.4),
+        ]);
+
+        let v_not_close_enough_im = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1, 1.1 - (f64::EPSILON * 2.)),
+            Complex::new(3.3, 4.4),
+        ]);
+
+        let v_zero = Vector::<Complex<f64>, 2>::zero();
+        let v_zero_eq = Vector::<Complex<f64>, 2>::zero();
+        let v_zero_neg_eq =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-0.0, -0.0), Complex::new(-0.0, -0.0)]);
+        let v_zero_close = Vector::<Complex<f64>, 2>::from([
+            Complex::new(0.0 + f64::EPSILON, -0.0),
+            Complex::new(-0.0, -0.0),
+        ]);
+
+        let v_nan =
+            Vector::<Complex<f64>, 2>::from([Complex::new(f64::NAN, 0.0), Complex::new(1.0, 2.0)]);
+        let v_nan_diff =
+            Vector::<Complex<f64>, 2>::from([Complex::new(f64::NAN, 0.0), Complex::new(1.0, 2.0)]);
+
+        let v_inf_pos = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::INFINITY, 0.0),
+            Complex::new(0.0, f64::INFINITY),
+        ]);
+        let v_inf_pos_eq = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::INFINITY, 0.0),
+            Complex::new(0.0, f64::INFINITY),
+        ]);
+        let v_inf_neg = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::NEG_INFINITY, 0.0),
+            Complex::new(0.0, f64::NEG_INFINITY),
+        ]);
+        let v_inf_neg_eq = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::NEG_INFINITY, 0.0),
+            Complex::new(0.0, f64::NEG_INFINITY),
+        ]);
+
+        assert!(v1.relative_eq(&v_eq, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v_eq.relative_eq(&v1, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v2.relative_eq(&v_eq, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v1.relative_eq(&v2, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(!v1.relative_eq(&v_diff_re, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(!v1.relative_eq(&v_diff_im, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v1.relative_eq(&v_close, f64::default_epsilon(), f64::default_epsilon()));
+        // when difference is epsilon multiplied by a factor of 2,
+        // we are outside of the relative diff bounds
+        assert!(!v1.relative_eq(
+            &v_not_close_enough_re,
+            f64::default_epsilon(),
+            f64::default_epsilon()
+        ));
+        assert!(!v1.relative_eq(
+            &v_not_close_enough_im,
+            f64::default_epsilon(),
+            f64::default_epsilon()
+        ));
+        // unless we adjust the acceptable max relative diff
+        assert!(v1.relative_eq(
+            &v_not_close_enough_re,
+            f64::default_epsilon(),
+            f64::default_epsilon() * 2.
+        ));
+        assert!(v1.relative_eq(
+            &v_not_close_enough_im,
+            f64::default_epsilon(),
+            f64::default_epsilon() * 2.
+        ));
+
+        // near zero use the absolute diff vs. epsilon comparisons
+        assert!(v_zero.relative_eq(&v_zero_eq, f64::default_epsilon(), f64::default_epsilon()));
+        assert!(v_zero.relative_eq(&v_zero_neg_eq, f64::default_epsilon(), f64::default_epsilon()));
+        // considered eq when within epsilon of zero
+        assert!(v_zero.relative_eq(&v_zero_close, f64::default_epsilon(), f64::default_epsilon()));
+        // considered ne when we decrease the epsilon definition below the diff from zero
+        assert!(!v_zero.relative_eq(
+            &v_zero_close,
+            f64::default_epsilon() / 2.,
+            f64::default_epsilon()
+        ));
+
+        assert!(!v_nan.relative_eq(&v_nan_diff, f64::default_epsilon(), f64::default_epsilon()));
+
+        assert!(v_inf_pos.relative_eq(
+            &v_inf_pos_eq,
+            f64::default_epsilon(),
+            f64::default_epsilon()
+        ));
+        assert!(v_inf_neg.relative_eq(
+            &v_inf_neg_eq,
+            f64::default_epsilon(),
+            f64::default_epsilon()
+        ));
+        assert!(!v_inf_pos.relative_eq(&v_inf_neg, f64::default_epsilon(), f64::default_epsilon()));
+    }
+
+    #[test]
     fn vector_trait_ulpseq_f64() {
         let v1 = Vector::<f64, 3>::from([-1.1, 2.2, 3.3]);
         let v2 = Vector::<f64, 3>::from([-0.1 - 1.0, 2.2, 3.3]);
@@ -3800,6 +4721,91 @@ mod tests {
         assert!(!v1.ulps_eq(&v_not_close_enough, f64::default_epsilon(), 1));
         // unless we adjust the acceptable ulps threshold
         assert!(v1.ulps_eq(&v_not_close_enough, f64::default_epsilon(), 2));
+
+        // near zero, use the epsilon value and absolute diff vs. epsilon comparisons
+        assert!(v_zero.ulps_eq(&v_zero_eq, f64::default_epsilon(), 1));
+        assert!(v_zero.ulps_eq(&v_zero_neg_eq, f64::default_epsilon(), 1));
+        // we are within epsilon of zero, consider this eq
+        assert!(v_zero.ulps_eq(&v_zero_close, f64::default_epsilon(), 1));
+        // but is defined as ne when we decrease epsilon value
+        assert!(!v_zero.ulps_eq(&v_zero_close, f64::default_epsilon() / 2., 1));
+
+        assert!(!v_nan.ulps_eq(&v_nan_diff, f64::default_epsilon(), 1));
+
+        assert!(v_inf_pos.ulps_eq(&v_inf_pos_eq, f64::default_epsilon(), 1));
+        assert!(v_inf_neg.ulps_eq(&v_inf_neg_eq, f64::default_epsilon(), 1));
+        assert!(!v_inf_pos.ulps_eq(&v_inf_neg, f64::default_epsilon(), 1));
+    }
+
+    #[test]
+    fn vector_trait_ulpseq_complex_f64() {
+        let v1 = Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 1.1), Complex::new(3.3, 4.4)]);
+        let v2 = Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 1.1), Complex::new(3.3, 4.4)]);
+        let v_eq =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 1.1), Complex::new(3.3, 4.4)]);
+        let v_diff_re =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.3, 1.1), Complex::new(3.3, 4.4)]);
+        let v_diff_im =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.1, 2.4), Complex::new(3.3, 4.4)]);
+        let v_close = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1 + (f64::EPSILON), 1.1),
+            Complex::new(3.3, 4.4),
+        ]);
+        let v_not_close_enough_re = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1 + (f64::EPSILON * 2.), 1.1),
+            Complex::new(3.3, 4.4),
+        ]);
+
+        let v_not_close_enough_im = Vector::<Complex<f64>, 2>::from([
+            Complex::new(-1.1, 1.1 - (f64::EPSILON * 2.)),
+            Complex::new(3.3, 4.4),
+        ]);
+
+        let v_zero = Vector::<Complex<f64>, 2>::zero();
+        let v_zero_eq = Vector::<Complex<f64>, 2>::zero();
+        let v_zero_neg_eq =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-0.0, -0.0), Complex::new(-0.0, -0.0)]);
+        let v_zero_close = Vector::<Complex<f64>, 2>::from([
+            Complex::new(0.0 + f64::EPSILON, -0.0),
+            Complex::new(-0.0, -0.0),
+        ]);
+
+        let v_nan =
+            Vector::<Complex<f64>, 2>::from([Complex::new(f64::NAN, 0.0), Complex::new(1.0, 2.0)]);
+        let v_nan_diff =
+            Vector::<Complex<f64>, 2>::from([Complex::new(f64::NAN, 0.0), Complex::new(1.0, 2.0)]);
+
+        let v_inf_pos = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::INFINITY, 0.0),
+            Complex::new(0.0, f64::INFINITY),
+        ]);
+        let v_inf_pos_eq = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::INFINITY, 0.0),
+            Complex::new(0.0, f64::INFINITY),
+        ]);
+        let v_inf_neg = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::NEG_INFINITY, 0.0),
+            Complex::new(0.0, f64::NEG_INFINITY),
+        ]);
+        let v_inf_neg_eq = Vector::<Complex<f64>, 2>::from([
+            Complex::new(f64::NEG_INFINITY, 0.0),
+            Complex::new(0.0, f64::NEG_INFINITY),
+        ]);
+
+        assert!(v1.ulps_eq(&v_eq, f64::default_epsilon(), 1));
+        assert!(v_eq.ulps_eq(&v1, f64::default_epsilon(), 1));
+        assert!(v2.ulps_eq(&v_eq, f64::default_epsilon(), 1));
+        assert!(v1.ulps_eq(&v2, f64::default_epsilon(), 1));
+        assert!(!v1.ulps_eq(&v_diff_re, f64::default_epsilon(), 1));
+        assert!(!v1.ulps_eq(&v_diff_im, f64::default_epsilon(), 1));
+        assert!(v1.ulps_eq(&v_close, f64::default_epsilon(), 1));
+        // when difference is epsilon multipled by a factor of 2,
+        // we are outside of the diff bounds defined by max ulps = 1
+        assert!(!v1.ulps_eq(&v_not_close_enough_re, f64::default_epsilon(), 1));
+        assert!(!v1.ulps_eq(&v_not_close_enough_im, f64::default_epsilon(), 1));
+        // unless we adjust the acceptable ulps threshold
+        assert!(v1.ulps_eq(&v_not_close_enough_re, f64::default_epsilon(), 2));
+        assert!(v1.ulps_eq(&v_not_close_enough_im, f64::default_epsilon(), 2));
 
         // near zero, use the epsilon value and absolute diff vs. epsilon comparisons
         assert!(v_zero.ulps_eq(&v_zero_eq, f64::default_epsilon(), 1));
@@ -3850,6 +4856,11 @@ mod tests {
         assert_eq!(test_vector[0], 10);
         assert_eq!(test_vector[1], 2);
         assert_eq!(test_vector[2], 3);
+
+        assert_eq!(test_slice.len(), 3);
+        assert_eq!(test_slice[0], 10);
+        assert_eq!(test_slice[1], 2);
+        assert_eq!(test_slice[2], 3);
     }
 
     // ================================
@@ -3944,6 +4955,49 @@ mod tests {
     }
 
     #[test]
+    fn vector_trait_from_into_complex_uint_to_complex_uint() {
+        let v_u8 = Vector::<Complex<u8>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u16 = Vector::<Complex<u16>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u32 = Vector::<Complex<u32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u64 = Vector::<Complex<u64>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
+        let v_new_16: Vector<Complex<u16>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<u16>, 2> = v_u8.into();
+        assert_eq!(v_new_16.components.len(), 2);
+        assert_eq!(v_new_16[0].re, 1 as u16);
+        assert_eq!(v_new_16[1].re, 3 as u16);
+        assert_eq!(v_new_16[0].im, 2 as u16);
+        assert_eq!(v_new_16[1].im, 4 as u16);
+
+        let _: Vector<Complex<u32>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<u32>, 2> = v_u8.into();
+
+        let _: Vector<Complex<u64>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<u64>, 2> = v_u8.into();
+
+        let _: Vector<Complex<u128>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<u128>, 2> = v_u8.into();
+
+        let _: Vector<Complex<u32>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<u32>, 2> = v_u16.into();
+
+        let _: Vector<Complex<u64>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<u64>, 2> = v_u16.into();
+
+        let _: Vector<Complex<u128>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<u128>, 2> = v_u16.into();
+
+        let _: Vector<Complex<u64>, 2> = Vector::from(v_u32);
+        let _: Vector<Complex<u64>, 2> = v_u32.into();
+
+        let _: Vector<Complex<u128>, 2> = Vector::from(v_u32);
+        let _: Vector<Complex<u128>, 2> = v_u32.into();
+
+        let _: Vector<Complex<u128>, 2> = Vector::from(v_u64);
+        let _: Vector<Complex<u128>, 2> = v_u64.into();
+    }
+
+    #[test]
     fn vector_trait_from_into_iint_to_iint() {
         let v_i8 = Vector::<i8, 3>::from(&[1, 2, 3]);
         let v_i16 = Vector::<i16, 3>::new();
@@ -3983,6 +5037,49 @@ mod tests {
 
         let _: Vector<i128, 3> = Vector::<i128, 3>::from(v_i64);
         let _: Vector<i128, 3> = v_i64.into();
+    }
+
+    #[test]
+    fn vector_trait_from_into_complex_iint_to_complex_iint() {
+        let v_i8 = Vector::<Complex<i8>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_i16 = Vector::<Complex<i16>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_i32 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_i64 = Vector::<Complex<i64>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
+        let v_new_16: Vector<Complex<i16>, 2> = Vector::from(v_i8);
+        let _: Vector<Complex<i16>, 2> = v_i8.into();
+        assert_eq!(v_new_16.components.len(), 2);
+        assert_eq!(v_new_16[0].re, 1 as i16);
+        assert_eq!(v_new_16[1].re, 3 as i16);
+        assert_eq!(v_new_16[0].im, 2 as i16);
+        assert_eq!(v_new_16[1].im, 4 as i16);
+
+        let _: Vector<Complex<i32>, 2> = Vector::from(v_i8);
+        let _: Vector<Complex<i32>, 2> = v_i8.into();
+
+        let _: Vector<Complex<i64>, 2> = Vector::from(v_i8);
+        let _: Vector<Complex<i64>, 2> = v_i8.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_i8);
+        let _: Vector<Complex<i128>, 2> = v_i8.into();
+
+        let _: Vector<Complex<i32>, 2> = Vector::from(v_i16);
+        let _: Vector<Complex<i32>, 2> = v_i16.into();
+
+        let _: Vector<Complex<i64>, 2> = Vector::from(v_i16);
+        let _: Vector<Complex<i64>, 2> = v_i16.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_i16);
+        let _: Vector<Complex<i128>, 2> = v_i16.into();
+
+        let _: Vector<Complex<i64>, 2> = Vector::from(v_i32);
+        let _: Vector<Complex<i64>, 2> = v_i32.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_i32);
+        let _: Vector<Complex<i128>, 2> = v_i32.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_i64);
+        let _: Vector<Complex<i128>, 2> = v_i64.into();
     }
 
     #[test]
@@ -4031,6 +5128,49 @@ mod tests {
     }
 
     #[test]
+    fn vector_trait_from_into_complex_uint_to_complex_iint() {
+        let v_u8 = Vector::<Complex<u8>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u16 = Vector::<Complex<u16>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u32 = Vector::<Complex<u32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u64 = Vector::<Complex<u64>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
+        let v_new_16: Vector<Complex<i16>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<i16>, 2> = v_u8.into();
+        assert_eq!(v_new_16.components.len(), 2);
+        assert_eq!(v_new_16[0].re, 1 as i16);
+        assert_eq!(v_new_16[1].re, 3 as i16);
+        assert_eq!(v_new_16[0].im, 2 as i16);
+        assert_eq!(v_new_16[1].im, 4 as i16);
+
+        let _: Vector<Complex<i32>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<i32>, 2> = v_u8.into();
+
+        let _: Vector<Complex<i64>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<i64>, 2> = v_u8.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<i128>, 2> = v_u8.into();
+
+        let _: Vector<Complex<i32>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<i32>, 2> = v_u16.into();
+
+        let _: Vector<Complex<i64>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<i64>, 2> = v_u16.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<i128>, 2> = v_u16.into();
+
+        let _: Vector<Complex<i64>, 2> = Vector::from(v_u32);
+        let _: Vector<Complex<i64>, 2> = v_u32.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_u32);
+        let _: Vector<Complex<i128>, 2> = v_u32.into();
+
+        let _: Vector<Complex<i128>, 2> = Vector::from(v_u64);
+        let _: Vector<Complex<i128>, 2> = v_u64.into();
+    }
+
+    #[test]
     fn vector_trait_from_into_uint_to_float() {
         let v_u8 = Vector::<u8, 3>::from(&[1, 2, 3]);
         let v_u16 = Vector::<u16, 3>::new();
@@ -4057,6 +5197,33 @@ mod tests {
     }
 
     #[test]
+    fn vector_trait_from_into_complex_uint_to_complex_float() {
+        let v_u8 = Vector::<Complex<u8>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u16 = Vector::<Complex<u16>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_u32 = Vector::<Complex<u32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
+        let v_new_32: Vector<Complex<f32>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<f32>, 2> = v_u8.into();
+        assert_eq!(v_new_32.components.len(), 2);
+        assert_relative_eq!(v_new_32[0].re, 1.0 as f32);
+        assert_relative_eq!(v_new_32[0].im, 2.0 as f32);
+        assert_relative_eq!(v_new_32[1].re, 3.0 as f32);
+        assert_relative_eq!(v_new_32[1].im, 4.0 as f32);
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_u8);
+        let _: Vector<Complex<f64>, 2> = v_u8.into();
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<f64>, 2> = v_u16.into();
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_u16);
+        let _: Vector<Complex<f64>, 2> = v_u16.into();
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_u32);
+        let _: Vector<Complex<f64>, 2> = v_u32.into();
+    }
+
+    #[test]
     fn vector_trait_from_into_iint_to_float() {
         let v_i8 = Vector::<i8, 3>::from(&[1, 2, 3]);
         let v_i16 = Vector::<i16, 3>::new();
@@ -4080,6 +5247,46 @@ mod tests {
 
         let _: Vector<f64, 3> = Vector::<f64, 3>::from(v_i32);
         let _: Vector<f64, 3> = v_i32.into();
+    }
+
+    #[test]
+    fn vector_trait_from_into_complex_iint_to_complex_float() {
+        let v_i8 = Vector::<Complex<i8>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_i16 = Vector::<Complex<i16>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+        let v_i32 = Vector::<Complex<i32>, 2>::from([Complex::new(1, 2), Complex::new(3, 4)]);
+
+        let v_new_32: Vector<Complex<f32>, 2> = Vector::from(v_i8);
+        let _: Vector<Complex<f32>, 2> = v_i8.into();
+        assert_eq!(v_new_32.components.len(), 2);
+        assert_relative_eq!(v_new_32[0].re, 1.0 as f32);
+        assert_relative_eq!(v_new_32[0].im, 2.0 as f32);
+        assert_relative_eq!(v_new_32[1].re, 3.0 as f32);
+        assert_relative_eq!(v_new_32[1].im, 4.0 as f32);
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_i8);
+        let _: Vector<Complex<f64>, 2> = v_i8.into();
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_i16);
+        let _: Vector<Complex<f64>, 2> = v_i16.into();
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_i16);
+        let _: Vector<Complex<f64>, 2> = v_i16.into();
+
+        let _: Vector<Complex<f64>, 2> = Vector::from(v_i32);
+        let _: Vector<Complex<f64>, 2> = v_i32.into();
+    }
+
+    #[test]
+    fn vector_trait_from_into_complex_float_to_complex_float() {
+        let v_f32 =
+            Vector::<Complex<f32>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+
+        let v_new_f32: Vector<Complex<f64>, 2> = Vector::from(v_f32);
+        let _: Vector<Complex<f64>, 2> = v_f32.into();
+        assert_relative_eq!(v_new_f32[0].re, 1.0 as f64);
+        assert_relative_eq!(v_new_f32[0].im, 2.0 as f64);
+        assert_relative_eq!(v_new_f32[1].re, 3.0 as f64);
+        assert_relative_eq!(v_new_f32[1].im, 4.0 as f64);
     }
 
     #[test]
@@ -4157,13 +5364,23 @@ mod tests {
         let v2: Vector<i32, 3> = Vector::from([-1, -2, -3]);
         let v3: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
         let v4: Vector<f64, 3> = Vector::from([-1.0, -2.0, -3.0]);
+        let v5: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let v6: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]);
 
         assert_eq!(-v1, -v1);
         assert_eq!(-v1, v2);
         assert_eq!(-v2, v1);
+        assert_eq!(v1 + -v1, Vector::<i32, 3>::zero());
         assert_eq!(-v3, -v3);
         assert_eq!(-v3, v4);
         assert_eq!(-v4, v3);
+        assert_eq!(v3 + -v3, Vector::<f64, 3>::zero());
+        assert_eq!(-v5, -v5);
+        assert_eq!(-v5, v6);
+        assert_eq!(-v6, v5);
+        assert_eq!(v5 + -v5, Vector::<Complex<f64>, 2>::zero());
     }
 
     #[test]
@@ -4198,6 +5415,37 @@ mod tests {
         assert_eq!((v1 + v2) + v3, v1 + (v2 + v3));
         assert_eq!(v1 + (-v1), v_zero);
         assert_eq!((v1 + v2) * 10.0, (v1 * 10.0) + (v2 * 10.0));
+
+        let v1: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let v2: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(5.0, -6.0), Complex::new(-7.0, 8.0)]);
+        let v3: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]);
+        let v_zero = Vector::<Complex<f64>, 2>::zero();
+
+        assert_eq!(
+            v1 + v2,
+            Vector::<Complex<f64>, 2>::from([Complex::new(6.0, -8.0), Complex::new(-10.0, 12.0)])
+        );
+        assert_eq!(
+            v2 + v3,
+            Vector::<Complex<f64>, 2>::from([Complex::new(4.0, -4.0), Complex::new(-4.0, 4.0)])
+        );
+        assert_eq!(
+            v1 + v2 + v3,
+            Vector::<Complex<f64>, 2>::from([Complex::new(5.0, -6.0), Complex::new(-7.0, 8.0)])
+        );
+        assert_eq!(v1 + v_zero, v1);
+        assert_eq!(v_zero + v1, v1);
+        assert_eq!(-v_zero + v1, v1);
+        assert_eq!(v1 + v2, v2 + v1);
+        assert_eq!((v1 + v2) + v3, v1 + (v2 + v3));
+        assert_eq!(v1 + (-v1), v_zero);
+        assert_eq!(
+            (v1 + v2) * Complex::new(10.0, 0.0),
+            (v1 * Complex::new(10.0, 0.0)) + (v2 * Complex::new(10.0, 0.0))
+        );
     }
 
     #[test]
@@ -4271,6 +5519,13 @@ mod tests {
         let v4: Vector<i32, 3> = Vector::from([4, 5, 6]);
         v1.mut_add(&v2);
         assert_eq!(v1 * 10, *(v3 * 10).mut_add(&(v4 * 10)));
+
+        // reset
+        let mut v1: Vector<Complex<i32>, 2> =
+            Vector::from([Complex::new(1, -2), Complex::new(-3, 4)]);
+        let v2: Vector<Complex<i32>, 2> = Vector::from([Complex::new(5, -6), Complex::new(-7, 8)]);
+        v1.mut_add(&v2);
+        assert_eq!(v1, Vector::from([Complex::new(6, -8), Complex::new(-10, 12)]));
     }
 
     #[test]
@@ -4316,6 +5571,36 @@ mod tests {
         assert_eq!(v1 - v2 - v3, Vector::<f64, 3>::from([-1.0, 0.0, 1.0]));
         assert_eq!((v1 - v2) - v3, v1 - v2 - v3);
         assert_eq!(v1 - (v2 - v3), Vector::<f64, 3>::from([-5.0, -6.0, -7.0]));
+        assert_eq!(v1 - v_zero, v1);
+        assert_eq!(v1 - (-v_zero), v1);
+        assert_eq!(v_zero - v1, -v1);
+        assert_eq!(-v_zero - v1, -v1);
+
+        let v1: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let v2: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(5.0, -6.0), Complex::new(-7.0, 8.0)]);
+        let v3: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]);
+        let v_zero = Vector::<Complex<f64>, 2>::zero();
+
+        assert_eq!(
+            v1 - v2,
+            Vector::<Complex<f64>, 2>::from([Complex::new(-4.0, 4.0), Complex::new(4.0, -4.0)])
+        );
+        assert_eq!(
+            v2 - v3,
+            Vector::<Complex<f64>, 2>::from([Complex::new(6.0, -8.0), Complex::new(-10.0, 12.0)])
+        );
+        assert_eq!(
+            v1 - v2 - v3,
+            Vector::<Complex<f64>, 2>::from([Complex::new(-3.0, 2.0), Complex::new(1.0, 0.0)])
+        );
+        assert_eq!((v1 - v2) - v3, v1 - v2 - v3);
+        assert_eq!(
+            v1 - (v2 - v3),
+            Vector::<Complex<f64>, 2>::from([Complex::new(-5.0, 6.0), Complex::new(7.0, -8.0)])
+        );
         assert_eq!(v1 - v_zero, v1);
         assert_eq!(v1 - (-v_zero), v1);
         assert_eq!(v_zero - v1, -v1);
@@ -4380,6 +5665,16 @@ mod tests {
         v_zero.mut_sub(&v1);
 
         assert_eq!(v_zero, Vector::<i32, 3>::from([-1, -2, -3]));
+
+        // reset
+        let mut v1: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let v2: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(-2.0, 3.0), Complex::new(2.0, -3.0)]);
+
+        v1.mut_sub(&v2);
+
+        assert_eq!(v1, Vector::from([Complex::new(3.0, -5.0), Complex::new(-5.0, 7.0)]));
     }
 
     #[test]
@@ -4423,6 +5718,15 @@ mod tests {
         assert_eq!(v1 * 1.0, v1);
         assert_eq!(v1 * -1.0, -v1);
         assert_eq!(v1 * 10.0 + v1 * 5.0, v1 * (10.0 + 5.0));
+
+        let v: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(3.0, 2.0), Complex::new(-3.0, -2.0)]);
+        let c1: Complex<f64> = Complex::new(1.0, 7.0);
+        let c2: Complex<f64> = Complex::new(0.0, 7.0);
+        let c3: Complex<f64> = Complex::new(1.0, 0.0);
+        assert_eq!(v * c1, Vector::from([Complex::new(-11.0, 23.0), Complex::new(11.0, -23.0)]));
+        assert_eq!(v * c2, Vector::from([Complex::new(-14.0, 21.0), Complex::new(14.0, -21.0)]));
+        assert_eq!(v * c3, Vector::from([Complex::new(3.0, 2.0), Complex::new(-3.0, -2.0)]));
     }
 
     #[test]
@@ -4474,6 +5778,15 @@ mod tests {
         v1.mut_mul(-1);
 
         assert_eq!(v1, -v2);
+
+        // reset
+        let mut v1: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(3.0, 2.0), Complex::new(-3.0, -2.0)]);
+        let c1: Complex<f64> = Complex::new(1.0, 7.0);
+        v1.mut_mul(c1);
+        assert_eq!(v1, Vector::from([Complex::new(-11.0, 23.0), Complex::new(11.0, -23.0)]));
+        // num::Complex supports Copy and we can use it again
+        v1.mut_mul(c1);
     }
 
     #[test]
