@@ -2436,6 +2436,24 @@ where
     }
 }
 
+impl<T, const N: usize> Mul<T> for Vector<Complex<T>, N>
+where
+    T: Num + Copy + Sync + Send,
+{
+    type Output = Self;
+
+    /// Binary multiplication operator overload implementation for complex
+    /// number [`Vector`] scalar multiplication with a real number
+    /// scalar multiple.
+    fn mul(self, rhs: T) -> Self::Output {
+        let new_components = &mut [Complex { re: T::zero(), im: T::zero() }; N];
+        for (i, x) in new_components.iter_mut().enumerate() {
+            *x = self[i] * rhs;
+        }
+        Self { components: *new_components }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -5733,6 +5751,16 @@ mod tests {
         assert_eq!(v1 * -1.0, -v1);
         assert_eq!(v1 * 10.0 + v1 * 5.0, v1 * (10.0 + 5.0));
 
+        // complex * scalar integer
+        let v: Vector<Complex<i32>, 2> = Vector::from([Complex::new(3, 2), Complex::new(-3, -2)]);
+        assert_eq!(v * 10, Vector::from([Complex::new(30, 20), Complex::new(-30, -20)]));
+
+        // complex * scalar float
+        let v: Vector<Complex<f64>, 2> =
+            Vector::from([Complex::new(3.0, 2.0), Complex::new(-3.0, -2.0)]);
+        assert_eq!(v * 10.0, Vector::from([Complex::new(30.0, 20.0), Complex::new(-30.0, -20.0)]));
+
+        // complex * complex
         let v: Vector<Complex<f64>, 2> =
             Vector::from([Complex::new(3.0, 2.0), Complex::new(-3.0, -2.0)]);
         let c1: Complex<f64> = Complex::new(1.0, 7.0);
