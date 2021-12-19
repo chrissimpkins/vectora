@@ -122,9 +122,9 @@
 //! Rust standard library approach of panics in debug builds
 //! and twos complement wrapping in release builds.  You will not encounter
 //! undefined behavior with either build type, but this approach
-//! may not be what you want. Avoid these operator overloads if your use
-//! case requires support for integer overflows/underflows, and you
-//! prefer to handle it differently.
+//! may not be what you want. Please consider this issue and understand
+//! the library source implementations if your use case requires support
+//! for integer overflows/underflows, and you prefer to handle it differently.
 //!
 //! ### Floating Point Numbers
 //!
