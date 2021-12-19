@@ -90,13 +90,13 @@ pub type Vector3dIsize = Vector<isize, 3>;
 pub type Vector3dUsize = Vector<usize, 3>;
 
 /// A generic, fixed length, ordered vector type that supports
-/// computation with N-dimensional scalar data.
+/// computation with N-dimensional real and complex scalar data.
 #[derive(Copy, Clone, Debug)]
 pub struct Vector<T, const N: usize>
 where
     T: Num + Copy + Sync + Send,
 {
-    /// N-dimensional vector data component values.
+    /// Ordered N-dimensional scalar values.
     pub components: [T; N],
 }
 
@@ -121,33 +121,50 @@ where
     ///
     /// ```
     /// # use vectora::types::vector::Vector;
-    /// let vec_2d_i32 = Vector::<i32, 2>::new();
+    /// let v = Vector::<i32, 2>::new();
     ///
-    /// assert_eq!(vec_2d_i32.len(), 2);
-    /// assert_eq!(vec_2d_i32[0], i32::default());
-    /// assert_eq!(vec_2d_i32[1], i32::default());
+    /// assert_eq!(v.len(), 2);
+    /// assert_eq!(v[0], i32::default());
+    /// assert_eq!(v[1], i32::default());
+    /// ```
     ///
-    /// let vec_3d_f64 = Vector::<f64, 3>::new();
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<f64, 3>::new();
     ///
-    /// assert_eq!(vec_3d_f64.len(), 3);
-    /// assert_eq!(vec_3d_f64[0], f64::default());
-    /// assert_eq!(vec_3d_f64[1], f64::default());
-    /// assert_eq!(vec_3d_f64[2], f64::default());
+    /// assert_eq!(v.len(), 3);
+    /// assert_eq!(v[0], f64::default());
+    /// assert_eq!(v[1], f64::default());
+    /// assert_eq!(v[2], f64::default());
+    /// ```
+    ///
+    /// ```
+    /// # use vectora::Vector;
+    /// use approx::assert_relative_eq;
+    /// use num::Complex;
+    ///
+    /// let v = Vector::<Complex<f64>, 2>::new();
+    ///
+    /// assert_eq!(v.len(), 2);
+    /// assert_relative_eq!(v[0].re, f64::default());
+    /// assert_relative_eq!(v[0].im, f64::default());
+    /// assert_relative_eq!(v[1].re, f64::default());
+    /// assert_relative_eq!(v[1].im, f64::default());
     /// ```
     ///
     /// ## Type alias syntax
     ///
-    /// Simplify instantiation with one of the defined 2D or 3D type aliases:
+    /// Simplify instantiation with a 2D or 3D type aliases:
     ///
     /// ```
     /// # use vectora::Vector;
     /// use vectora::types::vector::{Vector2d, Vector2dI32, Vector3d, Vector3dF64};
     ///
-    /// let vec_2d_i32_1 = Vector2d::<i32>::new();
-    /// let vec_2d_i32_2 = Vector2dI32::new();
+    /// let v1 = Vector2d::<i32>::new();
+    /// let v2 = Vector2dI32::new();
     ///
-    /// let vec_3d_f64_1 = Vector3d::<f64>::new();
-    /// let vec_3d_f64_2 = Vector3dF64::new();
+    /// let v3 = Vector3d::<f64>::new();
+    /// let v4 = Vector3dF64::new();
     /// ```
     ///
     /// ## With type inference
@@ -156,24 +173,24 @@ where
     /// by the compiler:
     ///
     /// ```
-    /// # use vectora::types::vector::Vector;
+    /// # use vectora::Vector;
     /// let v: Vector<u32, 3> = Vector::new();
     /// ```
     pub fn new() -> Self {
         Self { components: [T::default(); N] }
     }
 
-    /// Returns a new [`Vector`] initialized with scalar values
-    /// defined as zero for the corresponding numeric type.
+    /// Returns a new [`Vector`] initialized with scalar zero values
+    /// for the corresponding numeric type.
     ///
     /// # Examples
     ///
     /// Basic usage:
     ///
-    /// ## Integer types
+    /// ## Integer scalars
     ///
     /// ```
-    /// # use vectora::types::vector::*;
+    /// # use vectora::Vector;
     /// let v: Vector<i32, 3> = Vector::zero();
     ///
     /// assert_eq!(v.len(), 3);
@@ -182,16 +199,32 @@ where
     /// assert_eq!(v[2], 0 as i32);
     /// ```
     ///
-    /// ## Float types
+    /// ## Floating point scalars
     ///
     /// ```
-    /// # use vectora::types::vector::*;
+    /// # use vectora::Vector;
     /// let v: Vector<f64, 3> = Vector::zero();
     ///
     /// assert_eq!(v.len(), 3);
     /// assert_eq!(v[0], 0.0 as f64);
     /// assert_eq!(v[1], 0.0 as f64);
     /// assert_eq!(v[2], 0.0 as f64);
+    /// ```
+    ///
+    /// ## Complex number scalars
+    ///
+    /// ```
+    ///# use vectora::Vector;
+    /// use approx::assert_relative_eq;
+    /// use num::Complex;
+    ///
+    /// let v: Vector<Complex<f64>, 2> = Vector::zero();
+    ///
+    /// assert_eq!(v.len(), 2);
+    /// assert_relative_eq!(v[0].re, 0.0_f64);
+    /// assert_relative_eq!(v[0].im, 0.0_f64);
+    /// assert_relative_eq!(v[1].re, 0.0_f64);
+    /// assert_relative_eq!(v[1].im, 0.0_f64);
     /// ```
     pub fn zero() -> Self {
         Self { components: [T::zero(); N] }
@@ -580,6 +613,9 @@ where
 
     /// Returns the length of the [`Vector`] scalar data.
     ///
+    /// This value represents the number of scalar data points in
+    /// the [`Vector`].
+    ///
     /// # Examples
     ///
     /// Basic usage:
@@ -599,6 +635,20 @@ where
     }
 
     /// Returns `true` if the [`Vector`] contains no items and `false` otherwise.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v: Vector<i32, 2> = Vector::new();
+    /// let v_empty: Vector<i32, 0> = Vector::new();
+    ///
+    /// assert!(v.len() > 0);
+    /// assert!(!v.is_empty());
+    ///
+    /// assert!(v_empty.len() == 0);
+    /// assert!(v_empty.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.components.is_empty()
     }
@@ -688,8 +738,8 @@ where
     /// The return value is a scalar with the [`Vector`] numeric
     /// type.
     ///
-    /// Note: This method is not intended for use with [`Vector`]
-    /// **of** [`num::complex::Complex`] number types.
+    /// **Note**: This method is not intended for use with [`Vector`]
+    /// **of** [`num::Complex`] number types.
     ///
     ///
     /// # Examples
@@ -718,7 +768,7 @@ where
 
     /// Returns the displacement [`Vector`] from a parameter [`Vector`] to the calling [`Vector`].
     ///
-    /// Note: This is an alias for the [`Vector::sub`] vector subtraction
+    /// **Note**: This is an alias for the [`Vector::sub`] vector subtraction
     /// method and the operation can be performed with the overloaded `-` operator.
     ///
     /// # Examples
@@ -776,7 +826,7 @@ where
 
     /// Returns a [`Vector`] that is scaled by a given scalar parameter value.
     ///
-    /// Note: This is an alias for the [`Vector::mul`] scalar multiplication
+    /// **Note**: This is an alias for the [`Vector::mul`] scalar multiplication
     /// method and the operation can be performed with the overloaded `*` operator.
     ///
     /// # Examples
@@ -816,7 +866,7 @@ where
     /// Returns a translated [`Vector`] with displacement defined by a
     /// translation [`Vector`] parameter.
     ///
-    /// Note: This is an alias for the [`Vector::add`] vector addition method
+    /// **Note**: This is an alias for the [`Vector::add`] vector addition method
     /// and the operation can be performed with the overloaded `+` operator.
     ///
     /// # Examples
@@ -859,7 +909,7 @@ where
     /// Returns a new [`Vector`] with scalar data that are modified
     /// according to the definition in a closure parameter.
     ///
-    /// Note: the closure must return items of the same numeric
+    /// **Note**: the closure must return items of the same numeric
     /// type as the [`Vector`] numeric type.
     ///
     /// # Examples
@@ -887,7 +937,7 @@ where
     /// Mutates the [`Vector`] data in place according to the
     /// definition in a closure parameter.
     ///
-    /// Note: the closure must return items of the same numeric
+    /// **Note**: the closure must return items of the same numeric
     /// type as the [`Vector`] numeric type.
     ///
     /// # Examples
@@ -914,7 +964,7 @@ where
     /// Returns a new [`Vector`] with data that are modified
     /// according to the definition in a function parameter.
     ///
-    /// Note: the function must return items of the same numeric
+    /// **Note**: the function must return items of the same numeric
     /// type as the [`Vector`] numeric type.
     ///
     /// # Examples
@@ -942,7 +992,7 @@ where
     /// Mutates the [`Vector`] data in place according to
     /// the definition in a function parameter.
     ///
-    /// Note: the function must return items of the same numeric
+    /// **Note**: the function must return items of the same numeric
     /// type as the [`Vector`] numeric type.
     ///
     /// # Examples
@@ -976,7 +1026,7 @@ where
     ///
     /// This operation does not change zero vectors.
     ///
-    /// Note: This is an alias for the unary [`Vector::neg`] operation
+    /// **Note**: This is an alias for the unary [`Vector::neg`] operation
     /// and can be performed with the overloaded unary `-` operator.
     ///
     /// # Examples
@@ -1485,7 +1535,7 @@ where
 //
 // ================================
 
-/// PartialEq trait implementation for [`Vector`] with integer data types.
+/// PartialEq trait implementation for [`Vector`] with integer scalar data.
 ///
 /// These comparisons establish the symmetry and transitivity relationships
 /// required for the partial equivalence relation definition with integer types.
@@ -1523,7 +1573,7 @@ impl_vector_int_partialeq_from!(i32);
 impl_vector_int_partialeq_from!(i64);
 impl_vector_int_partialeq_from!(i128);
 
-/// PartialEq trait implementation for [`Vector`] with float component types.
+/// PartialEq trait implementation for [`Vector`] with floating point scalar data.
 ///
 /// These comparisons establish the symmetry and transitivity relationships
 /// required for the partial equivalence relation definition with floating point
@@ -2043,7 +2093,7 @@ where
     /// ```
     ///
     /// Callers should confirm that the length of the [`Vec`] is
-    /// the same as the number of requested [`Vector`] data components.  The following
+    /// the same as the number of requested [`Vector`] scalar data elements.  The following
     /// code raises [`VectorError::TryFromVecError`] on an attempt to make a
     /// three dimensional [`Vector`] with two dimensional data:
     ///
@@ -2185,7 +2235,7 @@ where
     }
 }
 
-/// Returns a new [`Vector`] with lossless [`Vector`] scalar numeric type data
+/// Returns a new [`Vector`] with lossless [`Vector`] real scalar numeric type data
 /// cast support.
 macro_rules! impl_vector_from_vector {
     ($Small: ty, $Large: ty, $doc: expr) => {
