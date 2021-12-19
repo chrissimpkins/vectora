@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.3.0
+
+### Added
+
+- `Vector` struct complex number support with the `num::Complex` data type
+- PartialEq trait implementation for `Vector` of `num::Complex` types with integer real and imaginary parts
+- PartialEq trait implementation for `Vector` of `num::Complex` types with floating point real and imaginary parts
+- AbsDiffEq trait implementation for `Vector` of `num::Complex` types with floating point real and imaginary parts
+- RelativeEq trait implementation for `Vector` of `num::Complex` types with floating point real and imaginary parts
+- UlpsEq trait implementation for `Vector` of `num::Complex` types with floating point real and imaginary parts
+- Mul trait implementation to support `Vector` of `num::Complex` types scalar multiplication with integer scalar values
+- Mul trait implementation to support `Vector` of `num::Complex` types scalar multiplication with floating point scalar values
+- Lossless `Vector` of `num::Complex` types unsigned integer to signed integer real and imaginary part cast support
+- Lossless `Vector` of `num::Complex` types signed integer to signed integer real and imaginary part cast support
+- Lossless `Vector` of `num::Complex` types unsigned integer to unsigned integer real and imaginary part cast support
+- Lossless `Vector` of `num::Complex` types unsigned integer to signed integer real and imaginary part cast support
+- Lossless `Vector` of `num::Complex` types unsigned integer to float real and imaginary part cast support
+- Lossless `Vector` of `num::Complex` types signed integer to float real and imaginary part cast support
+- Lossless `Vector` `f32` to `f64` floating point type cast support
+
+### Changed
+
+- refactor Neg trait implementation to support `Vector` of `num::Complex` types
+- docs: Getting Started guide: major revision to document the new support for `Vector` of complex numbers
+- docs: Getting Started guide: added new`Vector` unary negation operator documentation
+- docs: API: major revision to document the new support for `Vector` of complex numbers
+- docs: API: updated Vector `dot` method documentation to indicate that the method is not intended for complex number types
+- docs: API: updated Vector `Float` trait bound methods documentation to indicate that these methods are intended for real, floating point types
+- docs: README: minor revisions to document the new support for `Vector` of complex numbers
+
 ## v0.2.1
 
 ### Added
