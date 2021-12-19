@@ -688,7 +688,7 @@
 //!
 //! ## Working with Rust Standard Library Types
 //!
-//! Casts to commonly used Rust standard library data collection types are straightforward.  
+//! Casts to commonly used Rust standard library data collection types are straightforward.
 //! Note that some of these type casts support mutable [`Vector`] owned data references,
 //! allowing you to use standard library type operations to change the [`Vector`] data.
 //!
