@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.3.1
+
+### Added
+
+- None
+
+### Changed
+
+- docs: Getting Started guide: updated integer overflow / underflow text
+- docs: Getting Started guide: typo fix
+
 ## v0.3.0
 
 ### Added
