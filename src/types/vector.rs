@@ -1054,6 +1054,31 @@ where
     pub fn sum(&self) -> T {
         self.components.iter().fold(T::zero(), |a, b| a + *b)
     }
+
+    /// Returns the product of the [`Vector`] elements.
+    ///
+    /// **Note**:
+    ///
+    /// - An empty [`Vector`] returns the zero value of the contained numeric type.
+    /// - A 1-dimensional [`Vector`] returns the index 0 value contained in the [`Vector`]
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from([4, 5, 6]);
+    ///
+    /// assert_eq!(v.product(), 120);
+    /// ```
+    pub fn product(&self) -> T {
+        if self.components.is_empty() {
+            return T::zero();
+        } else if self.components.len() == 1 {
+            return self[0];
+        } else {
+            self.components.iter().skip(1).fold(self[0], |a, b| a * *b)
+        }
+    }
 }
 
 impl<T, const N: usize> Vector<T, N>
@@ -3786,6 +3811,85 @@ mod tests {
         let v7 = Vector::<f64, 3>::from([f64::NAN, 1.0, 2.0]);
 
         assert!(v7.sum().is_nan());
+    }
+
+    // ================================
+    //
+    // product method tests
+    //
+    // ================================
+    #[test]
+    fn vector_method_product() {
+        let v1 = Vector::<i32, 3>::from([-1, 2, 3]);
+
+        assert_eq!(v1.product(), -6);
+
+        let v2 = Vector::<f64, 3>::from([-1.0, 2.0, 3.0]);
+
+        assert_relative_eq!(v2.product(), -6.0);
+
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, -2), Complex::new(5, -6)]);
+
+        assert_eq!(v3.product(), Complex::new(-7, -16));
+
+        // -------------
+        // zero
+        // -------------
+        let v_int_zero = Vector::<i32, 3>::from([0, -2, 3]);
+
+        assert_eq!(v_int_zero.product(), 0);
+
+        let v_float_zero = Vector::<f64, 3>::from([0.0, -2.0, 3.0]);
+
+        assert_relative_eq!(v_float_zero.product(), 0.0);
+
+        let v_complex_zero =
+            Vector::<Complex<i32>, 2>::from([Complex::new(0, 0), Complex::new(5, -6)]);
+
+        assert_eq!(v_complex_zero.product(), Complex::new(0, 0));
+
+        // -------------------------
+        // floating point infinities
+        // -------------------------
+        let v_pos_inf = Vector::<f64, 3>::from([f64::INFINITY, 1.0, 2.0]);
+
+        assert_eq!(v_pos_inf.product(), f64::INFINITY);
+        assert!(v_pos_inf.product().is_infinite());
+
+        let v_neg_inf = Vector::<f64, 3>::from([f64::NEG_INFINITY, 1.0, 2.0]);
+
+        assert_eq!(v_neg_inf.product(), f64::NEG_INFINITY);
+        assert!(v_neg_inf.product().is_infinite());
+
+        // -------------------
+        // floating point NaN
+        // -------------------
+
+        let v_nan = Vector::<f64, 3>::from([f64::NAN, 1.0, 2.0]);
+
+        assert!(v_nan.product().is_nan());
+
+        // -------------
+        // special cases
+        // -------------
+
+        // zero-dimension Vector should return zero value for numeric type
+        let v_int_zero_ele = Vector::<i32, 0>::new();
+        let v_float_zero_ele = Vector::<f64, 0>::new();
+        let v_complex_zero_ele = Vector::<Complex<i32>, 0>::new();
+
+        assert_eq!(v_int_zero_ele.product(), 0);
+        assert_relative_eq!(v_float_zero_ele.product(), 0.0);
+        assert_eq!(v_complex_zero_ele.product(), Complex::new(0, 0));
+
+        // one-dimension Vector should return value at index 0
+        let v_int_one_ele = Vector::<i32, 1>::from([10]);
+        let v_float_one_ele = Vector::<f64, 1>::from([10.0]);
+        let v_complex_one_ele = Vector::<Complex<i32>, 1>::from([Complex::new(10, 1)]);
+
+        assert_eq!(v_int_one_ele.product(), 10);
+        assert_relative_eq!(v_float_one_ele.product(), 10.0);
+        assert_eq!(v_complex_one_ele.product(), Complex::new(10, 1));
     }
 
     // ===================================
