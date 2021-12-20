@@ -155,5 +155,21 @@ use vectora::types::vector::*;
 //     c.bench_function("PartialEq testing: f64 3D Vector : f64 3D Vector", |b| b.iter(|| v1 == v2));
 // }
 
+// ================================
+//
+// Method impl
+//
+// ================================
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<i32, 3> = Vector::from([1, -2, 3]);
+//     c.bench_function("Vector product method: i32 3D Vector", |b| b.iter(|| v.product()));
+// }
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f64, 3> = Vector::from([1.0, -2.0, 3.0]);
+//     c.bench_function("Vector product method: f64 3D Vector", |b| b.iter(|| v.product()));
+// }
+
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
