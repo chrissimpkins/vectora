@@ -60,13 +60,29 @@ git clone https://github.com/chrissimpkins/vectora.git
 
 The project is tested with the latest GitHub Actions macOS, Linux (Ubuntu), and Windows environment runners using the stable and beta `rustc` toolchains.
 
+##### Run unit and doc test suite
+
 Edit the source files, then run the unit and doc test suite locally with the command:
 
 ```txt
 cargo test
 ```
 
-Run clippy lints with:
+##### Run unit tests only
+
+```txt
+cargo test --lib
+```
+
+##### Run doc tests only
+
+```txt
+cargo test --doc
+```
+
+##### Run clippy lints
+
+Clippy lints are not executed with the above commands.  Use the following to lint Rust source files with clippy:
 
 ```txt
 cargo clippy -- -D warnings
