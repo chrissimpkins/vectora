@@ -1015,6 +1015,27 @@ where
         self.components.iter_mut().for_each(|x| *x = func(*x));
         self
     }
+
+    /// Returns an iterator that yields a tuple of the index value and [`Vector`] item
+    /// reference at the corresponding index during iteration.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from([10, 20, 30]);
+    /// let mut iter = v.enumerate();
+    ///
+    /// assert_eq!(iter.next(), Some((0, &10)));
+    /// assert_eq!(iter.next(), Some((1, &20)));
+    /// assert_eq!(iter.next(), Some((2, &30)));
+    /// assert_eq!(iter.next(), None);
+    /// ```
+    pub fn enumerate(&self) -> impl Iterator<Item = (usize, &T)> {
+        self.components.iter().enumerate()
+    }
 }
 
 impl<T, const N: usize> Vector<T, N>
@@ -3358,6 +3379,34 @@ mod tests {
         let _: Vec<Complex<i32>> = v3.to_vec();
         let _: Vec<Complex<f64>> = v4.to_vec();
     }
+
+    // ================================
+    //
+    // enumerate method tests
+    //
+    // ================================
+    #[test]
+    fn vector_method_enumerate() {
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        let mut iter1 = v1.enumerate();
+
+        assert_eq!(iter1.next(), Some((0, &1)));
+        assert_eq!(iter1.next(), Some((1, &2)));
+        assert_eq!(iter1.next(), Some((2, &3)));
+        assert_eq!(iter1.next(), None);
+
+        // empty vector
+        let v2: Vector<i32, 0> = Vector::new();
+        let mut iter2 = v2.enumerate();
+
+        assert_eq!(iter2.next(), None);
+    }
+
+    // ================================
+    //
+    // to_num_cast method tests
+    //
+    // ================================
 
     #[test]
     fn vector_to_num_cast() {
