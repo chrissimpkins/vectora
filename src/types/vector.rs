@@ -1036,6 +1036,24 @@ where
     pub fn enumerate(&self) -> impl Iterator<Item = (usize, &T)> {
         self.components.iter().enumerate()
     }
+
+    /// Returns the sum of the [`Vector`] elements.
+    ///
+    /// An empty [`Vector`] returns the zero value of the contained numeric type.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
+    ///
+    /// assert_eq!(v.sum(), 6);
+    /// ```
+    pub fn sum(&self) -> T {
+        self.components.iter().fold(T::zero(), |a, b| a + *b)
+    }
 }
 
 impl<T, const N: usize> Vector<T, N>
@@ -3726,6 +3744,48 @@ mod tests {
         let v_res_2 = v2.midpoint(&v3);
         assert!(v_res_2[0].is_nan());
         assert!(v_res_2[1].is_nan());
+    }
+
+    // ================================
+    //
+    // sum method tests
+    //
+    // ================================
+    #[test]
+    fn vector_method_sum() {
+        let v1 = Vector::<i32, 3>::from([-1, 2, 3]);
+
+        assert_eq!(v1.sum(), 4);
+
+        let v2 = Vector::<f64, 3>::from([-1.0, 2.0, 3.0]);
+
+        assert_relative_eq!(v2.sum(), 4.0);
+
+        let v3 = Vector::<Complex<i32>, 2>::from([Complex::new(1, -2), Complex::new(5, -6)]);
+
+        assert_eq!(v3.sum(), Complex::new(6, -8));
+
+        // zero floating point values
+        let v4 = Vector::<f64, 3>::from([0.0, -1.0, 5.0]);
+
+        assert_relative_eq!(v4.sum(), 4.0);
+
+        // postiive infinity floating point values
+        let v5 = Vector::<f64, 3>::from([f64::INFINITY, 1.0, 2.0]);
+
+        assert_eq!(v5.sum(), f64::INFINITY);
+        assert!(v5.sum().is_infinite());
+
+        // negative infinity floating point values
+        let v6 = Vector::<f64, 3>::from([f64::NEG_INFINITY, 1.0, 2.0]);
+
+        assert_eq!(v6.sum(), f64::NEG_INFINITY);
+        assert!(v6.sum().is_infinite());
+
+        // NaN floating point values
+        let v7 = Vector::<f64, 3>::from([f64::NAN, 1.0, 2.0]);
+
+        assert!(v7.sum().is_nan());
     }
 
     // ===================================
