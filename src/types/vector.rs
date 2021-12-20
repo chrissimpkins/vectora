@@ -1039,7 +1039,7 @@ where
 
     /// Returns the sum of the [`Vector`] elements.
     ///
-    /// An empty [`Vector`] returns the zero value of the contained numeric type.
+    /// **Note**: An empty [`Vector`] returns the zero value of the contained numeric type.
     ///
     /// # Examples
     ///
