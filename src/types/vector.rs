@@ -1072,9 +1072,9 @@ where
     /// ```
     pub fn product(&self) -> T {
         if self.components.is_empty() {
-            return T::zero();
+            T::zero()
         } else if self.components.len() == 1 {
-            return self[0];
+            self[0]
         } else {
             self.components.iter().skip(1).fold(self[0], |a, b| a * *b)
         }
