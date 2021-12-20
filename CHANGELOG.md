@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.4.0
+
+### Added
+
+- `Vector` struct `enumerate` method for enumeration over (index, value) tuples
+- `Vector` struct `product` method for element-wise products (supports int, float, and complex number types)
+- `Vector` struct `sum` method for element-wise sums (supports int, float, and complex number types)
+- `Vector::product` Criterion benchmark tests
+
+### Changed
+
+- None
+
 ## v0.3.1
 
 ### Added
