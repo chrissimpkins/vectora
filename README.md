@@ -60,7 +60,7 @@ git clone https://github.com/chrissimpkins/vectora.git
 
 The project is tested with the latest GitHub Actions macOS, Linux (Ubuntu), and Windows environment runners using the stable and beta `rustc` toolchains.
 
-##### Run unit and doc test suite
+##### Unit and doc test suite
 
 Edit the source files, then run the unit and doc test suite locally with the command:
 
@@ -68,25 +68,45 @@ Edit the source files, then run the unit and doc test suite locally with the com
 cargo test
 ```
 
-##### Run unit tests only
+##### Unit tests only
 
 ```txt
 cargo test --lib
 ```
 
-##### Run doc tests only
+##### Doc tests only
 
 ```txt
 cargo test --doc
 ```
 
-##### Run clippy lints
+##### Clippy lints
 
 Clippy lints are not executed with the above commands.  Use the following to lint Rust source files with clippy:
 
 ```txt
 cargo clippy -- -D warnings
 ```
+
+##### Fuzzing
+
+This crate supports [`cargo fuzz`](https://github.com/rust-fuzz/cargo-fuzz) + [`libFuzzer`](https://llvm.org/docs/LibFuzzer.html) based fuzzing with the nightly rustc toolchain in supported environments.
+
+[Install the `rustc` nightly toolchain](https://rust-lang.github.io/rustup/concepts/channels.html#working-with-nightly-rust).
+
+Then, install `cargo-fuzz` with:
+
+```
+cargo +nightly install -f cargo-fuzz
+```
+
+Edit the fuzz target source in the `fuzz/fuzz_vectora.rs` file and begin fuzzing with the command:
+
+```
+cargo +nightly fuzz run fuzz_vectora
+```
+
+Please see the [Fuzzing with cargo-fuzz chapter](https://rust-fuzz.github.io/book/cargo-fuzz.html) of the Rust Fuzz book for additional documentation.
 
 #### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Documentation contributions
 
