@@ -154,7 +154,7 @@
 //!
 //! A [`Vector`] can have mutable values, but it cannot grow in length.  The
 //! dimension length is fixed at instantiation, and all fields are *initialized*
-//! at instantiation.
+//! at instantiation.  The maximum dimension length is [`usize::MAX`].
 //!
 //! ### Zero Vector
 //!
