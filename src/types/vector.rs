@@ -270,8 +270,25 @@ where
 
 impl<T, const N: usize> Vector<T, N>
 where
-    T: Num + Copy + Sync + Send,
+    T: Num + Copy + Sync + Send + std::fmt::Debug,
 {
+    /// Returns a pretty-print formatted [`String`] of ordered [`Vector`]
+    /// data.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from([1, 2, 3]);
+    ///
+    /// assert_eq!(v.pretty(), String::from("[\n    1,\n    2,\n    3,\n]"));
+    /// ```
+    pub fn pretty(&self) -> String {
+        format!("{:#?}", self.components)
+    }
+
     /// Returns a reference to a [`Vector`] index value or range,
     /// or `None` if the index is out of bounds.
     ///
@@ -3180,6 +3197,23 @@ mod tests {
         });
 
         handle.join().unwrap();
+    }
+
+    // ================================
+    //
+    // pretty method tests
+    //
+    // ================================
+    #[test]
+    fn vector_method_pretty() {
+        let v1 = Vector::<i32, 2>::from([-1, 2]);
+        let v2 = Vector::<f64, 2>::from([-1.0, 2.0]);
+        let v3 =
+            Vector::<Complex<f64>, 2>::from([Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]);
+
+        assert_eq!(v1.pretty(), String::from("[\n    -1,\n    2,\n]"));
+        assert_eq!(v2.pretty(), String::from("[\n    -1.0,\n    2.0,\n]"));
+        assert_eq!(v3.pretty(), String::from("[\n    Complex {\n        re: -1.0,\n        im: 2.0,\n    },\n    Complex {\n        re: 3.0,\n        im: -4.0,\n    },\n]"));
     }
 
     // ================================
