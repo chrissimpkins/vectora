@@ -1401,6 +1401,38 @@ where
         self
     }
 
+    /// Returns the element-wise arithmetic mean for a floating point [`Vector`]
+    ///
+    /// # Errors
+    ///
+    /// Returns [`VectorError::EmptyVectorError`] if called on an empty [`Vector`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v: Vector<f64, 5> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0]);
+    ///
+    /// assert_relative_eq!(v.mean().unwrap(), 3.0);
+    /// ```
+    pub fn mean(&self) -> Result<T, VectorError>
+    where
+        T: Float + Copy + Sync + Send + Sum<T>,
+    {
+        if self.is_empty() {
+            Err(VectorError::EmptyVectorError(
+                "expected a Vector with data and received an empty Vector".to_string(),
+            ))
+        } else {
+            // this should be safe to unwrap because we have a fixed definition
+            // for acceptable type casts from primitive usize to primitive f32 and f64 types
+            let length = T::from(self.len()).unwrap();
+            Ok((self.components.iter().map(|a| *a).sum::<T>()) / length)
+        }
+    }
+
     // ================================
     //
     // Private methods
@@ -3941,6 +3973,42 @@ mod tests {
         assert_eq!(v_int_one_ele.product(), 10);
         assert_relative_eq!(v_float_one_ele.product(), 10.0);
         assert_eq!(v_complex_one_ele.product(), Complex::new(10, 1));
+    }
+
+    // ================================
+    //
+    // mean method tests
+    //
+    // ================================
+    #[test]
+    fn vector_method_mean() {
+        let v1_f32: Vector<f32, 5> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0]);
+        let v1_f64: Vector<f64, 5> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0]);
+
+        assert_relative_eq!(v1_f32.mean().unwrap(), 3.0);
+        assert_relative_eq!(v1_f64.mean().unwrap(), 3.0);
+
+        // 1-Vector mean = contained value
+        let v2: Vector<f64, 1> = Vector::from([5.0]);
+        assert_relative_eq!(v2.mean().unwrap(), 5.0);
+
+        // negative values
+        let v3: Vector<f64, 5> = Vector::from([-4.0, 2.0, 3.0, 4.0, 5.0]);
+        assert_relative_eq!(v3.mean().unwrap(), 2.0);
+
+        // zero vector
+        let v_zero: Vector<f64, 5> = Vector::zero();
+        assert_relative_eq!(v_zero.mean().unwrap(), 0.0);
+
+        // NaN data
+        let v_nan: Vector<f64, 5> = Vector::from([f64::NAN, 2.0, 3.0, 4.0, 5.0]);
+        assert!(v_nan.mean().unwrap().is_nan());
+
+        // infinities
+        let v_pos_inf: Vector<f64, 5> = Vector::from([f64::INFINITY, 2.0, 3.0, 4.0, 5.0]);
+        let v_neg_inf: Vector<f64, 5> = Vector::from([f64::NEG_INFINITY, 2.0, 3.0, 4.0, 5.0]);
+        assert_eq!(v_pos_inf.mean().unwrap(), f64::INFINITY);
+        assert_eq!(v_neg_inf.mean().unwrap(), f64::NEG_INFINITY);
     }
 
     // ===================================
