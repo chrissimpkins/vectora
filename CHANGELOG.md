@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.5.0
+
+### Added
+
+- `Vector` struct `pretty` method for pretty-print formatted `String` of data contents
+- Implement `Display` trait for `Vector` type
+- cargo fuzz + libFuzzer based fuzzing infrastructure support
+
+### Changed
+
+- Cargo.toml configuration: updated keyword metadata
+- tests: add unit tests of Vector type introspection with `Any` trait implementation
+- docs: Getting Started guide: revised to indicate the maximum length of a `Vector` type
+- docs: Developer: revised to include new documentation of how to execute only unit tests and only doc tests
+- docs: Developer: revised to include documentation of cargo fuzz based fuzzing on the library
+
 ## v0.4.0
 
 ### Added
