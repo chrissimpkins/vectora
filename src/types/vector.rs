@@ -2,6 +2,7 @@
 
 use std::{
     borrow::{Borrow, BorrowMut},
+    fmt,
     iter::{IntoIterator, Sum},
     ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Neg, Sub},
     slice::SliceIndex,
@@ -249,6 +250,21 @@ where
     /// ```
     fn default() -> Self {
         Self::new()
+    }
+}
+
+// ================================
+//
+// Display trait impl
+//
+// ================================
+
+impl<T, const N: usize> fmt::Display for Vector<T, N>
+where
+    T: Num + Copy + Default + Sync + Send + fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.components)
     }
 }
 
@@ -4090,6 +4106,25 @@ mod tests {
         let boxed_v3: Box<dyn Any> =
             Box::new(Vector::from([Complex::new(0, 1), Complex::new(3, 4)]));
         assert!(TypeId::of::<Vector<Complex<i32>, 2>>() == (&*boxed_v3).type_id());
+    }
+
+    // ================================
+    //
+    // Display trait tests
+    //
+    // ================================
+    #[test]
+    fn vector_trait_display() {
+        let v1: Vector<i32, 3> = Vector::from([-1, 2, 3]);
+        let v2: Vector<f64, 3> = Vector::from([-1.0, 2.0, 3.0]);
+        let v3: Vector<Complex<i32>, 2> = Vector::from([Complex::new(0, -1), Complex::new(3, 4)]);
+
+        assert_eq!(format!("{}", v1), String::from("[-1, 2, 3]"));
+        assert_eq!(format!("{}", v2), String::from("[-1.0, 2.0, 3.0]"));
+        assert_eq!(
+            format!("{}", v3),
+            String::from("[Complex { re: 0, im: -1 }, Complex { re: 3, im: 4 }]")
+        );
     }
 
     // ================================
