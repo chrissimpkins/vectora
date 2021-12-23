@@ -4011,6 +4011,14 @@ mod tests {
         assert_eq!(v_neg_inf.mean().unwrap(), f64::NEG_INFINITY);
     }
 
+    #[test]
+    fn vector_method_mean_err() {
+        // the mean method should raise an error when called from an empty vector
+        let v: Vector<f64, 0> = Vector::new();
+        assert!(v.mean().is_err());
+        assert!(matches!(v.mean(), Err(VectorError::EmptyVectorError(_))));
+    }
+
     // ===================================
     //
     // map_closure & map_func method tests
