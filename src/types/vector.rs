@@ -2576,6 +2576,7 @@ mod tests {
     use num::complex::Complex;
     #[allow(unused_imports)]
     use pretty_assertions::{assert_eq, assert_ne};
+    use std::any::{Any, TypeId};
 
     // =======================================
     //
@@ -4062,6 +4063,33 @@ mod tests {
         assert_relative_eq!(v4[0].im, 4.0);
         assert_relative_eq!(v4[1].re, -7.0);
         assert_relative_eq!(v4[1].im, 24.0);
+    }
+
+    // ================================
+    //
+    // Any trait introspection tests
+    //
+    // ================================
+    #[test]
+    fn vector_trait_any() {
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        assert!(TypeId::of::<Vector<i32, 3>>() == Any::type_id(&v1));
+
+        let boxed_v1: Box<dyn Any> = Box::new(Vector::from([1_i32, 2_i32, 3_i32]));
+        assert!(TypeId::of::<Vector<i32, 3>>() == (&*boxed_v1).type_id());
+
+        let v2: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
+        assert!(TypeId::of::<Vector<f64, 3>>() == Any::type_id(&v2));
+
+        let boxed_v2: Box<dyn Any> = Box::new(Vector::from([1.0_f64, 2.0_f64, 3.0_f64]));
+        assert!(TypeId::of::<Vector<f64, 3>>() == (&*boxed_v2).type_id());
+
+        let v3: Vector<Complex<i32>, 2> = Vector::from([Complex::new(0, 1), Complex::new(3, 4)]);
+        assert!(TypeId::of::<Vector<Complex<i32>, 2>>() == Any::type_id(&v3));
+
+        let boxed_v3: Box<dyn Any> =
+            Box::new(Vector::from([Complex::new(0, 1), Complex::new(3, 4)]));
+        assert!(TypeId::of::<Vector<Complex<i32>, 2>>() == (&*boxed_v3).type_id());
     }
 
     // ================================
