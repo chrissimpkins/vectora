@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.5.1
+
+### Added
+
+- None
+
+### Changed
+
+- Cargo.toml config: reduced keyword number from 7 to 5. crates.io does not accept > 5 keywords
+
 ## v0.5.0
 
 ### Added
