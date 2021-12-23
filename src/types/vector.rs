@@ -1429,7 +1429,7 @@ where
             // this should be safe to unwrap because we have a fixed definition
             // for acceptable type casts from primitive usize to primitive f32 and f64 types
             let length = T::from(self.len()).unwrap();
-            Ok((self.components.iter().map(|a| *a).sum::<T>()) / length)
+            Ok((self.components.iter().copied().sum::<T>()) / length)
         }
     }
 
