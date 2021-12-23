@@ -155,7 +155,7 @@ where
     ///
     /// ## Type alias syntax
     ///
-    /// Simplify instantiation with a 2D or 3D type aliases:
+    /// Simplify instantiation with a 2D or 3D type alias:
     ///
     /// ```
     /// # use vectora::Vector;
