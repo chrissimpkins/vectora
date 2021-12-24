@@ -1435,6 +1435,43 @@ where
         }
     }
 
+    /// Returns the element-wise geometric mean for a floating point [`Vector`] of values
+    /// greater than or equal to zero.
+    ///
+    /// **Note**: [`Vector`] that contain any number of zero values will always return a
+    /// geometric mean of zero.  [`Vector`] that contain any number of negative values will always
+    /// return `T::NAN`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v: Vector<f64, 5> = Vector::from([4.0, 36.0, 45.0, 50.0, 75.0]);
+    ///
+    /// assert_relative_eq!(v.mean_geo().unwrap(), 30.0);
+    /// ```
+    pub fn mean_geo(&self) -> Result<T, VectorError>
+    where
+        T: Float + Copy + Sync + Send + Sum<T>,
+    {
+        if self.is_empty() {
+            Err(VectorError::EmptyVectorError(
+                "expected a Vector with data and received an empty Vector".to_string(),
+            ))
+        } else {
+            // this should be safe to unwrap because we have a fixed definition
+            // for acceptable type casts from primitive usize to primitive f32 and f64 types
+            let length = T::from(self.len()).unwrap();
+            // note: this uses the sum of natural logs approach to reduce the likelihood of overflows
+            // with the product method
+            Ok(((self.components.iter().copied().map(|x| x.ln()).sum::<T>()) / length).exp())
+        }
+    }
+
     // ================================
     //
     // Private methods
@@ -4010,6 +4047,10 @@ mod tests {
         let v3: Vector<f64, 5> = Vector::from([-4.0, 2.0, 3.0, 4.0, 5.0]);
         assert_relative_eq!(v3.mean().unwrap(), 2.0);
 
+        // identical values
+        let v4: Vector<f64, 5> = Vector::from([10.0, 10.0, 10.0, 10.0, 10.0]);
+        assert_relative_eq!(v4.mean().unwrap(), 10.0);
+
         // zero vector
         let v_zero: Vector<f64, 5> = Vector::zero();
         assert_relative_eq!(v_zero.mean().unwrap(), 0.0);
@@ -4030,6 +4071,79 @@ mod tests {
         // the mean method should raise an error when called from an empty vector
         let v: Vector<f64, 0> = Vector::new();
         assert!(v.mean().is_err());
+        assert!(matches!(v.mean(), Err(VectorError::EmptyVectorError(_))));
+    }
+
+    // ================================
+    //
+    // mean_geo method tests
+    //
+    // ================================
+
+    #[test]
+    fn vector_method_mean_geo() {
+        let v1: Vector<f32, 5> = Vector::from([4.0, 36.0, 45.0, 50.0, 75.0]);
+        let v2: Vector<f64, 5> = Vector::from([4.0, 36.0, 45.0, 50.0, 75.0]);
+
+        assert_relative_eq!(v1.mean_geo().unwrap(), 30.0);
+        assert_relative_eq!(v2.mean_geo().unwrap(), 30.0);
+
+        let v1_mean_geo = v1.mean_geo().unwrap();
+
+        // sum of log residuals = zero
+        assert_relative_eq!(
+            (v1[0].ln() - v1_mean_geo.ln())
+                + (v1[1].ln() - v1_mean_geo.ln())
+                + (v1[2].ln() - v1_mean_geo.ln())
+                + (v1[3].ln() - v1_mean_geo.ln())
+                + (v1[4].ln() - v1_mean_geo.ln()),
+            0.0
+        );
+
+        // 1-Vector geometric mean = contained value
+        let v3: Vector<f64, 1> = Vector::from([5.0]);
+        assert_relative_eq!(v3.mean_geo().unwrap(), 5.0);
+
+        // mixed positive and negative values
+        let v3: Vector<f64, 5> = Vector::from([-4.0, 2.0, 3.0, 4.0, 5.0]);
+        assert!(v3.mean_geo().unwrap().is_nan());
+
+        let v3_alt: Vector<f64, 5> = Vector::from([-4.0, -2.0, 3.0, 4.0, 5.0]);
+        assert!(v3_alt.mean_geo().unwrap().is_nan());
+
+        // negative values only
+        let v4: Vector<f64, 5> = Vector::from([-4.0, -36.0, -45.0, -50.0, -75.0]);
+        assert!(v4.mean_geo().unwrap().is_nan());
+
+        // identical values
+        let v5: Vector<f64, 5> = Vector::from([10.0, 10.0, 10.0, 10.0, 10.0]);
+        assert_relative_eq!(v5.mean_geo().unwrap(), 10.0);
+
+        // NaN data
+        let v_nan: Vector<f64, 5> = Vector::from([f64::NAN, 2.0, 3.0, 4.0, 5.0]);
+        assert!(v_nan.mean_geo().unwrap().is_nan());
+
+        // positive infinity
+        let v_pos_inf: Vector<f64, 5> = Vector::from([f64::INFINITY, 2.0, 3.0, 4.0, 5.0]);
+        assert_eq!(v_pos_inf.mean_geo().unwrap(), f64::INFINITY);
+
+        // negative infinity
+        let v_neg_inf: Vector<f64, 5> = Vector::from([f64::NEG_INFINITY, 2.0, 3.0, 4.0, 5.0]);
+        assert!(v_neg_inf.mean_geo().unwrap().is_nan());
+
+        // zero values
+        let v_zero: Vector<f64, 5> = Vector::from([0.0, 1.0, 2.0, 3.0, 4.0]);
+        assert_relative_eq!(v_zero.mean_geo().unwrap(), 0.0);
+
+        let v_zero_alt: Vector<f64, 5> = Vector::from([0.0, 0.0, 0.0, 0.0, 0.0]);
+        assert_relative_eq!(v_zero_alt.mean_geo().unwrap(), 0.0);
+    }
+
+    #[test]
+    fn vector_method_mean_geo_err() {
+        // the mean method should raise an error when called from an empty vector
+        let v: Vector<f64, 0> = Vector::new();
+        assert!(v.mean_geo().is_err());
         assert!(matches!(v.mean(), Err(VectorError::EmptyVectorError(_))));
     }
 
