@@ -171,5 +171,15 @@ use vectora::types::vector::*;
 //     c.bench_function("Vector product method: f64 3D Vector", |b| b.iter(|| v.product()));
 // }
 
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f32, 5> = Vector::from([1.0, -2.0, 3.0, 100.0, 24.0]);
+//     c.bench_function("Vector mean method: f32 5D Vector", |b| b.iter(|| v.mean()));
+// }
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f64, 5> = Vector::from([1.0, -2.0, 3.0, 100.0, 24.0]);
+//     c.bench_function("Vector mean method: f64 5D Vector", |b| b.iter(|| v.mean()));
+// }
+
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
