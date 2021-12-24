@@ -1409,6 +1409,8 @@ where
     ///
     /// # Examples
     ///
+    /// Basic usage:
+    ///
     /// ```
     /// # use vectora::types::vector::Vector;
     /// use approx::assert_relative_eq;
