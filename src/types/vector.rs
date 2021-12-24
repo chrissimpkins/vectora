@@ -3988,6 +3988,18 @@ mod tests {
         assert_relative_eq!(v1_f32.mean().unwrap(), 3.0);
         assert_relative_eq!(v1_f64.mean().unwrap(), 3.0);
 
+        let v1_f64_mean = v1_f64.mean().unwrap();
+
+        // sum of residuals = zero
+        assert_relative_eq!(
+            (v1_f64[0] - v1_f64_mean)
+                + (v1_f64[1] - v1_f64_mean)
+                + (v1_f64[2] - v1_f64_mean)
+                + (v1_f64[3] - v1_f64_mean)
+                + (v1_f64[4] - v1_f64_mean),
+            0.0
+        );
+
         // 1-Vector mean = contained value
         let v2: Vector<f64, 1> = Vector::from([5.0]);
         assert_relative_eq!(v2.mean().unwrap(), 5.0);
