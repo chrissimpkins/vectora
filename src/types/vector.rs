@@ -2,6 +2,7 @@
 
 use std::{
     borrow::{Borrow, BorrowMut},
+    cmp::Ordering,
     fmt,
     iter::{IntoIterator, Sum},
     ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Neg, Sub},
@@ -1555,6 +1556,23 @@ where
             .for_each(|(i, a)| new_components[i] = a);
 
         Self { components: new_components }
+    }
+
+    // Floating point type : floating point type relative equivalence relation
+    // order comparison implementation
+    fn rel_eq_cmp<F>(&self, x: &F, y: &F) -> Ordering
+    where
+        F: Float + approx::RelativeEq + std::fmt::Debug,
+    {
+        if Relative::default().eq(x, y) {
+            Ordering::Equal
+        } else if x < y {
+            Ordering::Less
+        } else if x > y {
+            Ordering::Greater
+        } else {
+            panic!("unable to determine order of {:?} and {:?}", x, y);
+        }
     }
 }
 
@@ -3334,6 +3352,49 @@ mod tests {
         });
 
         handle.join().unwrap();
+    }
+
+    // ================================
+    //
+    // rel_eq_cmp method tests
+    //
+    // ================================
+    #[test]
+    fn vector_private_rel_eq_cmp() {
+        let v: Vector<f64, 0> = Vector::new();
+
+        assert_eq!(v.rel_eq_cmp(&4.0, &4.0), Ordering::Equal);
+        assert_eq!(v.rel_eq_cmp(&(0.1 + 0.2), &(0.15 + 0.15)), Ordering::Equal);
+        assert_eq!(v.rel_eq_cmp(&4.1, &4.0), Ordering::Greater);
+        assert_eq!(v.rel_eq_cmp(&4.0, &4.1), Ordering::Less);
+        assert_eq!(v.rel_eq_cmp(&f64::INFINITY, &4.0), Ordering::Greater);
+        assert_eq!(v.rel_eq_cmp(&f64::NEG_INFINITY, &4.0), Ordering::Less);
+        assert_eq!(v.rel_eq_cmp(&f64::INFINITY, &-4.0), Ordering::Greater);
+        assert_eq!(v.rel_eq_cmp(&f64::NEG_INFINITY, &-4.0), Ordering::Less);
+        assert_eq!(v.rel_eq_cmp(&f64::INFINITY, &0.0), Ordering::Greater);
+        assert_eq!(v.rel_eq_cmp(&f64::NEG_INFINITY, &0.0), Ordering::Less);
+        assert_eq!(v.rel_eq_cmp(&f64::INFINITY, &-0.0), Ordering::Greater);
+        assert_eq!(v.rel_eq_cmp(&f64::NEG_INFINITY, &-0.0), Ordering::Less);
+        assert_eq!(v.rel_eq_cmp(&f64::INFINITY, &f64::INFINITY), Ordering::Equal);
+        assert_eq!(v.rel_eq_cmp(&f64::NEG_INFINITY, &f64::NEG_INFINITY), Ordering::Equal);
+        assert_eq!(v.rel_eq_cmp(&f64::INFINITY, &f64::NEG_INFINITY), Ordering::Greater);
+        assert_eq!(v.rel_eq_cmp(&f64::NEG_INFINITY, &f64::INFINITY), Ordering::Less);
+    }
+
+    #[test]
+    #[should_panic(expected = "unable to determine order of NaN and 4.0")]
+    fn vector_private_rel_eq_cmp_panic_nan_lhs() {
+        let v: Vector<f64, 0> = Vector::new();
+
+        v.rel_eq_cmp(&f64::NAN, &4.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "unable to determine order of 4.0 and NaN")]
+    fn vector_private_rel_eq_cmp_panic_nan_rhs() {
+        let v: Vector<f64, 0> = Vector::new();
+
+        v.rel_eq_cmp(&4.0, &f64::NAN);
     }
 
     // ================================
