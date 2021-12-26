@@ -1541,6 +1541,10 @@ where
 
     /// Returns the element-wise median value for a floating point [`Vector`].
     ///
+    /// This implementation identifies median data with the quickselect algorithm
+    /// defined in the standard library [`slice::select_nth_unstable_by`] method.
+    /// The quickselect implementation has O(n) worst-case run time.
+    ///
     /// # Errors
     ///
     /// Returns a [`VectorError::ValueError`] when a [`Vector`] is empty.
@@ -1585,6 +1589,7 @@ where
                     .1;
                 let median_right =
                     data_copy_2.select_nth_unstable_by(length / 2, |a, b| self.rel_eq_cmp(a, b)).1;
+                // take the arithmetic average of the two ordered middle values
                 Ok((*median_left + *median_right) / T::from(2.0).unwrap())
             } else {
                 let mut data_copy = self.components;
