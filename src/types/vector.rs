@@ -1539,6 +1539,60 @@ where
         }
     }
 
+    /// Returns the element-wise median value for a floating point [`Vector`].
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`VectorError::ValueError`] when a [`Vector`] is empty.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the data include [`f32::NAN`] or [`f64::NAN`].
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v1: Vector<f64, 9> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    ///
+    /// assert_relative_eq!(v1.median().unwrap(), 5.0);
+    ///
+    /// let v2: Vector<f64, 10> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]);
+    ///
+    /// assert_relative_eq!(v2.median().unwrap(), 5.5);
+    /// ```
+    pub fn median(&self) -> Result<T, VectorError>
+    where
+        T: Float + Copy + Sync + Send + approx::RelativeEq + std::fmt::Debug,
+    {
+        if self.is_empty() {
+            Err(VectorError::EmptyVectorError(
+                "expected a Vector with data and received an empty Vector".to_string(),
+            ))
+        } else {
+            let length = self.len();
+            let even = length % 2 == 0;
+
+            if even {
+                let mut data_copy_1 = self.components;
+                let mut data_copy_2 = self.components;
+                let median_left = data_copy_1
+                    .select_nth_unstable_by((length / 2) - 1, |a, b| self.rel_eq_cmp(a, b))
+                    .1;
+                let median_right =
+                    data_copy_2.select_nth_unstable_by(length / 2, |a, b| self.rel_eq_cmp(a, b)).1;
+                Ok((*median_left + *median_right) / T::from(2.0).unwrap())
+            } else {
+                let mut data_copy = self.components;
+                Ok(*data_copy.select_nth_unstable_by(length / 2, |a, b| self.rel_eq_cmp(a, b)).1)
+            }
+        }
+    }
+
     // ================================
     //
     // Private methods
