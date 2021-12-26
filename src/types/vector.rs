@@ -1401,7 +1401,7 @@ where
         self
     }
 
-    /// Returns the element-wise arithmetic mean for a floating point [`Vector`]
+    /// Returns the element-wise arithmetic mean for a floating point [`Vector`].
     ///
     /// # Errors
     ///
@@ -1469,6 +1469,72 @@ where
             // note: this uses the sum of natural logs approach to reduce the likelihood of overflows
             // with the product method
             Ok(((self.components.iter().copied().map(|x| x.ln()).sum::<T>()) / length).exp())
+        }
+    }
+
+    /// Returns the element-wise harmonic mean for a floating point [`Vector`] of values
+    /// greater than zero.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`VectorError::ValueError`] when a [`Vector`] contains the value zero
+    /// or negative values.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v: Vector<f64, 5> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0]);
+    ///
+    /// assert_relative_eq!(v.mean_harmonic().unwrap(), 2.18978102189781);
+    /// ```
+    pub fn mean_harmonic(&self) -> Result<T, VectorError>
+    where
+        T: Float + Copy + Sync + Send + Sum<T> + std::fmt::Debug,
+    {
+        if self.is_empty() {
+            Err(VectorError::EmptyVectorError(
+                "expected a Vector with data and received an empty Vector".to_string(),
+            ))
+        } else {
+            // this should be safe to unwrap because we have a fixed definition
+            // for acceptable type casts from primitive usize to primitive f32 and f64 types
+            let length = T::from(self.len()).unwrap();
+
+            // the unchecked version of the sum of reciprocals approach is commented out below:
+            // let sum_of_reciprocal = self.components.iter().copied().map(|x| x.powi(-1)).sum::<T>();
+            let mut err = Ok(());
+            let sum_of_reciprocal = self
+                .components
+                .iter()
+                .copied()
+                .map(|x| {
+                    if x.is_sign_negative() || x.is_zero() {
+                        Err(VectorError::ValueError(format!(
+                            "found invalid value less than or equal to zero: {:?}",
+                            x,
+                        )))
+                    } else {
+                        Ok(x)
+                    }
+                })
+                .scan(&mut err, |err, res| match res {
+                    Ok(x) => Some(x),
+                    Err(e) => {
+                        **err = Err(e);
+                        None
+                    }
+                })
+                .map(|x| x.powi(-1))
+                .sum::<T>();
+
+            // propagate the error if a value <= 0.0 was in the data set
+            err?;
+            Ok(length / sum_of_reciprocal)
         }
     }
 
@@ -4145,6 +4211,67 @@ mod tests {
         let v: Vector<f64, 0> = Vector::new();
         assert!(v.mean_geo().is_err());
         assert!(matches!(v.mean(), Err(VectorError::EmptyVectorError(_))));
+    }
+
+    // ================================
+    //
+    // mean_harmonic method tests
+    //
+    // ================================
+    #[test]
+    fn vector_mean_harmonic() {
+        let v1: Vector<f32, 5> = Vector::from([4.0, 36.0, 45.0, 50.0, 75.0]);
+        let v2: Vector<f64, 5> = Vector::from([4.0, 36.0, 45.0, 50.0, 75.0]);
+
+        assert_relative_eq!(v1.mean_harmonic().unwrap(), 15.0);
+        assert_relative_eq!(v2.mean_harmonic().unwrap(), 15.0);
+
+        // 1-Vector geometric mean = contained value
+        let v3: Vector<f64, 1> = Vector::from([5.0]);
+        assert_relative_eq!(v3.mean_harmonic().unwrap(), 5.0);
+
+        // mixed positive and negative values
+        let v4: Vector<f64, 5> = Vector::from([-4.0, 2.0, 3.0, 4.0, 5.0]);
+        assert!(v4.mean_harmonic().is_err());
+        assert!(matches!(v4.mean_harmonic(), Err(VectorError::ValueError(_))));
+
+        let v4_alt: Vector<f64, 5> = Vector::from([-4.0, -2.0, 3.0, 4.0, 5.0]);
+        assert!(v4_alt.mean_harmonic().is_err());
+        assert!(matches!(v4.mean_harmonic(), Err(VectorError::ValueError(_))));
+
+        // negative values only
+        let v5: Vector<f64, 5> = Vector::from([-4.0, -36.0, -45.0, -50.0, -75.0]);
+        assert!(v5.mean_harmonic().is_err());
+        assert!(matches!(v4.mean_harmonic(), Err(VectorError::ValueError(_))));
+
+        // identical values
+        let v6: Vector<f64, 5> = Vector::from([10.0, 10.0, 10.0, 10.0, 10.0]);
+        assert_relative_eq!(v6.mean_harmonic().unwrap(), 10.0);
+
+        // NaN data
+        let v_nan: Vector<f64, 5> = Vector::from([f64::NAN, 2.0, 3.0, 4.0, 5.0]);
+        assert!(v_nan.mean_harmonic().unwrap().is_nan());
+
+        // positive infinity
+        let v_pos_inf: Vector<f64, 5> = Vector::from([f64::INFINITY, 2.0, 3.0, 4.0, 5.0]);
+        assert_eq!(v_pos_inf.mean_harmonic().unwrap(), 3.8961038961038965);
+    }
+
+    #[test]
+    fn vector_mean_harmonic_err() {
+        // negative infinity
+        let v_neg_inf: Vector<f64, 5> = Vector::from([f64::NEG_INFINITY, 2.0, 3.0, 4.0, 5.0]);
+        assert!(v_neg_inf.mean_harmonic().is_err());
+        assert!(matches!(v_neg_inf.mean_harmonic(), Err(VectorError::ValueError(_))));
+
+        // zero values
+        let v_zero: Vector<f64, 5> = Vector::from([0.0, 1.0, 2.0, 3.0, 4.0]);
+        assert!(v_zero.mean_harmonic().is_err());
+        assert!(matches!(v_zero.mean_harmonic(), Err(VectorError::ValueError(_))));
+
+        let v_zero_alt: Vector<f64, 5> = Vector::from([0.0, 0.0, 0.0, 0.0, 0.0]);
+        assert!(v_zero_alt.mean_harmonic().is_err());
+        assert!(matches!(v_zero_alt.mean_harmonic(), Err(VectorError::ValueError(_))));
     }
 
     // ===================================

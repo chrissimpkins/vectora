@@ -188,7 +188,21 @@ use vectora::types::vector::*;
 
 // fn criterion_benchmark(c: &mut Criterion) {
 //     let v: Vector<f64, 5> = Vector::from([1.0, 2.0, 3.0, 100.0, 24.0]);
-//     c.bench_function("Vector mean_ge method: f64 5D Vector", |b| b.iter(|| v.mean()));
+//     c.bench_function("Vector mean_geo method: f64 5D Vector", |b| b.iter(|| v.mean_geo()));
+// }
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f32, 5> = Vector::from([1.0, 2.0, 3.0, 100.0, 24.0]);
+//     c.bench_function("Vector mean_harmonic method: f32 5D Vector", |b| {
+//         b.iter(|| v.mean_harmonic())
+//     });
+// }
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f64, 5> = Vector::from([1.0, 2.0, 3.0, 100.0, 24.0]);
+//     c.bench_function("Vector mean_harmonic method: f64 5D Vector", |b| {
+//         b.iter(|| v.mean_harmonic())
+//     });
 // }
 
 criterion_group!(benches, criterion_benchmark);
