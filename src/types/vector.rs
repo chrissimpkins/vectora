@@ -1606,6 +1606,61 @@ where
         }
     }
 
+    /// Returns the element-wise variance for a floating point [`Vector`] given a
+    /// `ddof` delta degrees of freedom bias correction factor.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`VectorError::ValueError`] if the `ddof` parameter is negative or has a value
+    /// greater than the [`Vector`] length.  Returns [`VectorError::EmptyVectorError`] if the
+    /// [`Vector`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ## Population variance
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v: Vector<f64, 5> = Vector::from([5.0, 11.0, 20.0, 31.0, 100.0]);
+    ///
+    /// assert_relative_eq!(v.variance(0.0).unwrap(), 1185.84);
+    /// ```
+    ///
+    /// ## Sample variance
+    ///
+    /// With [Bessel's correction](https://en.wikipedia.org/wiki/Bessel%27s_correction) for the bias
+    /// in estimation of the population variance.
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v: Vector<f64, 5> = Vector::from([5.0, 11.0, 20.0, 31.0, 100.0]);
+    ///
+    /// assert_relative_eq!(v.variance(1.0).unwrap(), 1482.3);
+    /// ```
+    pub fn variance(&self, ddof: T) -> Result<T, VectorError>
+    where
+        T: Float + Copy + Sync + Send + std::fmt::Debug,
+    {
+        if self.is_empty() {
+            Err(VectorError::EmptyVectorError(
+                "expected a Vector with data and received an empty Vector".to_string(),
+            ))
+        } else if ddof.is_sign_negative() || ddof > T::from(self.len()).unwrap() {
+            Err(VectorError::ValueError(format!(
+                "ddof parameter must have a value greater than or equal to zero and must not be larger than the Vector length, received '{:?}'",
+                ddof
+            )))
+        } else {
+            Ok(self.variance_impl(ddof))
+        }
+    }
+
     // ================================
     //
     // Private methods
@@ -1640,6 +1695,27 @@ where
         } else {
             panic!("unable to determine order of {:?} and {:?}", x, y);
         }
+    }
+
+    // Element-wise variance implementation given `ddof` population variance estimation
+    // bias correction factor.
+    //
+    // Based on the ndarray crate `var` method implementation:
+    // https://docs.rs/ndarray/0.15.4/ndarray/struct.ArrayBase.html#method.var
+    // under [Apache License v2.0](https://github.com/rust-ndarray/ndarray/blob/master/LICENSE-APACHE)
+    //
+    // This implementation is computed with the [Welford one-pass algorithm](https://www.jstor.org/stable/1266577).
+    fn variance_impl(&self, ddof: T) -> T {
+        let bias_correction = T::from(self.len()).unwrap() - ddof;
+        let mut mean = T::zero();
+        let mut sum_of_squares = T::zero();
+        self.iter().enumerate().for_each(|(i, &x)| {
+            let delta = x - mean;
+            mean = mean + delta / T::from(i + 1).unwrap();
+            sum_of_squares = (x - mean).mul_add(delta, sum_of_squares);
+        });
+
+        sum_of_squares / bias_correction
     }
 }
 
