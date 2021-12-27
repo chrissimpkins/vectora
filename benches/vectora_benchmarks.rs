@@ -205,5 +205,25 @@ use vectora::types::vector::*;
 //     });
 // }
 
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f32, 10> = Vector::from([1.0, 2.0, 3.0, 100.0, 24.0, 9.0, 72.0, 1.0, 52.0, 88.0]);
+//     c.bench_function("Vector median method (even): f32 10D Vector", |b| b.iter(|| v.median()));
+// }
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f32, 9> = Vector::from([1.0, 2.0, 3.0, 100.0, 24.0, 9.0, 72.0, 1.0, 52.0]);
+//     c.bench_function("Vector median method (odd): f32 10D Vector", |b| b.iter(|| v.median()));
+// }
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f64, 10> = Vector::from([1.0, 2.0, 3.0, 100.0, 24.0, 9.0, 72.0, 1.0, 52.0, 88.0]);
+//     c.bench_function("Vector median method (even): f64 10D Vector", |b| b.iter(|| v.median()));
+// }
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f64, 9> = Vector::from([1.0, 2.0, 3.0, 100.0, 24.0, 9.0, 72.0, 1.0, 52.0]);
+//     c.bench_function("Vector median method (odd): f64 10D Vector", |b| b.iter(|| v.median()));
+// }
+
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
