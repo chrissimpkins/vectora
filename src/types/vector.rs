@@ -1704,7 +1704,7 @@ where
     // https://docs.rs/ndarray/0.15.4/ndarray/struct.ArrayBase.html#method.var
     // under [Apache License v2.0](https://github.com/rust-ndarray/ndarray/blob/master/LICENSE-APACHE)
     //
-    // This implementation is computed with the [Welford one-pass algorithm](https://www.jstor.org/stable/1266577).
+    // This implementation uses the [Welford one-pass algorithm](https://www.jstor.org/stable/1266577).
     fn variance_impl(&self, ddof: T) -> T {
         let bias_correction = T::from(self.len()).unwrap() - ddof;
         let mut mean = T::zero();
