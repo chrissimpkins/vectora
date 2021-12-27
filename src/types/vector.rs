@@ -2,6 +2,7 @@
 
 use std::{
     borrow::{Borrow, BorrowMut},
+    cmp::Ordering,
     fmt,
     iter::{IntoIterator, Sum},
     ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Neg, Sub},
@@ -1405,7 +1406,7 @@ where
     ///
     /// # Errors
     ///
-    /// Returns [`VectorError::EmptyVectorError`] if called on an empty [`Vector`].
+    /// Returns [`VectorError::EmptyVectorError`] when a [`Vector`] is empty.
     ///
     /// # Examples
     ///
@@ -1441,6 +1442,10 @@ where
     /// **Note**: [`Vector`] that contain any number of zero values will always return a
     /// geometric mean of zero.  [`Vector`] that contain any number of negative values will always
     /// return `T::NAN`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`VectorError::EmptyVectorError`] when a [`Vector`] is empty.
     ///
     /// # Examples
     ///
@@ -1478,7 +1483,8 @@ where
     /// # Errors
     ///
     /// Returns [`VectorError::ValueError`] when a [`Vector`] contains the value zero
-    /// or negative values.
+    /// or negative values.  Returns [`VectorError::EmptyVectorError`] when a [`Vector`]
+    /// is empty.
     ///
     /// # Examples
     ///
@@ -1538,6 +1544,68 @@ where
         }
     }
 
+    /// Returns the element-wise median value for a floating point [`Vector`].
+    ///
+    /// This implementation identifies the median with the quickselect algorithm
+    /// defined in the standard library [`slice::select_nth_unstable_by`] method.
+    /// This quickselect implementation has O(n) worst-case run time.
+    ///
+    /// # Errors
+    ///
+    /// Returns a [`VectorError::EmptyVectorError`] when a [`Vector`] is empty.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the data include [`f32::NAN`] or [`f64::NAN`].
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v1: Vector<f64, 9> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]);
+    ///
+    /// assert_relative_eq!(v1.median().unwrap(), 5.0);
+    ///
+    /// let v2: Vector<f64, 10> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]);
+    ///
+    /// assert_relative_eq!(v2.median().unwrap(), 5.5);
+    /// ```
+    ///
+    /// **Note**: Returns `T::NAN` if the median value is the arithmetic average of `T::INFINITY`
+    /// and `T::NEG_INFINITY` (e.g., the data set `[f64::NEG_INFINITY, f64::NEG_INFINITY, f64::INFINITY, f64::INFINITY]`);
+    pub fn median(&self) -> Result<T, VectorError>
+    where
+        T: Float + Copy + Sync + Send + approx::RelativeEq + std::fmt::Debug,
+    {
+        if self.is_empty() {
+            Err(VectorError::EmptyVectorError(
+                "expected a Vector with data and received an empty Vector".to_string(),
+            ))
+        } else {
+            let length = self.len();
+            let even = length % 2 == 0;
+
+            if even {
+                let mut data_copy_1 = self.components;
+                let mut data_copy_2 = self.components;
+                let median_left = data_copy_1
+                    .select_nth_unstable_by((length / 2) - 1, |a, b| self.rel_eq_cmp(a, b))
+                    .1;
+                let median_right =
+                    data_copy_2.select_nth_unstable_by(length / 2, |a, b| self.rel_eq_cmp(a, b)).1;
+                // take the arithmetic average of the two ordered middle values
+                Ok((*median_left + *median_right) / T::from(2.0).unwrap())
+            } else {
+                let mut data_copy = self.components;
+                Ok(*data_copy.select_nth_unstable_by(length / 2, |a, b| self.rel_eq_cmp(a, b)).1)
+            }
+        }
+    }
+
     // ================================
     //
     // Private methods
@@ -1555,6 +1623,23 @@ where
             .for_each(|(i, a)| new_components[i] = a);
 
         Self { components: new_components }
+    }
+
+    // Floating point type : floating point type relative equivalence relation
+    // order comparison implementation
+    fn rel_eq_cmp<F>(&self, x: &F, y: &F) -> Ordering
+    where
+        F: Float + approx::RelativeEq + std::fmt::Debug,
+    {
+        if Relative::default().eq(x, y) {
+            Ordering::Equal
+        } else if x < y {
+            Ordering::Less
+        } else if x > y {
+            Ordering::Greater
+        } else {
+            panic!("unable to determine order of {:?} and {:?}", x, y);
+        }
     }
 }
 
@@ -3338,6 +3423,49 @@ mod tests {
 
     // ================================
     //
+    // rel_eq_cmp method tests
+    //
+    // ================================
+    #[test]
+    fn vector_private_rel_eq_cmp() {
+        let v: Vector<f64, 0> = Vector::new();
+
+        assert_eq!(v.rel_eq_cmp(&4.0, &4.0), Ordering::Equal);
+        assert_eq!(v.rel_eq_cmp(&(0.1 + 0.2), &(0.15 + 0.15)), Ordering::Equal);
+        assert_eq!(v.rel_eq_cmp(&4.1, &4.0), Ordering::Greater);
+        assert_eq!(v.rel_eq_cmp(&4.0, &4.1), Ordering::Less);
+        assert_eq!(v.rel_eq_cmp(&f64::INFINITY, &4.0), Ordering::Greater);
+        assert_eq!(v.rel_eq_cmp(&f64::NEG_INFINITY, &4.0), Ordering::Less);
+        assert_eq!(v.rel_eq_cmp(&f64::INFINITY, &-4.0), Ordering::Greater);
+        assert_eq!(v.rel_eq_cmp(&f64::NEG_INFINITY, &-4.0), Ordering::Less);
+        assert_eq!(v.rel_eq_cmp(&f64::INFINITY, &0.0), Ordering::Greater);
+        assert_eq!(v.rel_eq_cmp(&f64::NEG_INFINITY, &0.0), Ordering::Less);
+        assert_eq!(v.rel_eq_cmp(&f64::INFINITY, &-0.0), Ordering::Greater);
+        assert_eq!(v.rel_eq_cmp(&f64::NEG_INFINITY, &-0.0), Ordering::Less);
+        assert_eq!(v.rel_eq_cmp(&f64::INFINITY, &f64::INFINITY), Ordering::Equal);
+        assert_eq!(v.rel_eq_cmp(&f64::NEG_INFINITY, &f64::NEG_INFINITY), Ordering::Equal);
+        assert_eq!(v.rel_eq_cmp(&f64::INFINITY, &f64::NEG_INFINITY), Ordering::Greater);
+        assert_eq!(v.rel_eq_cmp(&f64::NEG_INFINITY, &f64::INFINITY), Ordering::Less);
+    }
+
+    #[test]
+    #[should_panic(expected = "unable to determine order of NaN and 4.0")]
+    fn vector_private_rel_eq_cmp_panic_nan_lhs() {
+        let v: Vector<f64, 0> = Vector::new();
+
+        v.rel_eq_cmp(&f64::NAN, &4.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "unable to determine order of 4.0 and NaN")]
+    fn vector_private_rel_eq_cmp_panic_nan_rhs() {
+        let v: Vector<f64, 0> = Vector::new();
+
+        v.rel_eq_cmp(&4.0, &f64::NAN);
+    }
+
+    // ================================
+    //
     // pretty method tests
     //
     // ================================
@@ -4219,7 +4347,7 @@ mod tests {
     //
     // ================================
     #[test]
-    fn vector_mean_harmonic() {
+    fn vector_method_mean_harmonic() {
         let v1: Vector<f32, 5> = Vector::from([4.0, 36.0, 45.0, 50.0, 75.0]);
         let v2: Vector<f64, 5> = Vector::from([4.0, 36.0, 45.0, 50.0, 75.0]);
 
@@ -4258,7 +4386,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_mean_harmonic_err() {
+    fn vector_method_mean_harmonic_err() {
         // negative infinity
         let v_neg_inf: Vector<f64, 5> = Vector::from([f64::NEG_INFINITY, 2.0, 3.0, 4.0, 5.0]);
         assert!(v_neg_inf.mean_harmonic().is_err());
@@ -4272,6 +4400,85 @@ mod tests {
         let v_zero_alt: Vector<f64, 5> = Vector::from([0.0, 0.0, 0.0, 0.0, 0.0]);
         assert!(v_zero_alt.mean_harmonic().is_err());
         assert!(matches!(v_zero_alt.mean_harmonic(), Err(VectorError::ValueError(_))));
+    }
+
+    // ================================
+    //
+    // median method tests
+    //
+    // ================================
+    #[test]
+    fn vector_method_median() {
+        let v_even: Vector<f64, 10> =
+            Vector::from([5.0, 1.0, 2.0, 3.0, 4.0, 6.0, 7.0, 8.0, 9.0, 10.0]);
+        let v_odd: Vector<f64, 9> = Vector::from([5.0, 1.0, 2.0, 3.0, 4.0, 6.0, 7.0, 8.0, 9.0]);
+
+        // should take arithmetic average of middle two values in data set with even number of items
+        assert_relative_eq!(v_even.median().unwrap(), 5.5);
+        // should be the middle value in a data set with an odd number of items
+        assert_relative_eq!(v_odd.median().unwrap(), 5.0);
+
+        let v_neg_even: Vector<f64, 10> =
+            Vector::from([-5.0, -1.0, -2.0, -3.0, -4.0, -6.0, -7.0, -8.0, -9.0, -10.0]);
+        let v_neg_odd: Vector<f64, 9> =
+            Vector::from([-5.0, -1.0, -2.0, -3.0, -4.0, -6.0, -7.0, -8.0, -9.0]);
+
+        assert_relative_eq!(v_neg_even.median().unwrap(), -5.5);
+        assert_relative_eq!(v_neg_odd.median().unwrap(), -5.0);
+
+        // two value data set
+        let v_two_val: Vector<f64, 2> = Vector::from([2.0, 3.0]);
+
+        assert_relative_eq!(v_two_val.median().unwrap(), 2.5);
+
+        // single value data set
+        let v_one_val: Vector<f64, 1> = Vector::from([2.0]);
+
+        assert_relative_eq!(v_one_val.median().unwrap(), 2.0);
+
+        // positive / negative infinity in the data set - order
+        let v_infinites: Vector<f64, 5> =
+            Vector::from([f64::INFINITY, 3.0, 2.0, 1.0, f64::NEG_INFINITY]);
+
+        assert_relative_eq!(v_infinites.median().unwrap(), 2.0);
+
+        // positive infinity as the median value (odd)
+        let v_infinites: Vector<f64, 3> =
+            Vector::from([f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY]);
+
+        assert!(v_infinites.median().unwrap().is_infinite());
+        assert_eq!(v_infinites.median().unwrap(), f64::INFINITY);
+
+        // positive infinity as the median value (even)
+        let v_infinites: Vector<f64, 2> = Vector::from([f64::INFINITY, f64::INFINITY]);
+
+        assert!(v_infinites.median().unwrap().is_infinite());
+        assert_eq!(v_infinites.median().unwrap(), f64::INFINITY);
+
+        // negative infinity as the median value (odd)
+        let v_infinites: Vector<f64, 3> =
+            Vector::from([f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY]);
+
+        assert!(v_infinites.median().unwrap().is_infinite());
+        assert_eq!(v_infinites.median().unwrap(), f64::NEG_INFINITY);
+
+        // negative infinity as the median value (even)
+        let v_infinites: Vector<f64, 2> = Vector::from([f64::NEG_INFINITY, f64::NEG_INFINITY]);
+
+        assert!(v_infinites.median().unwrap().is_infinite());
+        assert_eq!(v_infinites.median().unwrap(), f64::NEG_INFINITY);
+
+        // median of positive infinity and negative infinity in a data set with even # items is NaN
+        let v_infinites: Vector<f64, 2> = Vector::from([f64::INFINITY, f64::NEG_INFINITY]);
+
+        assert!(v_infinites.median().unwrap().is_nan());
+
+        // the median of an even data set with neg zero and pos zero can be
+        // asserted as either 0.0 or -0.0
+        let v_zeroes: Vector<f64, 4> = Vector::from([-1.0, -0.0, 0.0, 1.0]);
+
+        assert_relative_eq!(v_zeroes.median().unwrap(), 0.0);
+        assert_relative_eq!(v_zeroes.median().unwrap(), -0.0);
     }
 
     // ===================================
