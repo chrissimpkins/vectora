@@ -10,7 +10,7 @@ use std::{
 };
 
 use approx::{AbsDiffEq, Relative, RelativeEq, UlpsEq};
-use num::{Complex, Float, Num};
+use num::{Complex, Float, Num, ToPrimitive};
 
 use crate::errors::VectorError;
 
@@ -1979,6 +1979,61 @@ where
         newvec
     }
 }
+
+// ================================
+//
+// to_* numeric type cast impl
+//
+// ================================
+
+macro_rules! impl_vector_cast_num_type_to {
+    ($NumTyp: ty, $MethodName: ident, $doc: expr) => {
+        impl<T, const N: usize> Vector<T, N>
+        where
+            T: Num + Copy + Default + Sync + Send + ToPrimitive,
+        {
+            #[doc = $doc]
+            pub fn $MethodName(&self) -> Option<Vector<$NumTyp, N>> {
+                let mut new_components: [$NumTyp; N] = [0 as $NumTyp; N];
+                for (i, val) in self.components.iter().enumerate() {
+                    match val.$MethodName() {
+                        Some(x) => new_components[i] = x,
+                        None => return None,
+                    }
+                }
+                Some(Vector { components: new_components })
+            }
+        }
+    };
+    ($NumTyp: ty, $MethodName: ident) => {
+        impl_vector_cast_num_type_to!(
+            $NumTyp,
+            $MethodName,
+            concat!(
+                "Cast [`Vector`] numeric type to [`",
+                stringify!($NumTyp),
+                "`] and return a new [`Vector`]."
+            )
+        );
+    };
+}
+
+impl_vector_cast_num_type_to!(isize, to_isize);
+impl_vector_cast_num_type_to!(i8, to_i8);
+impl_vector_cast_num_type_to!(i16, to_i16);
+impl_vector_cast_num_type_to!(i32, to_i32);
+impl_vector_cast_num_type_to!(i64, to_i64);
+impl_vector_cast_num_type_to!(i128, to_i128);
+
+impl_vector_cast_num_type_to!(usize, to_usize);
+impl_vector_cast_num_type_to!(u8, to_u8);
+impl_vector_cast_num_type_to!(u16, to_u16);
+impl_vector_cast_num_type_to!(u32, to_u32);
+impl_vector_cast_num_type_to!(u64, to_u64);
+impl_vector_cast_num_type_to!(u128, to_u128);
+
+impl_vector_cast_num_type_to!(f32, to_f32);
+impl_vector_cast_num_type_to!(f64, to_f64);
 
 // ================================
 //
