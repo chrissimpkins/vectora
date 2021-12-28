@@ -4709,6 +4709,43 @@ mod tests {
         assert!(matches!(v.variance(4.0), Err(VectorError::ValueError(_))));
     }
 
+    // ================================
+    //
+    // stddev method tests
+    //
+    // ================================
+
+    // note: this method is the square root of the variance method and additional
+    // test case coverage is on the variance method above.
+    #[test]
+    fn vector_method_stddev() {
+        let v: Vector<f64, 5> = Vector::from([-40.0, -10.0, -1.0, 5.0, 20.0]);
+
+        // population
+        assert_relative_eq!(v.stddev(0.0).unwrap(), 19.95394697797907);
+        // sample
+        assert_relative_eq!(v.stddev(1.0).unwrap(), 22.30919093109385);
+
+        // no variance in data set
+        let v: Vector<f64, 5> = Vector::from([1.0, 1.0, 1.0, 1.0, 1.0]);
+
+        // population
+        assert_relative_eq!(v.stddev(0.0).unwrap(), 0.0);
+        // sample
+        assert_relative_eq!(v.stddev(1.0).unwrap(), 0.0);
+
+        // infinities
+        let v_pos_inf: Vector<f64, 5> = Vector::from([f64::INFINITY, -10.0, -1.0, 5.0, 20.0]);
+        let v_neg_inf: Vector<f64, 5> = Vector::from([f64::NEG_INFINITY, -10.0, -1.0, 5.0, 20.0]);
+
+        // population
+        assert!(v_pos_inf.stddev(0.0).unwrap().is_nan());
+        assert!(v_neg_inf.stddev(0.0).unwrap().is_nan());
+        // sample
+        assert!(v_pos_inf.stddev(1.0).unwrap().is_nan());
+        assert!(v_neg_inf.stddev(1.0).unwrap().is_nan());
+    }
+
     // ===================================
     //
     // map_closure & map_func method tests
