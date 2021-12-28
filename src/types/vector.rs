@@ -1606,8 +1606,8 @@ where
         }
     }
 
-    /// Returns the element-wise variance for a floating point [`Vector`] given a
-    /// `ddof` delta degrees of freedom bias correction factor.
+    /// Returns the element-wise variance for a floating point [`Vector`] containing
+    /// finite values, given a `ddof` delta degrees of freedom bias correction factor.
     ///
     /// # Errors
     ///
@@ -4555,6 +4555,102 @@ mod tests {
 
         assert_relative_eq!(v_zeroes.median().unwrap(), 0.0);
         assert_relative_eq!(v_zeroes.median().unwrap(), -0.0);
+    }
+
+    // ================================
+    //
+    // variance method tests
+    //
+    // ================================
+
+    #[test]
+    fn vector_method_variance_impl() {
+        // all positive numbers
+        let v: Vector<f64, 5> = Vector::from([1.0, 5.0, 10.0, 20.0, 40.0]);
+
+        // population
+        assert_relative_eq!(v.variance_impl(0.0), 194.16);
+        assert_relative_eq!(v.variance(0.0).unwrap(), 194.16);
+        // sample
+        assert_relative_eq!(v.variance_impl(1.0), 242.7);
+        assert_relative_eq!(v.variance(1.0).unwrap(), 242.7);
+
+        // include negative numbers
+        let v: Vector<f64, 5> = Vector::from([-40.0, -10.0, -1.0, 5.0, 20.0]);
+
+        // population
+        assert_relative_eq!(v.variance_impl(0.0), 398.16);
+        assert_relative_eq!(v.variance(0.0).unwrap(), 398.16);
+        // sample
+        assert_relative_eq!(v.variance_impl(1.0), 497.7);
+        assert_relative_eq!(v.variance(1.0).unwrap(), 497.7);
+
+        // no variance in data set
+        let v: Vector<f64, 5> = Vector::from([1.0, 1.0, 1.0, 1.0, 1.0]);
+
+        assert_relative_eq!(v.variance_impl(0.0), 0.0);
+        assert_relative_eq!(v.variance(0.0).unwrap(), 0.0);
+        assert_relative_eq!(v.variance_impl(1.0), 0.0);
+        assert_relative_eq!(v.variance(1.0).unwrap(), 0.0);
+
+        let v: Vector<f64, 5> = Vector::from([-1.0, -1.0, -1.0, -1.0, -1.0]);
+
+        assert_relative_eq!(v.variance_impl(0.0), 0.0);
+        assert_relative_eq!(v.variance(0.0).unwrap(), 0.0);
+        assert_relative_eq!(v.variance_impl(1.0), 0.0);
+        assert_relative_eq!(v.variance(1.0).unwrap(), 0.0);
+
+        let v: Vector<f64, 5> = Vector::from([0.0, 0.0, 0.0, 0.0, 0.0]);
+
+        assert_relative_eq!(v.variance_impl(0.0), 0.0);
+        assert_relative_eq!(v.variance(0.0).unwrap(), 0.0);
+        assert_relative_eq!(v.variance_impl(1.0), 0.0);
+        assert_relative_eq!(v.variance(1.0).unwrap(), 0.0);
+
+        let v: Vector<f64, 5> = Vector::from([-0.0, -0.0, -0.0, -0.0, -0.0]);
+
+        assert_relative_eq!(v.variance_impl(0.0), 0.0);
+        assert_relative_eq!(v.variance(0.0).unwrap(), 0.0);
+        assert_relative_eq!(v.variance_impl(1.0), 0.0);
+        assert_relative_eq!(v.variance(1.0).unwrap(), 0.0);
+
+        // infinities
+        let v_pos_inf: Vector<f64, 5> = Vector::from([f64::INFINITY, -10.0, -1.0, 5.0, 20.0]);
+        let v_neg_inf: Vector<f64, 5> = Vector::from([f64::NEG_INFINITY, -10.0, -1.0, 5.0, 20.0]);
+
+        assert!(v_pos_inf.variance_impl(0.0).is_nan());
+        assert!(v_pos_inf.variance(0.0).unwrap().is_nan());
+        assert!(v_neg_inf.variance_impl(0.0).is_nan());
+        assert!(v_neg_inf.variance(0.0).unwrap().is_nan());
+
+        assert!(v_pos_inf.variance_impl(1.0).is_nan());
+        assert!(v_pos_inf.variance(1.0).unwrap().is_nan());
+        assert!(v_neg_inf.variance_impl(1.0).is_nan());
+        assert!(v_neg_inf.variance(1.0).unwrap().is_nan());
+    }
+
+    #[test]
+    fn vector_method_variance_err_empty() {
+        let v: Vector<f64, 0> = Vector::new();
+
+        assert!(v.variance(1.0).is_err());
+        assert!(matches!(v.variance(0.0), Err(VectorError::EmptyVectorError(_))));
+    }
+
+    #[test]
+    fn vector_method_variance_err_ddof_out_of_range_neg() {
+        let v: Vector<f64, 3> = Vector::new();
+
+        assert!(v.variance(-1.0).is_err());
+        assert!(matches!(v.variance(-1.0), Err(VectorError::ValueError(_))));
+    }
+
+    #[test]
+    fn vector_method_variance_err_ddof_out_of_range_greater_vector_size() {
+        let v: Vector<f64, 3> = Vector::new();
+
+        assert!(v.variance(4.0).is_err());
+        assert!(matches!(v.variance(4.0), Err(VectorError::ValueError(_))));
     }
 
     // ===================================
