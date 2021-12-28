@@ -4746,6 +4746,30 @@ mod tests {
         assert!(v_neg_inf.stddev(1.0).unwrap().is_nan());
     }
 
+    #[test]
+    fn vector_method_stddev_err_empty() {
+        let v: Vector<f64, 0> = Vector::new();
+
+        assert!(v.stddev(1.0).is_err());
+        assert!(matches!(v.stddev(0.0), Err(VectorError::EmptyVectorError(_))));
+    }
+
+    #[test]
+    fn vector_method_stddev_err_ddof_out_of_range_neg() {
+        let v: Vector<f64, 3> = Vector::new();
+
+        assert!(v.stddev(-1.0).is_err());
+        assert!(matches!(v.stddev(-1.0), Err(VectorError::ValueError(_))));
+    }
+
+    #[test]
+    fn vector_method_stddev_err_ddof_out_of_range_greater_vector_size() {
+        let v: Vector<f64, 3> = Vector::new();
+
+        assert!(v.stddev(4.0).is_err());
+        assert!(matches!(v.stddev(4.0), Err(VectorError::ValueError(_))));
+    }
+
     // ===================================
     //
     // map_closure & map_func method tests
