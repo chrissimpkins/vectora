@@ -21,6 +21,7 @@
 //!     - [Iteration and Loops](#iteration-and-loops)
 //!     - [Vector Arithmetic](#vector-arithmetic)
 //!     - [Methods for Vector Operations](#methods-for-vector-operations)
+//!     - [Descriptive Statistics](#descriptive-statistics)
 //!     - [Working with Rust Standard Library Types](#working-with-rust-standard-library-types)
 //!     
 //!
@@ -685,6 +686,85 @@
 //!
 //! See the [`Vector` method implementations](types/vector/struct.Vector.html#implementations) docs
 //! for the complete list of supported methods and additional examples.
+//!
+//! ## Descriptive Statistics
+//!
+//! Element-wise measures of central tendency and dispersion are available for floating
+//! point [`Vector`] types.
+//!
+//! ### Arithmetic Mean
+//!
+//! ```
+//! # use vectora::Vector;
+//! use approx::assert_relative_eq;
+//!
+//! let v: Vector<f64, 6> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+//!
+//! assert_relative_eq!(v.mean().unwrap(), 3.5);
+//! ```
+//!
+//! ### Geometric mean
+//!
+//! ```
+//! # use vectora::Vector;
+//! use approx::assert_relative_eq;
+//!
+//! let v: Vector<f64, 6> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+//!
+//! assert_relative_eq!(v.mean_geo().unwrap(), 2.993795165523909);
+//! ```
+//!
+//! ### Harmonic mean
+//!
+//! ```
+//! # use vectora::Vector;
+//! use approx::assert_relative_eq;
+//!
+//! let v: Vector<f64, 6> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+//!
+//! assert_relative_eq!(v.mean_harmonic().unwrap(), 2.4489795918367347);
+//! ```
+//!
+//! ### Median
+//!
+//! ```
+//! # use vectora::Vector;
+//! use approx::assert_relative_eq;
+//!
+//! let v: Vector<f64, 6> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+//!
+//! assert_relative_eq!(v.median().unwrap(), 3.5);
+//! ```
+//!
+//! ### Variance
+//!
+//! ```
+//! # use vectora::Vector;
+//! use approx::assert_relative_eq;
+//!
+//! let v: Vector<f64, 6> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+//!
+//! // population variance
+//! assert_relative_eq!(v.variance(0.0).unwrap(), 2.9166666666666665);
+//!
+//! // sample variance (with Bessel's correction)
+//! assert_relative_eq!(v.variance(1.0).unwrap(), 3.5);
+//! ```
+//!
+//! ### Standard deviation
+//!
+//! ```
+//! # use vectora::Vector;
+//! use approx::assert_relative_eq;
+//!
+//! let v: Vector<f64, 6> = Vector::from([1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
+//!
+//! // population standard deviation
+//! assert_relative_eq!(v.stddev(0.0).unwrap(), 1.707825127659933);
+//!
+//! // sample standard deviation (with Bessel's correction)
+//! assert_relative_eq!(v.stddev(1.0).unwrap(), 1.8708286933869707);
+//! ```
 //!
 //! ## Working with Rust Standard Library Types
 //!
