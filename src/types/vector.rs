@@ -1606,6 +1606,61 @@ where
         }
     }
 
+    /// Returns the element-wise variance for a floating point [`Vector`] containing
+    /// finite values, given a `ddof` delta degrees of freedom bias correction factor.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`VectorError::ValueError`] if the `ddof` parameter is negative or has a value
+    /// greater than the [`Vector`] length.  Returns [`VectorError::EmptyVectorError`] if the
+    /// [`Vector`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ## Population variance
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v: Vector<f64, 5> = Vector::from([5.0, 11.0, 20.0, 31.0, 100.0]);
+    ///
+    /// assert_relative_eq!(v.variance(0.0).unwrap(), 1185.84);
+    /// ```
+    ///
+    /// ## Sample variance
+    ///
+    /// With [Bessel's correction](https://en.wikipedia.org/wiki/Bessel%27s_correction) for the bias
+    /// in estimation of the population variance.
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v: Vector<f64, 5> = Vector::from([5.0, 11.0, 20.0, 31.0, 100.0]);
+    ///
+    /// assert_relative_eq!(v.variance(1.0).unwrap(), 1482.3);
+    /// ```
+    pub fn variance(&self, ddof: T) -> Result<T, VectorError>
+    where
+        T: Float + Copy + Sync + Send + std::fmt::Debug,
+    {
+        if self.is_empty() {
+            Err(VectorError::EmptyVectorError(
+                "expected a Vector with data and received an empty Vector".to_string(),
+            ))
+        } else if ddof.is_sign_negative() || ddof > T::from(self.len()).unwrap() {
+            Err(VectorError::ValueError(format!(
+                "ddof parameter must have a value greater than or equal to zero and must not be larger than the Vector length, received '{:?}'",
+                ddof
+            )))
+        } else {
+            Ok(self.variance_impl(ddof))
+        }
+    }
+
     // ================================
     //
     // Private methods
@@ -1640,6 +1695,27 @@ where
         } else {
             panic!("unable to determine order of {:?} and {:?}", x, y);
         }
+    }
+
+    // Element-wise variance implementation given `ddof` population variance estimation
+    // bias correction factor.
+    //
+    // Based on the ndarray crate `var` method implementation:
+    // https://docs.rs/ndarray/0.15.4/ndarray/struct.ArrayBase.html#method.var
+    // under [Apache License v2.0](https://github.com/rust-ndarray/ndarray/blob/master/LICENSE-APACHE)
+    //
+    // This implementation uses the [Welford one-pass algorithm](https://www.jstor.org/stable/1266577).
+    fn variance_impl(&self, ddof: T) -> T {
+        let bias_correction = T::from(self.len()).unwrap() - ddof;
+        let mut mean = T::zero();
+        let mut sum_of_squares = T::zero();
+        self.iter().enumerate().for_each(|(i, &x)| {
+            let delta = x - mean;
+            mean = mean + delta / T::from(i + 1).unwrap();
+            sum_of_squares = (x - mean).mul_add(delta, sum_of_squares);
+        });
+
+        sum_of_squares / bias_correction
     }
 }
 
@@ -4479,6 +4555,102 @@ mod tests {
 
         assert_relative_eq!(v_zeroes.median().unwrap(), 0.0);
         assert_relative_eq!(v_zeroes.median().unwrap(), -0.0);
+    }
+
+    // ================================
+    //
+    // variance method tests
+    //
+    // ================================
+
+    #[test]
+    fn vector_method_variance_impl() {
+        // all positive numbers
+        let v: Vector<f64, 5> = Vector::from([1.0, 5.0, 10.0, 20.0, 40.0]);
+
+        // population
+        assert_relative_eq!(v.variance_impl(0.0), 194.16);
+        assert_relative_eq!(v.variance(0.0).unwrap(), 194.16);
+        // sample
+        assert_relative_eq!(v.variance_impl(1.0), 242.7);
+        assert_relative_eq!(v.variance(1.0).unwrap(), 242.7);
+
+        // include negative numbers
+        let v: Vector<f64, 5> = Vector::from([-40.0, -10.0, -1.0, 5.0, 20.0]);
+
+        // population
+        assert_relative_eq!(v.variance_impl(0.0), 398.16);
+        assert_relative_eq!(v.variance(0.0).unwrap(), 398.16);
+        // sample
+        assert_relative_eq!(v.variance_impl(1.0), 497.7);
+        assert_relative_eq!(v.variance(1.0).unwrap(), 497.7);
+
+        // no variance in data set
+        let v: Vector<f64, 5> = Vector::from([1.0, 1.0, 1.0, 1.0, 1.0]);
+
+        assert_relative_eq!(v.variance_impl(0.0), 0.0);
+        assert_relative_eq!(v.variance(0.0).unwrap(), 0.0);
+        assert_relative_eq!(v.variance_impl(1.0), 0.0);
+        assert_relative_eq!(v.variance(1.0).unwrap(), 0.0);
+
+        let v: Vector<f64, 5> = Vector::from([-1.0, -1.0, -1.0, -1.0, -1.0]);
+
+        assert_relative_eq!(v.variance_impl(0.0), 0.0);
+        assert_relative_eq!(v.variance(0.0).unwrap(), 0.0);
+        assert_relative_eq!(v.variance_impl(1.0), 0.0);
+        assert_relative_eq!(v.variance(1.0).unwrap(), 0.0);
+
+        let v: Vector<f64, 5> = Vector::from([0.0, 0.0, 0.0, 0.0, 0.0]);
+
+        assert_relative_eq!(v.variance_impl(0.0), 0.0);
+        assert_relative_eq!(v.variance(0.0).unwrap(), 0.0);
+        assert_relative_eq!(v.variance_impl(1.0), 0.0);
+        assert_relative_eq!(v.variance(1.0).unwrap(), 0.0);
+
+        let v: Vector<f64, 5> = Vector::from([-0.0, -0.0, -0.0, -0.0, -0.0]);
+
+        assert_relative_eq!(v.variance_impl(0.0), 0.0);
+        assert_relative_eq!(v.variance(0.0).unwrap(), 0.0);
+        assert_relative_eq!(v.variance_impl(1.0), 0.0);
+        assert_relative_eq!(v.variance(1.0).unwrap(), 0.0);
+
+        // infinities
+        let v_pos_inf: Vector<f64, 5> = Vector::from([f64::INFINITY, -10.0, -1.0, 5.0, 20.0]);
+        let v_neg_inf: Vector<f64, 5> = Vector::from([f64::NEG_INFINITY, -10.0, -1.0, 5.0, 20.0]);
+
+        assert!(v_pos_inf.variance_impl(0.0).is_nan());
+        assert!(v_pos_inf.variance(0.0).unwrap().is_nan());
+        assert!(v_neg_inf.variance_impl(0.0).is_nan());
+        assert!(v_neg_inf.variance(0.0).unwrap().is_nan());
+
+        assert!(v_pos_inf.variance_impl(1.0).is_nan());
+        assert!(v_pos_inf.variance(1.0).unwrap().is_nan());
+        assert!(v_neg_inf.variance_impl(1.0).is_nan());
+        assert!(v_neg_inf.variance(1.0).unwrap().is_nan());
+    }
+
+    #[test]
+    fn vector_method_variance_err_empty() {
+        let v: Vector<f64, 0> = Vector::new();
+
+        assert!(v.variance(1.0).is_err());
+        assert!(matches!(v.variance(0.0), Err(VectorError::EmptyVectorError(_))));
+    }
+
+    #[test]
+    fn vector_method_variance_err_ddof_out_of_range_neg() {
+        let v: Vector<f64, 3> = Vector::new();
+
+        assert!(v.variance(-1.0).is_err());
+        assert!(matches!(v.variance(-1.0), Err(VectorError::ValueError(_))));
+    }
+
+    #[test]
+    fn vector_method_variance_err_ddof_out_of_range_greater_vector_size() {
+        let v: Vector<f64, 3> = Vector::new();
+
+        assert!(v.variance(4.0).is_err());
+        assert!(matches!(v.variance(4.0), Err(VectorError::ValueError(_))));
     }
 
     // ===================================
