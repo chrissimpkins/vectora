@@ -3899,7 +3899,7 @@ mod tests {
 
     // ================================
     //
-    // to_* method tests
+    // to_array / to_vec method tests
     //
     // ================================
     #[test]
@@ -4030,6 +4030,68 @@ mod tests {
         // NAN casts to zero value
         assert_eq!(u8_v_3[0], f64::NAN as u8);
         assert_eq!(u8_v_3[0], 0);
+    }
+
+    // ================================
+    //
+    // to_[TYPE] numeric type cast method tests
+    //
+    // ================================
+
+    #[test]
+    fn vector_method_to_type_numeric_casts() {
+        let v_u8: Vector<u8, 2> = Vector::from([1, 2]);
+        let v_i8: Vector<i8, 2> = Vector::from([-1, 2]);
+        let v_f32: Vector<f32, 2> = Vector::from([1.0, 2.0]);
+        let v_f64: Vector<f32, 2> = Vector::from([-1.0, 2.0]);
+
+        assert_eq!(v_u8.to_u16().unwrap().components, [1 as u16, 2 as u16]);
+        assert_eq!(v_u8.to_u32().unwrap().components, [1 as u32, 2 as u32]);
+        assert_eq!(v_u8.to_u64().unwrap().components, [1 as u64, 2 as u64]);
+        assert_eq!(v_u8.to_u128().unwrap().components, [1 as u128, 2 as u128]);
+        assert_eq!(v_u8.to_i16().unwrap().components, [1 as i16, 2 as i16]);
+        assert_eq!(v_u8.to_i32().unwrap().components, [1 as i32, 2 as i32]);
+        assert_eq!(v_u8.to_i64().unwrap().components, [1 as i64, 2 as i64]);
+        assert_eq!(v_u8.to_i128().unwrap().components, [1 as i128, 2 as i128]);
+        assert_eq!(v_u8.to_f32().unwrap(), Vector::<f32, 2>::from([1.0, 2.0]));
+        assert_eq!(v_u8.to_f64().unwrap(), Vector::<f64, 2>::from([1.0, 2.0]));
+
+        // contains neg values so cast to unsigned type returns None
+        assert_eq!(v_i8.to_u16(), None);
+        assert_eq!(v_i8.to_u32(), None);
+        assert_eq!(v_i8.to_u64(), None);
+        assert_eq!(v_i8.to_u128(), None);
+        assert_eq!(v_i8.to_i16().unwrap().components, [-1 as i16, 2 as i16]);
+        assert_eq!(v_i8.to_i32().unwrap().components, [-1 as i32, 2 as i32]);
+        assert_eq!(v_i8.to_i64().unwrap().components, [-1 as i64, 2 as i64]);
+        assert_eq!(v_i8.to_i128().unwrap().components, [-1 as i128, 2 as i128]);
+        assert_eq!(v_i8.to_f32().unwrap(), Vector::<f32, 2>::from([-1.0, 2.0]));
+        assert_eq!(v_i8.to_f64().unwrap(), Vector::<f64, 2>::from([-1.0, 2.0]));
+
+        // float to unsigned int type returns a value when contents are all positive
+        // data of appropriate number range
+        assert_eq!(v_f32.to_u16().unwrap().components, [1 as u16, 2 as u16]);
+        assert_eq!(v_f32.to_u32().unwrap().components, [1 as u32, 2 as u32]);
+        assert_eq!(v_f32.to_u64().unwrap().components, [1 as u64, 2 as u64]);
+        assert_eq!(v_f32.to_u128().unwrap().components, [1 as u128, 2 as u128]);
+        assert_eq!(v_f32.to_i16().unwrap().components, [1 as i16, 2 as i16]);
+        assert_eq!(v_f32.to_i32().unwrap().components, [1 as i32, 2 as i32]);
+        assert_eq!(v_f32.to_i64().unwrap().components, [1 as i64, 2 as i64]);
+        assert_eq!(v_f32.to_i128().unwrap().components, [1 as i128, 2 as i128]);
+        assert_eq!(v_f32.to_f32().unwrap(), Vector::<f32, 2>::from([1.0, 2.0]));
+        assert_eq!(v_f32.to_f64().unwrap(), Vector::<f64, 2>::from([1.0, 2.0]));
+
+        // contains neg values so cast to unsigned type returns None
+        assert_eq!(v_f64.to_u16(), None);
+        assert_eq!(v_f64.to_u32(), None);
+        assert_eq!(v_f64.to_u64(), None);
+        assert_eq!(v_f64.to_u128(), None);
+        assert_eq!(v_f64.to_i16().unwrap().components, [-1 as i16, 2 as i16]);
+        assert_eq!(v_f64.to_i32().unwrap().components, [-1 as i32, 2 as i32]);
+        assert_eq!(v_f64.to_i64().unwrap().components, [-1 as i64, 2 as i64]);
+        assert_eq!(v_f64.to_i128().unwrap().components, [-1 as i128, 2 as i128]);
+        assert_eq!(v_f64.to_f32().unwrap(), Vector::<f32, 2>::from([-1.0, 2.0]));
+        assert_eq!(v_f64.to_f64().unwrap(), Vector::<f64, 2>::from([-1.0, 2.0]));
     }
 
     // ================================
