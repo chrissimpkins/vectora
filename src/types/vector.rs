@@ -1661,6 +1661,62 @@ where
         }
     }
 
+    /// Returns the element-wise standard deviation for a floating point [`Vector`]
+    /// containing finite values, given a `ddof` delta degrees of freedom bias correction
+    /// factor.
+    ///
+    /// /// # Errors
+    ///
+    /// Returns [`VectorError::ValueError`] if the `ddof` parameter is negative or has a value
+    /// greater than the [`Vector`] length.  Returns [`VectorError::EmptyVectorError`] if the
+    /// [`Vector`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ## Population standard deviation
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v: Vector<f64, 5> = Vector::from([5.0, 11.0, 20.0, 31.0, 100.0]);
+    ///
+    /// assert_relative_eq!(v.stddev(0.0).unwrap(), 34.43602764547618);
+    /// ```
+    ///
+    /// ## Sample standard deviation
+    ///
+    /// With [Bessel's correction](https://en.wikipedia.org/wiki/Bessel%27s_correction) for the bias
+    /// in estimation of the population variance.
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v: Vector<f64, 5> = Vector::from([5.0, 11.0, 20.0, 31.0, 100.0]);
+    ///
+    /// assert_relative_eq!(v.stddev(1.0).unwrap(), 38.500649345173386);
+    /// ```
+    pub fn stddev(&self, ddof: T) -> Result<T, VectorError>
+    where
+        T: Float + Copy + Sync + Send + std::fmt::Debug,
+    {
+        if self.is_empty() {
+            Err(VectorError::EmptyVectorError(
+                "expected a Vector with data and received an empty Vector".to_string(),
+            ))
+        } else if ddof.is_sign_negative() || ddof > T::from(self.len()).unwrap() {
+            Err(VectorError::ValueError(format!(
+                "ddof parameter must have a value greater than or equal to zero and must not be larger than the Vector length, received '{:?}'",
+                ddof
+            )))
+        } else {
+            Ok(self.variance_impl(ddof).sqrt())
+        }
+    }
+
     // ================================
     //
     // Private methods
