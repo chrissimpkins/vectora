@@ -235,5 +235,15 @@ use vectora::types::vector::*;
 //     c.bench_function("Vector variance method: f64 10D Vector", |b| b.iter(|| v.variance(1.0)));
 // }
 
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f32, 10> = Vector::from([1.0, 2.0, 3.0, 100.0, 24.0, 9.0, 72.0, 1.0, 52.0, 88.0]);
+//     c.bench_function("Vector stddev method: f32 10D Vector", |b| b.iter(|| v.stddev(1.0)));
+// }
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f64, 10> = Vector::from([1.0, 2.0, 3.0, 100.0, 24.0, 9.0, 72.0, 1.0, 52.0, 88.0]);
+//     c.bench_function("Vector stddev method: f64 10D Vector", |b| b.iter(|| v.stddev(1.0)));
+// }
+
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);

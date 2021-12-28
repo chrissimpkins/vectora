@@ -1661,6 +1661,62 @@ where
         }
     }
 
+    /// Returns the element-wise standard deviation for a floating point [`Vector`]
+    /// containing finite values, given a `ddof` delta degrees of freedom bias correction
+    /// factor.
+    ///
+    /// /// # Errors
+    ///
+    /// Returns [`VectorError::ValueError`] if the `ddof` parameter is negative or has a value
+    /// greater than the [`Vector`] length.  Returns [`VectorError::EmptyVectorError`] if the
+    /// [`Vector`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ## Population standard deviation
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v: Vector<f64, 5> = Vector::from([5.0, 11.0, 20.0, 31.0, 100.0]);
+    ///
+    /// assert_relative_eq!(v.stddev(0.0).unwrap(), 34.43602764547618);
+    /// ```
+    ///
+    /// ## Sample standard deviation
+    ///
+    /// With [Bessel's correction](https://en.wikipedia.org/wiki/Bessel%27s_correction) for the bias
+    /// in estimation of the population variance.
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v: Vector<f64, 5> = Vector::from([5.0, 11.0, 20.0, 31.0, 100.0]);
+    ///
+    /// assert_relative_eq!(v.stddev(1.0).unwrap(), 38.500649345173386);
+    /// ```
+    pub fn stddev(&self, ddof: T) -> Result<T, VectorError>
+    where
+        T: Float + Copy + Sync + Send + std::fmt::Debug,
+    {
+        if self.is_empty() {
+            Err(VectorError::EmptyVectorError(
+                "expected a Vector with data and received an empty Vector".to_string(),
+            ))
+        } else if ddof.is_sign_negative() || ddof > T::from(self.len()).unwrap() {
+            Err(VectorError::ValueError(format!(
+                "ddof parameter must have a value greater than or equal to zero and must not be larger than the Vector length, received '{:?}'",
+                ddof
+            )))
+        } else {
+            Ok(self.variance_impl(ddof).sqrt())
+        }
+    }
+
     // ================================
     //
     // Private methods
@@ -4651,6 +4707,67 @@ mod tests {
 
         assert!(v.variance(4.0).is_err());
         assert!(matches!(v.variance(4.0), Err(VectorError::ValueError(_))));
+    }
+
+    // ================================
+    //
+    // stddev method tests
+    //
+    // ================================
+
+    // note: this method is the square root of the variance method and additional
+    // test case coverage is on the variance method above.
+    #[test]
+    fn vector_method_stddev() {
+        let v: Vector<f64, 5> = Vector::from([-40.0, -10.0, -1.0, 5.0, 20.0]);
+
+        // population
+        assert_relative_eq!(v.stddev(0.0).unwrap(), 19.95394697797907);
+        // sample
+        assert_relative_eq!(v.stddev(1.0).unwrap(), 22.30919093109385);
+
+        // no variance in data set
+        let v: Vector<f64, 5> = Vector::from([1.0, 1.0, 1.0, 1.0, 1.0]);
+
+        // population
+        assert_relative_eq!(v.stddev(0.0).unwrap(), 0.0);
+        // sample
+        assert_relative_eq!(v.stddev(1.0).unwrap(), 0.0);
+
+        // infinities
+        let v_pos_inf: Vector<f64, 5> = Vector::from([f64::INFINITY, -10.0, -1.0, 5.0, 20.0]);
+        let v_neg_inf: Vector<f64, 5> = Vector::from([f64::NEG_INFINITY, -10.0, -1.0, 5.0, 20.0]);
+
+        // population
+        assert!(v_pos_inf.stddev(0.0).unwrap().is_nan());
+        assert!(v_neg_inf.stddev(0.0).unwrap().is_nan());
+        // sample
+        assert!(v_pos_inf.stddev(1.0).unwrap().is_nan());
+        assert!(v_neg_inf.stddev(1.0).unwrap().is_nan());
+    }
+
+    #[test]
+    fn vector_method_stddev_err_empty() {
+        let v: Vector<f64, 0> = Vector::new();
+
+        assert!(v.stddev(1.0).is_err());
+        assert!(matches!(v.stddev(0.0), Err(VectorError::EmptyVectorError(_))));
+    }
+
+    #[test]
+    fn vector_method_stddev_err_ddof_out_of_range_neg() {
+        let v: Vector<f64, 3> = Vector::new();
+
+        assert!(v.stddev(-1.0).is_err());
+        assert!(matches!(v.stddev(-1.0), Err(VectorError::ValueError(_))));
+    }
+
+    #[test]
+    fn vector_method_stddev_err_ddof_out_of_range_greater_vector_size() {
+        let v: Vector<f64, 3> = Vector::new();
+
+        assert!(v.stddev(4.0).is_err());
+        assert!(matches!(v.stddev(4.0), Err(VectorError::ValueError(_))));
     }
 
     // ===================================
