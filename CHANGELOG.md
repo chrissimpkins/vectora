@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.6.0
+
+### Added
+
+- `Vector::mean` method for arithmetic mean statistic with floating point data
+- `Vector::mean_geo` method for geometric mean statistic with floating point data
+- `Vector::mean_harmonic` method for harmonic mean statistic with floating point data
+- `Vector::median` method for median statistic with floating point data
+- `Vector::variance` method for variance statistic with floating point data (supports population and sample variance)
+- `Vector::stddev` method for standard deviation statistic with floating point data (supports population and sample std dev)
+- `Vector::to_usize` method for explicit type cast support
+- `Vector::to_u8` method for explicit type cast support
+- `Vector::to_u16` method for explicit type cast support
+- `Vector::to_u32` method for explicit type cast support
+- `Vector::to_u64` method for explicit type cast support
+- `Vector::to_u128` method for explicit type cast support
+- `Vector::to_isize` method for explicit type cast support
+- `Vector::to_i8` method for explicit type cast support
+- `Vector::to_i16` method for explicit type cast support
+- `Vector::to_i32` method for explicit type cast support
+- `Vector::to_i64` method for explicit type cast support
+- `Vector::to_i128` method for explicit type cast support
+- `Vector::to_f32` method for explicit type cast support
+- `Vector::to_f64` method for explicit type cast support
+
+### Changed
+
+- docs: Getting Started guide revised with new "Descriptive Statistics" section
+- docs: Getting Started guide revised with new "Numeric Type Casts" section
+- docs: Getting Started guide updated with Complex number type cast support example
+- docs: API docs revised with updated Vector numeric type cast information and internal links
+
 ## v0.5.1
 
 ### Added
