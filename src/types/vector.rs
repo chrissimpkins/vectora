@@ -4044,6 +4044,10 @@ mod tests {
         let v_i8: Vector<i8, 2> = Vector::from([-1, 2]);
         let v_f32: Vector<f32, 2> = Vector::from([1.0, 2.0]);
         let v_f64: Vector<f32, 2> = Vector::from([-1.0, 2.0]);
+        let v_complex_without_im: Vector<Complex<f32>, 2> =
+            Vector::from([Complex::new(1.0, 0.0), Complex::new(2.0, 0.0)]);
+        let v_complex_with_im: Vector<Complex<f32>, 2> =
+            Vector::from([Complex::new(1.0, 1.0), Complex::new(2.0, 1.0)]);
 
         assert_eq!(v_u8.to_u16().unwrap().components, [1 as u16, 2 as u16]);
         assert_eq!(v_u8.to_u32().unwrap().components, [1 as u32, 2 as u32]);
@@ -4092,6 +4096,30 @@ mod tests {
         assert_eq!(v_f64.to_i128().unwrap().components, [-1 as i128, 2 as i128]);
         assert_eq!(v_f64.to_f32().unwrap(), Vector::<f32, 2>::from([-1.0, 2.0]));
         assert_eq!(v_f64.to_f64().unwrap(), Vector::<f64, 2>::from([-1.0, 2.0]));
+
+        // complex numbers cast when imaginary part is zero
+        assert_eq!(v_complex_without_im.to_u16().unwrap().components, [1 as u16, 2 as u16]);
+        assert_eq!(v_complex_without_im.to_u32().unwrap().components, [1 as u32, 2 as u32]);
+        assert_eq!(v_complex_without_im.to_u64().unwrap().components, [1 as u64, 2 as u64]);
+        assert_eq!(v_complex_without_im.to_u128().unwrap().components, [1 as u128, 2 as u128]);
+        assert_eq!(v_complex_without_im.to_i16().unwrap().components, [1 as i16, 2 as i16]);
+        assert_eq!(v_complex_without_im.to_i32().unwrap().components, [1 as i32, 2 as i32]);
+        assert_eq!(v_complex_without_im.to_i64().unwrap().components, [1 as i64, 2 as i64]);
+        assert_eq!(v_complex_without_im.to_i128().unwrap().components, [1 as i128, 2 as i128]);
+        assert_eq!(v_complex_without_im.to_f32().unwrap(), Vector::<f32, 2>::from([1.0, 2.0]));
+        assert_eq!(v_complex_without_im.to_f64().unwrap(), Vector::<f64, 2>::from([1.0, 2.0]));
+
+        // complex numbers return None when imaginary part is non-zero
+        assert_eq!(v_complex_with_im.to_u16(), None);
+        assert_eq!(v_complex_with_im.to_u32(), None);
+        assert_eq!(v_complex_with_im.to_u64(), None);
+        assert_eq!(v_complex_with_im.to_u128(), None);
+        assert_eq!(v_complex_with_im.to_i16(), None);
+        assert_eq!(v_complex_with_im.to_i32(), None);
+        assert_eq!(v_complex_with_im.to_i64(), None);
+        assert_eq!(v_complex_with_im.to_i128(), None);
+        assert_eq!(v_complex_with_im.to_f32(), None);
+        assert_eq!(v_complex_with_im.to_f64(), None);
     }
 
     // ================================
