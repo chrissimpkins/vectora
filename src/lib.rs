@@ -15,6 +15,7 @@
 //!     - [Add Vectora to Your Project](#add-vectora-to-your-project)
 //!     - [Numeric Type Support](#numeric-type-support)
 //!     - [Initialization](#initialization)
+//!     - [Numeric Type Casts](#numeric-type-casts)
 //!     - [Access and Assignment with Indexing](#access-and-assignment-with-indexing)
 //!     - [Slicing](#slicing)
 //!     - [Partial Equivalence Testing](#partial-equivalence-testing)
@@ -136,20 +137,19 @@
 //!
 //! ### Complex Numbers
 //!
-//! A 2-[`Vector`] can be used **as a** complex number with real and imaginary
-//! integer or floating point parts at indices 0 and 1.
-//!
-//! The [`Vector`] type also supports **collections of** complex numbers as
-//! represented by the [`num::Complex`] type.
+//! The [`Vector`] type supports **collections of** complex scalars as
+//! represented by the [`num::Complex`] type.  Please review the num crate documentation
+//! for additional details on the [`num::Complex`] number type.
 //!
 //! **Note**: This guide will not provide detailed examples with [`num::Complex`] data in order to
-//! remain as concise as possible. With the notable exception of some
-//! floating point only [`Vector`] methods, most of the public API supports
-//! the [`num::Complex`] type.  These areas should be evident in the
-//! [`Vector`] API descriptions and source trait bounds.  [`num::Complex`] support
+//! remain as concise as possible. With the notable exception of the
+//! floating point only [`Vector`] methods that can be identified with a [`num::Float`] trait bound,
+//! much of the public API supports the [`num::Complex`] type.  These areas should be evident in the
+//! [`Vector`] API documentation descriptions and source trait bounds.  [`num::Complex`] support
 //! *should* be available when a general [`num::Num`] trait bound is used in
-//! implementations. In these cases, you can replace the integer or floating point
-//!  numbers in the following examples with [`num::Complex`] types.
+//! the implementation. In these cases, you can replace integer or floating point
+//! numbers in the following examples with [`num::Complex`] types.  Please raise an
+//! issue on the repository if this is not the case.
 //!
 //! ## Initialization
 //!
@@ -221,6 +221,53 @@
 //! Please see the API docs for the approach to overflows and underflows with the
 //! [`FromIterator`](types/vector/struct.Vector.html#impl-FromIterator<T>)
 //! trait implementation that supports the `collect` approach.
+//!
+//! ## Numeric Type Casts
+//!
+//! Use the `to_[TYPE SIGNATURE]` methods for explicit [`Vector`] data type casts
+//! to supported integer and floating point types.  Casts to unsupported numeric
+//! types (e.g., signed integer to unsigned integer) return `None`.  Casts from
+//! unsupported types (e.g., [`num::Complex`] number with a non-zero imaginary part)
+//! return `None`.
+//!
+//! ```
+//! # use vectora::Vector;
+//! use num::Complex;
+//!
+//! let v_u8: Vector<u8, 3> = Vector::from([1, 2, 3]);
+//! let v_i8: Vector<i8, 3> = Vector::from([-1, 2, 3]);
+//! let v_complex: Vector<Complex<f32>, 2> = Vector::from([Complex::new(1.0, 0.0), Complex::new(2.0, 0.0)]);
+//!
+//! let v_i32: Vector<i32, 3> = v_u8.to_i32().unwrap();
+//! let v_f64: Vector<f64, 3> = v_u8.to_f64().unwrap();
+//! let v_f64_2: Vector<f64, 2> = v_complex.to_f64().unwrap();
+//!
+//! assert!(v_i8.to_u32().is_none());
+//! ```
+//!
+//! Implicit, lossless type casts can be performed between supported types
+//! with the `into` method:
+//!
+//! ```
+//! # use vectora::types::vector::Vector;
+//! let v_i32: Vector<i32, 2> = Vector::from([1_i32, 2_i32]);
+//!
+//! let v_i128: Vector<i128, 2> = v_i32.into();
+//! let v_f64: Vector<f64, 2> = v_i32.into();
+//! ```
+//!
+//! And the [`Vector::to_num_cast`] method supports unchecked, closure-defined
+//! type casts:
+//!
+//! ```
+//! # use vectora::types::vector::Vector;
+//! let v_i32: Vector<i32, 2> = Vector::from([1_i32, 2_i32]);
+//!
+//! let v_i128: Vector<i128, 2> = v_i32.to_num_cast(|x| x as i128);
+//! let v_f64: Vector<f64, 2> = v_i32.to_num_cast(|x| x as f64);
+//! ```
+//!
+//! Please review the API documentation for warnings and additional details.
 //!
 //! ## Access and Assignment with Indexing
 //!

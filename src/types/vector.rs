@@ -10,7 +10,7 @@ use std::{
 };
 
 use approx::{AbsDiffEq, Relative, RelativeEq, UlpsEq};
-use num::{Complex, Float, Num};
+use num::{Complex, Float, Num, ToPrimitive};
 
 use crate::errors::VectorError;
 
@@ -1184,14 +1184,9 @@ where
     /// assert_relative_eq!(v1.distance(&v1), 0.0_f64);
     /// ```
     ///
-    /// Note: This method can be used on data in integer [`Vector`] types
-    /// with **lossless** integer to float [`Vector`] type casts:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let vf: Vector<f64, 2> = vi.into();
-    /// ```
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn distance(&self, other: &Vector<T, N>) -> T {
         (*self - *other).magnitude()
     }
@@ -1225,14 +1220,9 @@ where
     /// assert_eq!(v1.lerp(&v2, 1.0).unwrap(), Vector::from([10.0, 10.0]));
     /// ```
     ///
-    /// Note: This method can be used on data in integer [`Vector`] types
-    /// with **lossless** integer to float [`Vector`] type casts:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let vf: Vector<f64, 2> = vi.into();
-    /// ```
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn lerp(&self, end: &Vector<T, N>, weight: T) -> Result<Self, VectorError>
     where
         T: std::fmt::Debug,
@@ -1279,14 +1269,9 @@ where
     /// assert_eq!(mid, Vector::from([5.0, 5.0]));
     /// ```
     ///
-    /// Note: This method can be used on data in integer [`Vector`] types
-    /// with **lossless** integer to float [`Vector`] type casts:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let vf: Vector<f64, 2> = vi.into();
-    /// ```
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn midpoint(&self, end: &Vector<T, N>) -> Self
     where
         T: std::fmt::Debug,
@@ -1316,14 +1301,9 @@ where
     /// assert_relative_eq!(v_zero.magnitude(), 0.0);
     /// ```
     ///
-    /// Note: This method can be used on data in integer [`Vector`] types
-    /// with **lossless** integer to float [`Vector`] type casts:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let vf: Vector<f64, 2> = vi.into();
-    /// ```
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn magnitude(&self) -> T {
         let x: T = self.components.iter().map(|a| *a * *a).sum();
         x.sqrt()
@@ -1345,14 +1325,9 @@ where
     /// assert_relative_eq!(v[1], 30.456);
     /// ```
     ///
-    /// Note: This method can be used on data in integer [`Vector`] types
-    /// with **lossless** integer to float [`Vector`] type casts:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let vf: Vector<f64, 2> = vi.into();
-    /// ```
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn normalize(&self) -> Self
     where
         T: Float + Copy + Sync + Send + Sum,
@@ -1385,14 +1360,9 @@ where
     /// assert_relative_eq!(v[1], 0.7714130645857428);
     /// ```
     ///
-    /// Note: This method can be used on data in integer [`Vector`] types
-    /// with **lossless** integer to float [`Vector`] type casts:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let vf: Vector<f64, 2> = vi.into();
-    /// ```
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn mut_normalize(&mut self) -> &mut Self
     where
         T: Float + Copy + Sync + Send + Sum,
@@ -1420,6 +1390,10 @@ where
     ///
     /// assert_relative_eq!(v.mean().unwrap(), 3.0);
     /// ```
+    ///
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn mean(&self) -> Result<T, VectorError>
     where
         T: Float + Copy + Sync + Send + Sum<T>,
@@ -1459,6 +1433,10 @@ where
     ///
     /// assert_relative_eq!(v.mean_geo().unwrap(), 30.0);
     /// ```
+    ///
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn mean_geo(&self) -> Result<T, VectorError>
     where
         T: Float + Copy + Sync + Send + Sum<T>,
@@ -1498,6 +1476,10 @@ where
     ///
     /// assert_relative_eq!(v.mean_harmonic().unwrap(), 2.18978102189781);
     /// ```
+    ///
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn mean_harmonic(&self) -> Result<T, VectorError>
     where
         T: Float + Copy + Sync + Send + Sum<T> + std::fmt::Debug,
@@ -1577,6 +1559,10 @@ where
     ///
     /// **Note**: Returns `T::NAN` if the median value is the arithmetic average of `T::INFINITY`
     /// and `T::NEG_INFINITY` (e.g., the data set `[f64::NEG_INFINITY, f64::NEG_INFINITY, f64::INFINITY, f64::INFINITY]`);
+    ///
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn median(&self) -> Result<T, VectorError>
     where
         T: Float + Copy + Sync + Send + approx::RelativeEq + std::fmt::Debug,
@@ -1643,6 +1629,10 @@ where
     ///
     /// assert_relative_eq!(v.variance(1.0).unwrap(), 1482.3);
     /// ```
+    ///
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn variance(&self, ddof: T) -> Result<T, VectorError>
     where
         T: Float + Copy + Sync + Send + std::fmt::Debug,
@@ -1699,6 +1689,10 @@ where
     ///
     /// assert_relative_eq!(v.stddev(1.0).unwrap(), 38.500649345173386);
     /// ```
+    ///
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn stddev(&self, ddof: T) -> Result<T, VectorError>
     where
         T: Float + Copy + Sync + Send + std::fmt::Debug,
@@ -1979,6 +1973,61 @@ where
         newvec
     }
 }
+
+// ================================
+//
+// to_* numeric type cast impl
+//
+// ================================
+
+macro_rules! impl_vector_cast_num_type_to {
+    ($NumTyp: ty, $MethodName: ident, $doc: expr) => {
+        impl<T, const N: usize> Vector<T, N>
+        where
+            T: Num + Copy + Default + Sync + Send + ToPrimitive,
+        {
+            #[doc = $doc]
+            pub fn $MethodName(&self) -> Option<Vector<$NumTyp, N>> {
+                let mut new_components: [$NumTyp; N] = [0 as $NumTyp; N];
+                for (i, val) in self.components.iter().enumerate() {
+                    match val.$MethodName() {
+                        Some(x) => new_components[i] = x,
+                        None => return None,
+                    }
+                }
+                Some(Vector { components: new_components })
+            }
+        }
+    };
+    ($NumTyp: ty, $MethodName: ident) => {
+        impl_vector_cast_num_type_to!(
+            $NumTyp,
+            $MethodName,
+            concat!(
+                "Cast [`Vector`] numeric type to [`",
+                stringify!($NumTyp),
+                "`] and return a new [`Vector`]."
+            )
+        );
+    };
+}
+
+impl_vector_cast_num_type_to!(isize, to_isize);
+impl_vector_cast_num_type_to!(i8, to_i8);
+impl_vector_cast_num_type_to!(i16, to_i16);
+impl_vector_cast_num_type_to!(i32, to_i32);
+impl_vector_cast_num_type_to!(i64, to_i64);
+impl_vector_cast_num_type_to!(i128, to_i128);
+
+impl_vector_cast_num_type_to!(usize, to_usize);
+impl_vector_cast_num_type_to!(u8, to_u8);
+impl_vector_cast_num_type_to!(u16, to_u16);
+impl_vector_cast_num_type_to!(u32, to_u32);
+impl_vector_cast_num_type_to!(u64, to_u64);
+impl_vector_cast_num_type_to!(u128, to_u128);
+
+impl_vector_cast_num_type_to!(f32, to_f32);
+impl_vector_cast_num_type_to!(f64, to_f64);
 
 // ================================
 //
@@ -3844,7 +3893,7 @@ mod tests {
 
     // ================================
     //
-    // to_* method tests
+    // to_array / to_vec method tests
     //
     // ================================
     #[test]
@@ -3975,6 +4024,96 @@ mod tests {
         // NAN casts to zero value
         assert_eq!(u8_v_3[0], f64::NAN as u8);
         assert_eq!(u8_v_3[0], 0);
+    }
+
+    // ================================
+    //
+    // to_[TYPE] numeric type cast method tests
+    //
+    // ================================
+
+    #[test]
+    fn vector_method_to_type_numeric_casts() {
+        let v_u8: Vector<u8, 2> = Vector::from([1, 2]);
+        let v_i8: Vector<i8, 2> = Vector::from([-1, 2]);
+        let v_f32: Vector<f32, 2> = Vector::from([1.0, 2.0]);
+        let v_f64: Vector<f32, 2> = Vector::from([-1.0, 2.0]);
+        let v_complex_without_im: Vector<Complex<f32>, 2> =
+            Vector::from([Complex::new(1.0, 0.0), Complex::new(2.0, 0.0)]);
+        let v_complex_with_im: Vector<Complex<f32>, 2> =
+            Vector::from([Complex::new(1.0, 1.0), Complex::new(2.0, 1.0)]);
+
+        assert_eq!(v_u8.to_u16().unwrap().components, [1 as u16, 2 as u16]);
+        assert_eq!(v_u8.to_u32().unwrap().components, [1 as u32, 2 as u32]);
+        assert_eq!(v_u8.to_u64().unwrap().components, [1 as u64, 2 as u64]);
+        assert_eq!(v_u8.to_u128().unwrap().components, [1 as u128, 2 as u128]);
+        assert_eq!(v_u8.to_i16().unwrap().components, [1 as i16, 2 as i16]);
+        assert_eq!(v_u8.to_i32().unwrap().components, [1 as i32, 2 as i32]);
+        assert_eq!(v_u8.to_i64().unwrap().components, [1 as i64, 2 as i64]);
+        assert_eq!(v_u8.to_i128().unwrap().components, [1 as i128, 2 as i128]);
+        assert_eq!(v_u8.to_f32().unwrap(), Vector::<f32, 2>::from([1.0, 2.0]));
+        assert_eq!(v_u8.to_f64().unwrap(), Vector::<f64, 2>::from([1.0, 2.0]));
+
+        // contains neg values so cast to unsigned type returns None
+        assert_eq!(v_i8.to_u16(), None);
+        assert_eq!(v_i8.to_u32(), None);
+        assert_eq!(v_i8.to_u64(), None);
+        assert_eq!(v_i8.to_u128(), None);
+        assert_eq!(v_i8.to_i16().unwrap().components, [-1 as i16, 2 as i16]);
+        assert_eq!(v_i8.to_i32().unwrap().components, [-1 as i32, 2 as i32]);
+        assert_eq!(v_i8.to_i64().unwrap().components, [-1 as i64, 2 as i64]);
+        assert_eq!(v_i8.to_i128().unwrap().components, [-1 as i128, 2 as i128]);
+        assert_eq!(v_i8.to_f32().unwrap(), Vector::<f32, 2>::from([-1.0, 2.0]));
+        assert_eq!(v_i8.to_f64().unwrap(), Vector::<f64, 2>::from([-1.0, 2.0]));
+
+        // float to unsigned int type returns a value when contents are all positive
+        // data of appropriate number range
+        assert_eq!(v_f32.to_u16().unwrap().components, [1 as u16, 2 as u16]);
+        assert_eq!(v_f32.to_u32().unwrap().components, [1 as u32, 2 as u32]);
+        assert_eq!(v_f32.to_u64().unwrap().components, [1 as u64, 2 as u64]);
+        assert_eq!(v_f32.to_u128().unwrap().components, [1 as u128, 2 as u128]);
+        assert_eq!(v_f32.to_i16().unwrap().components, [1 as i16, 2 as i16]);
+        assert_eq!(v_f32.to_i32().unwrap().components, [1 as i32, 2 as i32]);
+        assert_eq!(v_f32.to_i64().unwrap().components, [1 as i64, 2 as i64]);
+        assert_eq!(v_f32.to_i128().unwrap().components, [1 as i128, 2 as i128]);
+        assert_eq!(v_f32.to_f32().unwrap(), Vector::<f32, 2>::from([1.0, 2.0]));
+        assert_eq!(v_f32.to_f64().unwrap(), Vector::<f64, 2>::from([1.0, 2.0]));
+
+        // contains neg values so cast to unsigned type returns None
+        assert_eq!(v_f64.to_u16(), None);
+        assert_eq!(v_f64.to_u32(), None);
+        assert_eq!(v_f64.to_u64(), None);
+        assert_eq!(v_f64.to_u128(), None);
+        assert_eq!(v_f64.to_i16().unwrap().components, [-1 as i16, 2 as i16]);
+        assert_eq!(v_f64.to_i32().unwrap().components, [-1 as i32, 2 as i32]);
+        assert_eq!(v_f64.to_i64().unwrap().components, [-1 as i64, 2 as i64]);
+        assert_eq!(v_f64.to_i128().unwrap().components, [-1 as i128, 2 as i128]);
+        assert_eq!(v_f64.to_f32().unwrap(), Vector::<f32, 2>::from([-1.0, 2.0]));
+        assert_eq!(v_f64.to_f64().unwrap(), Vector::<f64, 2>::from([-1.0, 2.0]));
+
+        // complex numbers cast when imaginary part is zero
+        assert_eq!(v_complex_without_im.to_u16().unwrap().components, [1 as u16, 2 as u16]);
+        assert_eq!(v_complex_without_im.to_u32().unwrap().components, [1 as u32, 2 as u32]);
+        assert_eq!(v_complex_without_im.to_u64().unwrap().components, [1 as u64, 2 as u64]);
+        assert_eq!(v_complex_without_im.to_u128().unwrap().components, [1 as u128, 2 as u128]);
+        assert_eq!(v_complex_without_im.to_i16().unwrap().components, [1 as i16, 2 as i16]);
+        assert_eq!(v_complex_without_im.to_i32().unwrap().components, [1 as i32, 2 as i32]);
+        assert_eq!(v_complex_without_im.to_i64().unwrap().components, [1 as i64, 2 as i64]);
+        assert_eq!(v_complex_without_im.to_i128().unwrap().components, [1 as i128, 2 as i128]);
+        assert_eq!(v_complex_without_im.to_f32().unwrap(), Vector::<f32, 2>::from([1.0, 2.0]));
+        assert_eq!(v_complex_without_im.to_f64().unwrap(), Vector::<f64, 2>::from([1.0, 2.0]));
+
+        // complex numbers return None when imaginary part is non-zero
+        assert_eq!(v_complex_with_im.to_u16(), None);
+        assert_eq!(v_complex_with_im.to_u32(), None);
+        assert_eq!(v_complex_with_im.to_u64(), None);
+        assert_eq!(v_complex_with_im.to_u128(), None);
+        assert_eq!(v_complex_with_im.to_i16(), None);
+        assert_eq!(v_complex_with_im.to_i32(), None);
+        assert_eq!(v_complex_with_im.to_i64(), None);
+        assert_eq!(v_complex_with_im.to_i128(), None);
+        assert_eq!(v_complex_with_im.to_f32(), None);
+        assert_eq!(v_complex_with_im.to_f64(), None);
     }
 
     // ================================
