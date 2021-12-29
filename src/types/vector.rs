@@ -1113,6 +1113,44 @@ where
             self.components.iter().skip(1).fold(self[0], |a, b| a * *b)
         }
     }
+
+    /// Returns the minimum scalar value in a [`Vector`].
+    ///
+    /// Returns `None` if the [`Vector`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from([4, 5, 6]);
+    ///
+    /// assert_eq!(v.min().unwrap(), 4);
+    /// ```
+    pub fn min(&self) -> Option<T>
+    where
+        T: Num + Copy + Sync + Send + std::cmp::Ord,
+    {
+        self.components.iter().copied().min()
+    }
+
+    /// Returns the maximum scalar value in a [`Vector`].
+    ///
+    /// Returns `None` if the [`Vector`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from([4, 5, 6]);
+    ///
+    /// assert_eq!(v.max().unwrap(), 6);
+    /// ```
+    pub fn max(&self) -> Option<T>
+    where
+        T: Num + Copy + Sync + Send + std::cmp::Ord,
+    {
+        self.components.iter().copied().max()
+    }
 }
 
 impl<T, const N: usize> Vector<T, N>
