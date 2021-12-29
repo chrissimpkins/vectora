@@ -4983,6 +4983,65 @@ mod tests {
         assert!(matches!(v.stddev(4.0), Err(VectorError::ValueError(_))));
     }
 
+    // =====================================
+    //
+    // min, max, min_fp, max_fp method tests
+    //
+    // =====================================
+    #[test]
+    fn vector_method_min() {
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        assert_eq!(v1.min().unwrap(), 1);
+
+        let v2: Vector<i32, 3> = Vector::from([-1, -2, -3]);
+        assert_eq!(v2.min().unwrap(), -3);
+
+        let v3: Vector<i32, 3> = Vector::from([-1, 2, 3]);
+        assert_eq!(v3.min().unwrap(), -1);
+
+        let v4: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        assert_eq!(v4.min().unwrap(), 1);
+
+        let v5: Vector<i32, 3> = Vector::from([0, 0, 0]);
+        assert_eq!(v5.min().unwrap(), 0);
+
+        let v6: Vector<i32, 3> = Vector::from([i32::MIN, 0, 0]);
+        assert_eq!(v6.min().unwrap(), i32::MIN);
+
+        let v6: Vector<i32, 3> = Vector::from([i32::MIN, i32::MIN, i32::MIN]);
+        assert_eq!(v6.min().unwrap(), i32::MIN);
+
+        let v_empty: Vector<i32, 0> = Vector::zero();
+        assert!(v_empty.min().is_none());
+    }
+
+    #[test]
+    fn vector_method_max() {
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        assert_eq!(v1.max().unwrap(), 3);
+
+        let v2: Vector<i32, 3> = Vector::from([-1, -2, -3]);
+        assert_eq!(v2.max().unwrap(), -1);
+
+        let v3: Vector<i32, 3> = Vector::from([-1, 2, 3]);
+        assert_eq!(v3.max().unwrap(), 3);
+
+        let v4: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        assert_eq!(v4.max().unwrap(), 1);
+
+        let v5: Vector<i32, 3> = Vector::from([0, 0, 0]);
+        assert_eq!(v5.max().unwrap(), 0);
+
+        let v6: Vector<i32, 3> = Vector::from([i32::MAX, 0, 0]);
+        assert_eq!(v6.max().unwrap(), i32::MAX);
+
+        let v6: Vector<i32, 3> = Vector::from([i32::MAX, i32::MAX, i32::MAX]);
+        assert_eq!(v6.max().unwrap(), i32::MAX);
+
+        let v_empty: Vector<i32, 0> = Vector::zero();
+        assert!(v_empty.max().is_none());
+    }
+
     // ===================================
     //
     // map_closure & map_func method tests
