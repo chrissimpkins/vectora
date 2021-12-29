@@ -1184,14 +1184,9 @@ where
     /// assert_relative_eq!(v1.distance(&v1), 0.0_f64);
     /// ```
     ///
-    /// Note: This method can be used on data in integer [`Vector`] types
-    /// with **lossless** integer to float [`Vector`] type casts:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let vf: Vector<f64, 2> = vi.into();
-    /// ```
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn distance(&self, other: &Vector<T, N>) -> T {
         (*self - *other).magnitude()
     }
@@ -1225,14 +1220,9 @@ where
     /// assert_eq!(v1.lerp(&v2, 1.0).unwrap(), Vector::from([10.0, 10.0]));
     /// ```
     ///
-    /// Note: This method can be used on data in integer [`Vector`] types
-    /// with **lossless** integer to float [`Vector`] type casts:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let vf: Vector<f64, 2> = vi.into();
-    /// ```
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn lerp(&self, end: &Vector<T, N>, weight: T) -> Result<Self, VectorError>
     where
         T: std::fmt::Debug,
@@ -1279,14 +1269,9 @@ where
     /// assert_eq!(mid, Vector::from([5.0, 5.0]));
     /// ```
     ///
-    /// Note: This method can be used on data in integer [`Vector`] types
-    /// with **lossless** integer to float [`Vector`] type casts:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let vf: Vector<f64, 2> = vi.into();
-    /// ```
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn midpoint(&self, end: &Vector<T, N>) -> Self
     where
         T: std::fmt::Debug,
@@ -1316,14 +1301,9 @@ where
     /// assert_relative_eq!(v_zero.magnitude(), 0.0);
     /// ```
     ///
-    /// Note: This method can be used on data in integer [`Vector`] types
-    /// with **lossless** integer to float [`Vector`] type casts:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let vf: Vector<f64, 2> = vi.into();
-    /// ```
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn magnitude(&self) -> T {
         let x: T = self.components.iter().map(|a| *a * *a).sum();
         x.sqrt()
@@ -1345,14 +1325,9 @@ where
     /// assert_relative_eq!(v[1], 30.456);
     /// ```
     ///
-    /// Note: This method can be used on data in integer [`Vector`] types
-    /// with **lossless** integer to float [`Vector`] type casts:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let vf: Vector<f64, 2> = vi.into();
-    /// ```
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn normalize(&self) -> Self
     where
         T: Float + Copy + Sync + Send + Sum,
@@ -1385,14 +1360,9 @@ where
     /// assert_relative_eq!(v[1], 0.7714130645857428);
     /// ```
     ///
-    /// Note: This method can be used on data in integer [`Vector`] types
-    /// with **lossless** integer to float [`Vector`] type casts:
-    ///
-    /// ```
-    /// # use vectora::types::vector::Vector;
-    /// let vi: Vector<i32, 2> = Vector::from([2, 2]);
-    /// let vf: Vector<f64, 2> = vi.into();
-    /// ```
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn mut_normalize(&mut self) -> &mut Self
     where
         T: Float + Copy + Sync + Send + Sum,
@@ -1420,6 +1390,10 @@ where
     ///
     /// assert_relative_eq!(v.mean().unwrap(), 3.0);
     /// ```
+    ///
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn mean(&self) -> Result<T, VectorError>
     where
         T: Float + Copy + Sync + Send + Sum<T>,
@@ -1459,6 +1433,10 @@ where
     ///
     /// assert_relative_eq!(v.mean_geo().unwrap(), 30.0);
     /// ```
+    ///
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn mean_geo(&self) -> Result<T, VectorError>
     where
         T: Float + Copy + Sync + Send + Sum<T>,
@@ -1498,6 +1476,10 @@ where
     ///
     /// assert_relative_eq!(v.mean_harmonic().unwrap(), 2.18978102189781);
     /// ```
+    ///
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn mean_harmonic(&self) -> Result<T, VectorError>
     where
         T: Float + Copy + Sync + Send + Sum<T> + std::fmt::Debug,
@@ -1577,6 +1559,10 @@ where
     ///
     /// **Note**: Returns `T::NAN` if the median value is the arithmetic average of `T::INFINITY`
     /// and `T::NEG_INFINITY` (e.g., the data set `[f64::NEG_INFINITY, f64::NEG_INFINITY, f64::INFINITY, f64::INFINITY]`);
+    ///
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn median(&self) -> Result<T, VectorError>
     where
         T: Float + Copy + Sync + Send + approx::RelativeEq + std::fmt::Debug,
@@ -1643,6 +1629,10 @@ where
     ///
     /// assert_relative_eq!(v.variance(1.0).unwrap(), 1482.3);
     /// ```
+    ///
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn variance(&self, ddof: T) -> Result<T, VectorError>
     where
         T: Float + Copy + Sync + Send + std::fmt::Debug,
@@ -1699,6 +1689,10 @@ where
     ///
     /// assert_relative_eq!(v.stddev(1.0).unwrap(), 38.500649345173386);
     /// ```
+    ///
+    /// This method supports floating point [`Vector`] types only. Please
+    /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
+    /// documentation for details on casting to floating point types.
     pub fn stddev(&self, ddof: T) -> Result<T, VectorError>
     where
         T: Float + Copy + Sync + Send + std::fmt::Debug,
