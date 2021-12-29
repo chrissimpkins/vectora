@@ -1749,6 +1749,42 @@ where
         }
     }
 
+    /// Returns the minimum scalar value in a floating point [`Vector`].
+    ///
+    /// Returns `None` if the [`Vector`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v = Vector::<f64, 3>::from([4.0, 5.0, 6.0]);
+    ///
+    /// assert_relative_eq!(v.min_fp().unwrap(), 4.0);
+    /// ```
+    pub fn min_fp(&self) -> Option<T> {
+        self.components.iter().copied().reduce(T::min)
+    }
+
+    /// Returns the maximum scalar value in a floating point [`Vector`].
+    ///
+    /// Returns `None` if the [`Vector`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v = Vector::<f64, 3>::from([4.0, 5.0, 6.0]);
+    ///
+    /// assert_relative_eq!(v.max_fp().unwrap(), 6.0);
+    /// ```
+    pub fn max_fp(&self) -> Option<T> {
+        self.components.iter().copied().reduce(T::max)
+    }
+
     // ================================
     //
     // Private methods
