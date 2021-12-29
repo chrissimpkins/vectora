@@ -89,7 +89,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! vectora = "0.5.1"
+//! vectora = "0.6.0"
 //! ```
 //!
 //! The examples below assume the following [`Vector`] struct import in
