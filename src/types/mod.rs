@@ -1,3 +1,4 @@
-//! Library data types.
+//! Library types.
 
+pub mod macros;
 pub mod vector;
