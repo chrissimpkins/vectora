@@ -85,6 +85,96 @@ macro_rules! vector {
     );
 }
 
+/// Returns a [`crate::Vector`] with scalar data contents and order as defined in a supported
+/// fallible numeric data collection type argument.
+///
+/// This macro can be used with supported types that may not have known length at compile
+/// time (e.g., [`Vec`] and [`slice`]).  The macro takes a single numeric data collection
+/// type argument.
+///
+/// Import the macro before use with:
+///
+/// ```
+/// use vectora::try_vector;
+/// ```
+///
+/// # Errors
+///
+/// The macro returns an error if the length of the argument data collection type differs from the
+/// requested [`crate::Vector`] length.  Errors are also propagated from argument data types. Please review
+/// the crate `TryFrom` trait implementation documentation for additional details.
+///
+/// ```
+/// use vectora::{try_vector, Vector};
+///
+/// let stdlib_vec_too_long = vec![1, 2, 3, 4, 5];
+/// let res: Result<Vector<i32, 3>, _> = try_vector!(stdlib_vec_too_long);
+///
+/// assert!(res.is_err());
+/// ```
+///
+/// ```
+/// use vectora::{try_vector, Vector};
+///
+/// let stdlib_vec_too_short = vec![1, 2];
+/// let res: Result<Vector<i32, 3>, _> = try_vector!(stdlib_vec_too_short);
+///
+/// assert!(res.is_err());
+/// ```
+///
+/// # Examples
+///
+/// ## Integer types
+///
+/// ```
+/// use vectora::{try_vector, Vector};
+///
+/// let stdlib_vec_i32 = vec![1_i32, 2_i32, 3_i32];
+/// let v_i32: Vector<i32, 3> = try_vector!(stdlib_vec_i32).unwrap();
+///
+/// assert_eq!(v_i32[0], 1_i32);
+/// assert_eq!(v_i32[1], 2_i32);
+/// assert_eq!(v_i32[2], 3_i32);
+/// ```
+///
+/// ## Floating point types
+///
+/// ```
+/// use vectora::{try_vector, Vector};
+///
+/// use approx::assert_relative_eq;
+///
+/// let stdlib_vec_f64 = vec![1.0_f64, 2.0_f64, 3.0_f64];
+/// let v_f64: Vector<f64, 3> = try_vector!(stdlib_vec_f64).unwrap();
+///
+/// assert_relative_eq!(v_f64[0], 1.0_f64);
+/// assert_relative_eq!(v_f64[1], 2.0_f64);
+/// assert_relative_eq!(v_f64[2], 3.0_f64);
+/// ```
+///
+/// ## Complex number types
+///
+/// ```
+/// use vectora::{try_vector, Vector};
+///
+/// use approx::assert_relative_eq;
+/// use num::Complex;
+///
+/// let stdlib_vec_complex = vec![Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)];
+/// let v_complex_f64: Vector<Complex<f64>, 2> = try_vector!(stdlib_vec_complex).unwrap();
+///
+/// assert_relative_eq!(v_complex_f64[0].re, 1.0_f64);
+/// assert_relative_eq!(v_complex_f64[0].im, 2.0_f64);
+/// assert_relative_eq!(v_complex_f64[1].re, 3.0_f64);
+/// assert_relative_eq!(v_complex_f64[1].im, 4.0_f64);
+/// ```
+#[macro_export]
+macro_rules! try_vector {
+    ($elem:expr) => {
+        $crate::types::vector::Vector::try_from($elem)
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Vector;
@@ -451,5 +541,107 @@ mod tests {
         assert_relative_eq!(v3[0].im, -2. as f64);
         assert_relative_eq!(v3[1].re, 1. as f64);
         assert_relative_eq!(v3[1].im, -2. as f64);
+    }
+
+    #[test]
+    fn macro_try_vector_i32() {
+        let slv = vec![1_i32, 2_i32, 3_i32];
+        let v: Vector<i32, 3> = try_vector!(slv).unwrap();
+
+        assert_eq!(v[0], 1_i32);
+        assert_eq!(v[1], 2_i32);
+        assert_eq!(v[2], 3_i32);
+
+        let slv = vec![1_i32, 2_i32, 3_i32];
+        let v: Vector<i32, 3> = try_vector!(&slv).unwrap();
+
+        assert_eq!(v[0], 1_i32);
+        assert_eq!(v[1], 2_i32);
+        assert_eq!(v[2], 3_i32);
+
+        let slv = vec![1_i32, 2_i32, 3_i32];
+        let v: Vector<i32, 3> = try_vector!(&slv[..]).unwrap();
+
+        assert_eq!(v[0], 1_i32);
+        assert_eq!(v[1], 2_i32);
+        assert_eq!(v[2], 3_i32);
+    }
+
+    #[test]
+    fn macro_try_vector_f64() {
+        let slv = vec![1.0_f64, 2.0_f64, 3.0_f64];
+        let v: Vector<f64, 3> = try_vector!(slv).unwrap();
+
+        assert_relative_eq!(v[0], 1.0_f64);
+        assert_relative_eq!(v[1], 2.0_f64);
+        assert_relative_eq!(v[2], 3.0_f64);
+
+        let slv = vec![1.0_f64, 2.0_f64, 3.0_f64];
+        let v: Vector<f64, 3> = try_vector!(&slv).unwrap();
+
+        assert_relative_eq!(v[0], 1.0_f64);
+        assert_relative_eq!(v[1], 2.0_f64);
+        assert_relative_eq!(v[2], 3.0_f64);
+
+        let slv = vec![1.0_f64, 2.0_f64, 3.0_f64];
+        let v: Vector<f64, 3> = try_vector!(&slv[..]).unwrap();
+
+        assert_relative_eq!(v[0], 1.0_f64);
+        assert_relative_eq!(v[1], 2.0_f64);
+        assert_relative_eq!(v[2], 3.0_f64);
+    }
+
+    #[test]
+    fn macro_try_vector_complex_i32() {
+        let slv = vec![Complex::new(1_i32, 2_i32), Complex::new(3_i32, 4_i32)];
+        let v: Vector<Complex<i32>, 2> = try_vector!(slv).unwrap();
+
+        assert_eq!(v[0].re, 1_i32);
+        assert_eq!(v[0].im, 2_i32);
+        assert_eq!(v[1].re, 3_i32);
+        assert_eq!(v[1].im, 4_i32);
+
+        let slv = vec![Complex::new(1_i32, 2_i32), Complex::new(3_i32, 4_i32)];
+        let v: Vector<Complex<i32>, 2> = try_vector!(&slv).unwrap();
+
+        assert_eq!(v[0].re, 1_i32);
+        assert_eq!(v[0].im, 2_i32);
+        assert_eq!(v[1].re, 3_i32);
+        assert_eq!(v[1].im, 4_i32);
+
+        let slv = vec![Complex::new(1_i32, 2_i32), Complex::new(3_i32, 4_i32)];
+        let v: Vector<Complex<i32>, 2> = try_vector!(&slv[..]).unwrap();
+
+        assert_eq!(v[0].re, 1_i32);
+        assert_eq!(v[0].im, 2_i32);
+        assert_eq!(v[1].re, 3_i32);
+        assert_eq!(v[1].im, 4_i32);
+    }
+
+    #[test]
+    fn macro_try_vector_complex_f64() {
+        let slv = vec![Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)];
+        let v: Vector<Complex<f64>, 2> = try_vector!(slv).unwrap();
+
+        assert_relative_eq!(v[0].re, 1.0_f64);
+        assert_relative_eq!(v[0].im, 2.0_f64);
+        assert_relative_eq!(v[1].re, 3.0_f64);
+        assert_relative_eq!(v[1].im, 4.0_f64);
+
+        let slv = vec![Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)];
+        let v: Vector<Complex<f64>, 2> = try_vector!(&slv).unwrap();
+
+        assert_relative_eq!(v[0].re, 1.0_f64);
+        assert_relative_eq!(v[0].im, 2.0_f64);
+        assert_relative_eq!(v[1].re, 3.0_f64);
+        assert_relative_eq!(v[1].im, 4.0_f64);
+
+        let slv = vec![Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)];
+        let v: Vector<Complex<f64>, 2> = try_vector!(&slv[..]).unwrap();
+
+        assert_relative_eq!(v[0].re, 1.0_f64);
+        assert_relative_eq!(v[0].im, 2.0_f64);
+        assert_relative_eq!(v[1].re, 3.0_f64);
+        assert_relative_eq!(v[1].im, 4.0_f64);
     }
 }
