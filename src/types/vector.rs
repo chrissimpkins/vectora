@@ -1126,6 +1126,8 @@ where
     ///
     /// assert_eq!(v.min().unwrap(), 4);
     /// ```
+    ///
+    /// See [`Vector::min_fp`] for minimum floating point scalars.
     pub fn min(&self) -> Option<T>
     where
         T: Num + Copy + Sync + Send + std::cmp::Ord,
@@ -1145,6 +1147,8 @@ where
     ///
     /// assert_eq!(v.max().unwrap(), 6);
     /// ```
+    ///
+    /// See [`Vector::max_fp`] for maximum floating point scalars.
     pub fn max(&self) -> Option<T>
     where
         T: Num + Copy + Sync + Send + std::cmp::Ord,
@@ -1763,6 +1767,8 @@ where
     ///
     /// assert_relative_eq!(v.min_fp().unwrap(), 4.0);
     /// ```
+    ///
+    /// See [`Vector::min`] for minimum integer scalars.
     pub fn min_fp(&self) -> Option<T> {
         self.components.iter().copied().reduce(T::min)
     }
@@ -1781,6 +1787,8 @@ where
     ///
     /// assert_relative_eq!(v.max_fp().unwrap(), 6.0);
     /// ```
+    ///
+    /// See [`Vector::max`] for maximum integer scalars.
     pub fn max_fp(&self) -> Option<T> {
         self.components.iter().copied().reduce(T::max)
     }
