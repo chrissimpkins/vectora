@@ -1,6 +1,7 @@
 //! Macros.
 
-/// Returns a [`crate::Vector`] given the numeric type arguments.
+/// Returns a [`crate::Vector`] with scalar data contents and order as defined in
+/// the numeric type arguments.
 ///
 /// This macro supports standard library [`array`]-like initialization syntax of
 /// a [`crate::Vector`] with the numeric type and length defined by the macro arguments.
@@ -46,17 +47,17 @@
 /// let v_f64_2: Vector<f64, 3> = vector![1.0, 2.0, 3.0];
 /// let v_f64_3: Vector<f64, 3> = vector![10.0; 3];
 ///
-/// assert_eq!(v_f64_1[0], 1.0_f64);
-/// assert_eq!(v_f64_1[1], 2.0_f64);
-/// assert_eq!(v_f64_1[2], 3.0_f64);
+/// assert_relative_eq!(v_f64_1[0], 1.0_f64);
+/// assert_relative_eq!(v_f64_1[1], 2.0_f64);
+/// assert_relative_eq!(v_f64_1[2], 3.0_f64);
 ///
-/// assert_eq!(v_f64_2[0], 1.0_f64);
-/// assert_eq!(v_f64_2[1], 2.0_f64);
-/// assert_eq!(v_f64_2[2], 3.0_f64);
+/// assert_relative_eq!(v_f64_2[0], 1.0_f64);
+/// assert_relative_eq!(v_f64_2[1], 2.0_f64);
+/// assert_relative_eq!(v_f64_2[2], 3.0_f64);
 ///
-/// assert_eq!(v_f64_3[0], 10.0_f64);
-/// assert_eq!(v_f64_3[1], 10.0_f64);
-/// assert_eq!(v_f64_3[2], 10.0_f64);
+/// assert_relative_eq!(v_f64_3[0], 10.0_f64);
+/// assert_relative_eq!(v_f64_3[1], 10.0_f64);
+/// assert_relative_eq!(v_f64_3[2], 10.0_f64);
 /// ```
 ///
 /// ## Complex number types
