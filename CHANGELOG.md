@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.7.0
+
+### Added
+
+- `macros` module
+- `vector!` macro for initialization of `Vector` with infallible data
+- `try_vector!` macro for initialization of `Vector` with fallible data
+- `Vector::min` method for element-wise minimum value with `Num` data types that support the `std::cmp::Ord` trait
+- `Vector::min_fp` method for element-wise minimum value with floating point data types that do not support the `std::cmp::Ord` trait
+- `Vector::max` method for element-wise maximum value with `Num` data types that support the `std::cmp::Ord` trait
+- `Vector::max_fp` method for element-wise maximum value with floating point data types that do not support the `std::cmp::Ord` trait
+
+### Changed
+
+- docs: revise Getting Started guide docs with `vector!` macro initialization strategy for infallible data collection types
+- docs: revise Getting Started guide docs with `try_vector!` macro initialization strategy for fallible data collection types
+- docs: revise API docs numeric type syntax in some examples
+
 ## v0.6.0
 
 ### Added
