@@ -260,5 +260,20 @@ use vectora::types::vector::*;
 //     c.bench_function("Vector min_fp method: f64 10D Vector", |b| b.iter(|| v.min_fp()));
 // }
 
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<i32, 10> = Vector::from([1, 2, 3, 100, 24, 9, 72, 1, 52, 88]);
+//     c.bench_function("Vector max method: i32 10D Vector", |b| b.iter(|| v.max()));
+// }
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f32, 10> = Vector::from([1.0, 2.0, 3.0, 100.0, 24.0, 9.0, 72.0, 1.0, 52.0, 88.0]);
+//     c.bench_function("Vector max_fp method: f32 10D Vector", |b| b.iter(|| v.max_fp()));
+// }
+
+// fn criterion_benchmark(c: &mut Criterion) {
+//     let v: Vector<f64, 10> = Vector::from([1.0, 2.0, 3.0, 100.0, 24.0, 9.0, 72.0, 1.0, 52.0, 88.0]);
+//     c.bench_function("Vector max_fp method: f64 10D Vector", |b| b.iter(|| v.max_fp()));
+// }
+
 criterion_group!(benches, criterion_benchmark);
 criterion_main!(benches);
