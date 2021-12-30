@@ -157,14 +157,19 @@
 //! dimension length is fixed at instantiation, and all fields are *initialized*
 //! at instantiation.  The maximum dimension length is [`usize::MAX`].
 //!
+//! The [`crate::vector`] macro is available for shorthand initialization of the [`Vector`] type
+//! with standard library [`array`]-like syntax.
+//!
 //! ### Zero Vector
 //!
 //! Use the [`Vector::zero`] method to initialize a [`Vector`] with zero values
 //! of the respective numeric type:
 //!
 //! ```
-//! # use vectora::Vector;
+//! use vectora::Vector;
+//!
 //! let v_zero_int: Vector<i32, 3> = Vector::zero();
+//!
 //! let v_zero_float: Vector<f64, 2> = Vector::zero();
 //!
 //! // Note: the following complex number example requires an import of the `num::Complex` type!
@@ -175,52 +180,67 @@
 //!
 //! ### With Predefined Data in Other Types
 //!
-//! The recommended approach is to use [`Vector::from`] with an [`array`] of
-//! ordered data when possible:
+//! Use the [`Vector::from`] method or the [`crate::vector`] macro
+//! with an ordered [`array`] of data when possible:
 //!
 //! ```
-//! # use vectora::Vector;
+//! use vectora::{vector, Vector};
+//!
 //! // example three dimensional f64 Vector
 //! let v: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
+//! let v_alt = vector![1.0_f64, 2.0_f64, 3.0_f64];
 //!
 //! // example two dimensional i32 Vector
 //! let v: Vector<i32, 2> = Vector::from([4, -5]);
+//! let v_alt = vector![4_i32, -5_i32];
 //!
 //! // with num crate Complex numbers
 //! // Note: the following complex number example requires an import of the `num::Complex` type!
 //! use num::Complex;
 //!
 //! let v: Vector<Complex<f64>, 2> = Vector::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+//! let v_alt = vector![Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)];
 //!
 //! // with a library type alias
 //! use vectora::types::vector::Vector3dF64;
 //!
 //! let v: Vector3dF64 = Vector::from([1.0, 2.0, 3.0]);
+//! let v_alt: Vector3dF64 = vector![1.0, 2.0, 3.0];
 //! ```
 //!
 //! or use one of the alternate initialization approaches with data
-//! in iterator, [`array`], [`slice`], or [`Vec`] types:
+//! in iterator, [`array`], [`slice`], or [`Vec`] types.  The
+//! [`crate::try_vector`] macro is a shorthand approach to fallible
+//! initialization with data in these standard library types.
 //!
 //! ```
-//! # use vectora::Vector;
+//! use vectora::{try_vector, Vector};
+//!
 //! // from an iterator over an array or Vec with collect
 //! let v: Vector<i32, 3> = [1, 2, 3].into_iter().collect();
 //! let v: Vector<f64, 2> = vec![1.0, 2.0].into_iter().collect();
 //!
-//! // from a slice with try_from
+//! // from a standard lib slice type with the try_from function or try_vector! macro
 //! let arr = [1, 2, 3];
 //! let vec = vec![1.0, 2.0, 3.0];
-//! let v: Vector<i32, 3> = Vector::try_from(&arr[..]).unwrap();
-//! let v: Vector<f64, 3> = Vector::try_from(&vec[..]).unwrap();
 //!
-//! // from a Vec with try_from
+//! let v: Vector<i32, 3> = Vector::try_from(&arr[..]).unwrap();
+//! let v_alt: Vector<i32, 3> = try_vector!(&arr[..]).unwrap();
+//!
+//! let v: Vector<f64, 3> = Vector::try_from(&vec[..]).unwrap();
+//! let v_alt: Vector<f64, 3> = try_vector!(&vec[..]).unwrap();
+//!
+//! // from a standard lib Vec type with the try_from function or try_vector! macro
 //! let vec = vec![1, 2, 3];
+//!
 //! let v: Vector<i32, 3> = Vector::try_from(&vec).unwrap();
+//! let v_alt: Vector<i32, 3> = try_vector!(&vec).unwrap();
 //! ```
 //!
-//! Please see the API docs for the approach to overflows and underflows with the
+//! Please see the API docs for more information about overflow and underflow handling with the
 //! [`FromIterator`](types/vector/struct.Vector.html#impl-FromIterator<T>)
-//! trait implementation that supports the `collect` approach.
+//! trait implementation that supports the `collect` approach, and additional
+//! information about returned error types for fallible initializations.
 //!
 //! ## Numeric Type Casts
 //!

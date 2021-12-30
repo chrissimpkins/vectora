@@ -196,9 +196,9 @@ where
     /// let v: Vector<i32, 3> = Vector::zero();
     ///
     /// assert_eq!(v.len(), 3);
-    /// assert_eq!(v[0], 0 as i32);
-    /// assert_eq!(v[1], 0 as i32);
-    /// assert_eq!(v[2], 0 as i32);
+    /// assert_eq!(v[0], 0_i32);
+    /// assert_eq!(v[1], 0_i32);
+    /// assert_eq!(v[2], 0_i32);
     /// ```
     ///
     /// ## Floating point scalars
@@ -208,9 +208,9 @@ where
     /// let v: Vector<f64, 3> = Vector::zero();
     ///
     /// assert_eq!(v.len(), 3);
-    /// assert_eq!(v[0], 0.0 as f64);
-    /// assert_eq!(v[1], 0.0 as f64);
-    /// assert_eq!(v[2], 0.0 as f64);
+    /// assert_eq!(v[0], 0.0_f64);
+    /// assert_eq!(v[1], 0.0_f64);
+    /// assert_eq!(v[2], 0.0_f64);
     /// ```
     ///
     /// ## Complex number scalars
