@@ -1113,6 +1113,48 @@ where
             self.components.iter().skip(1).fold(self[0], |a, b| a * *b)
         }
     }
+
+    /// Returns the minimum scalar value in a [`Vector`].
+    ///
+    /// Returns `None` if the [`Vector`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from([4, 5, 6]);
+    ///
+    /// assert_eq!(v.min().unwrap(), 4);
+    /// ```
+    ///
+    /// See [`Vector::min_fp`] for minimum floating point scalars.
+    pub fn min(&self) -> Option<T>
+    where
+        T: Num + Copy + Sync + Send + std::cmp::Ord,
+    {
+        self.components.iter().copied().min()
+    }
+
+    /// Returns the maximum scalar value in a [`Vector`].
+    ///
+    /// Returns `None` if the [`Vector`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// let v = Vector::<i32, 3>::from([4, 5, 6]);
+    ///
+    /// assert_eq!(v.max().unwrap(), 6);
+    /// ```
+    ///
+    /// See [`Vector::max_fp`] for maximum floating point scalars.
+    pub fn max(&self) -> Option<T>
+    where
+        T: Num + Copy + Sync + Send + std::cmp::Ord,
+    {
+        self.components.iter().copied().max()
+    }
 }
 
 impl<T, const N: usize> Vector<T, N>
@@ -1709,6 +1751,46 @@ where
         } else {
             Ok(self.variance_impl(ddof).sqrt())
         }
+    }
+
+    /// Returns the minimum scalar value in a floating point [`Vector`].
+    ///
+    /// Returns `None` if the [`Vector`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v = Vector::<f64, 3>::from([4.0, 5.0, 6.0]);
+    ///
+    /// assert_relative_eq!(v.min_fp().unwrap(), 4.0);
+    /// ```
+    ///
+    /// See [`Vector::min`] for minimum integer scalars.
+    pub fn min_fp(&self) -> Option<T> {
+        self.components.iter().copied().reduce(T::min)
+    }
+
+    /// Returns the maximum scalar value in a floating point [`Vector`].
+    ///
+    /// Returns `None` if the [`Vector`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::types::vector::Vector;
+    /// use approx::assert_relative_eq;
+    ///
+    /// let v = Vector::<f64, 3>::from([4.0, 5.0, 6.0]);
+    ///
+    /// assert_relative_eq!(v.max_fp().unwrap(), 6.0);
+    /// ```
+    ///
+    /// See [`Vector::max`] for maximum integer scalars.
+    pub fn max_fp(&self) -> Option<T> {
+        self.components.iter().copied().reduce(T::max)
     }
 
     // ================================
@@ -4907,6 +4989,125 @@ mod tests {
 
         assert!(v.stddev(4.0).is_err());
         assert!(matches!(v.stddev(4.0), Err(VectorError::ValueError(_))));
+    }
+
+    // =====================================
+    //
+    // min, max, min_fp, max_fp method tests
+    //
+    // =====================================
+    #[test]
+    fn vector_method_min() {
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        assert_eq!(v1.min().unwrap(), 1);
+
+        let v2: Vector<i32, 3> = Vector::from([-1, -2, -3]);
+        assert_eq!(v2.min().unwrap(), -3);
+
+        let v3: Vector<i32, 3> = Vector::from([-1, 2, 3]);
+        assert_eq!(v3.min().unwrap(), -1);
+
+        let v4: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        assert_eq!(v4.min().unwrap(), 1);
+
+        let v5: Vector<i32, 3> = Vector::from([0, 0, 0]);
+        assert_eq!(v5.min().unwrap(), 0);
+
+        let v6: Vector<i32, 3> = Vector::from([i32::MIN, 0, 0]);
+        assert_eq!(v6.min().unwrap(), i32::MIN);
+
+        let v6: Vector<i32, 3> = Vector::from([i32::MIN, i32::MIN, i32::MIN]);
+        assert_eq!(v6.min().unwrap(), i32::MIN);
+
+        let v_empty: Vector<i32, 0> = Vector::zero();
+        assert!(v_empty.min().is_none());
+    }
+
+    #[test]
+    fn vector_method_min_fp() {
+        let v1: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
+        assert_relative_eq!(v1.min_fp().unwrap(), 1.0);
+
+        let v2: Vector<f64, 3> = Vector::from([-1.0, -2.0, -3.0]);
+        assert_relative_eq!(v2.min_fp().unwrap(), -3.0);
+
+        let v3: Vector<f64, 3> = Vector::from([-1.0, 2.0, 3.0]);
+        assert_relative_eq!(v3.min_fp().unwrap(), -1.0);
+
+        let v4: Vector<f64, 3> = Vector::from([1.0, 1.0, 1.0]);
+        assert_relative_eq!(v4.min_fp().unwrap(), 1.0);
+
+        let v5: Vector<f64, 3> = Vector::from([0.0, 0.0, 0.0]);
+        assert_relative_eq!(v5.min_fp().unwrap(), 0.0);
+
+        let v6: Vector<f64, 3> = Vector::from([f64::MIN, 0.0, 0.0]);
+        assert_relative_eq!(v6.min_fp().unwrap(), f64::MIN);
+
+        let v6: Vector<f64, 3> = Vector::from([f64::MIN, f64::MIN, f64::MIN]);
+        assert_relative_eq!(v6.min_fp().unwrap(), f64::MIN);
+
+        let v7: Vector<f64, 3> = Vector::from([0.0, 0.0, 1.0]);
+        assert_relative_eq!(v7.min_fp().unwrap(), 0.0);
+
+        let v_empty: Vector<f64, 0> = Vector::zero();
+        assert!(v_empty.min_fp().is_none());
+    }
+
+    #[test]
+    fn vector_method_max() {
+        let v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+        assert_eq!(v1.max().unwrap(), 3);
+
+        let v2: Vector<i32, 3> = Vector::from([-1, -2, -3]);
+        assert_eq!(v2.max().unwrap(), -1);
+
+        let v3: Vector<i32, 3> = Vector::from([-1, 2, 3]);
+        assert_eq!(v3.max().unwrap(), 3);
+
+        let v4: Vector<i32, 3> = Vector::from([1, 1, 1]);
+        assert_eq!(v4.max().unwrap(), 1);
+
+        let v5: Vector<i32, 3> = Vector::from([0, 0, 0]);
+        assert_eq!(v5.max().unwrap(), 0);
+
+        let v6: Vector<i32, 3> = Vector::from([i32::MAX, 0, 0]);
+        assert_eq!(v6.max().unwrap(), i32::MAX);
+
+        let v6: Vector<i32, 3> = Vector::from([i32::MAX, i32::MAX, i32::MAX]);
+        assert_eq!(v6.max().unwrap(), i32::MAX);
+
+        let v_empty: Vector<i32, 0> = Vector::zero();
+        assert!(v_empty.max().is_none());
+    }
+
+    #[test]
+    fn vector_method_max_fp() {
+        let v1: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
+        assert_relative_eq!(v1.max_fp().unwrap(), 3.0);
+
+        let v2: Vector<f64, 3> = Vector::from([-1.0, -2.0, -3.0]);
+        assert_relative_eq!(v2.max_fp().unwrap(), -1.0);
+
+        let v3: Vector<f64, 3> = Vector::from([-1.0, 2.0, 3.0]);
+        assert_relative_eq!(v3.max_fp().unwrap(), 3.0);
+
+        let v4: Vector<f64, 3> = Vector::from([1.0, 1.0, 1.0]);
+        assert_relative_eq!(v4.max_fp().unwrap(), 1.0);
+
+        let v5: Vector<f64, 3> = Vector::from([0.0, 0.0, 0.0]);
+        assert_relative_eq!(v5.max_fp().unwrap(), 0.0);
+
+        let v6: Vector<f64, 3> = Vector::from([f64::MAX, 0.0, 0.0]);
+        assert_relative_eq!(v6.max_fp().unwrap(), f64::MAX);
+
+        let v6: Vector<f64, 3> = Vector::from([f64::MAX, f64::MAX, f64::MAX]);
+        assert_relative_eq!(v6.max_fp().unwrap(), f64::MAX);
+
+        let v7: Vector<f64, 3> = Vector::from([0.0, 0.0, -1.0]);
+        assert_relative_eq!(v7.max_fp().unwrap(), 0.0);
+
+        let v_empty: Vector<f64, 0> = Vector::zero();
+        assert!(v_empty.max_fp().is_none());
     }
 
     // ===================================
