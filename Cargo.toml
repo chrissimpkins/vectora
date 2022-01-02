@@ -16,14 +16,21 @@ exclude = [
 [dependencies]
 approx = "0.5.0"
 num = "0.4.0"
+# optional dependencies
+rayon = { version = "1.5.1", optional = true }
 
+[features]
+parallel = ["rayon"]
 
 [dev-dependencies]
 criterion = "0.3"
 pretty_assertions = "1.0.0"
 tempdir = "0.3.7"
 
-
 [[bench]]
 name = "vectora_benchmarks"
 harness = false
+
+[package.metadata.docs.rs]
+# Whether to pass `--all-features` to Cargo (default: false)
+all-features = true
