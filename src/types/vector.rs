@@ -12,6 +12,15 @@ use std::{
 use approx::{AbsDiffEq, Relative, RelativeEq, UlpsEq};
 use num::{Complex, Float, Num, ToPrimitive};
 
+#[cfg(feature = "parallel")]
+// clippy with --all-features does not seem to appropriately detect
+// use of the following imported trait implmentations so we mark with
+// allow unused_imports
+#[allow(unused_imports)]
+use rayon::iter::{
+    IntoParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator,
+};
+
 use crate::errors::VectorError;
 
 // ================================
@@ -3086,6 +3095,54 @@ where
     }
 }
 
+// =====================================================
+//
+// Optional rayon::iter::IntoParallelIterator trait impl
+//
+// =====================================================
+
+#[cfg(feature = "parallel")]
+impl<T, const N: usize> IntoParallelIterator for Vector<T, N>
+where
+    T: Num + Copy + Sync + Send,
+{
+    type Item = T;
+    type Iter = rayon::array::IntoIter<T, N>;
+
+    /// Creates a parallel iterator over owned scalar data.
+    fn into_par_iter(self) -> Self::Iter {
+        self.components.into_par_iter()
+    }
+}
+
+#[cfg(feature = "parallel")]
+impl<'a, T, const N: usize> IntoParallelIterator for &'a Vector<T, N>
+where
+    T: Num + Copy + Sync + Send + 'a,
+{
+    type Item = &'a T;
+    type Iter = rayon::slice::Iter<'a, T>;
+
+    /// Creates a parallel iterator over immutable references to scalar data.
+    fn into_par_iter(self) -> Self::Iter {
+        <&[T]>::into_par_iter(self)
+    }
+}
+
+#[cfg(feature = "parallel")]
+impl<'a, T, const N: usize> IntoParallelIterator for &'a mut Vector<T, N>
+where
+    T: Num + Copy + Sync + Send + 'a,
+{
+    type Item = &'a mut T;
+    type Iter = rayon::slice::IterMut<'a, T>;
+
+    /// Creates a parallel iterator over mutable references to scalar data.
+    fn into_par_iter(self) -> Self::Iter {
+        <&mut [T]>::into_par_iter(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -3095,6 +3152,9 @@ mod tests {
     #[allow(unused_imports)]
     use pretty_assertions::{assert_eq, assert_ne};
     use std::any::{Any, TypeId};
+
+    #[cfg(feature = "parallel")]
+    use rayon::iter::IndexedParallelIterator;
 
     // =======================================
     //
@@ -5513,6 +5573,68 @@ mod tests {
             }
             i += 1;
         }
+    }
+
+    // =======================================
+    //
+    // rayon traits
+    //
+    // IntoParallelIterator trait tests
+    // IntoParallelRefIterator trait tests
+    // IntoParallelRefMutIterator trait tests
+    //
+    // =======================================
+
+    #[cfg(feature = "parallel")]
+    #[test]
+    fn vector_trait_intoparalleliterator_owned() {
+        let v = Vector::<i32, 3>::from([1, 2, 3]);
+
+        let x: i32 = v.into_par_iter().map(|x| x + 1).sum();
+
+        assert_eq!(x, 9);
+        assert_eq!(v, Vector::from([1, 2, 3]));
+    }
+
+    #[cfg(feature = "parallel")]
+    #[test]
+    fn vector_trait_intoparalleliterator_ref() {
+        let v = Vector::<i32, 3>::from([1, 2, 3]);
+
+        let x: i32 = (&v).into_par_iter().map(|&x| x + 1_i32).sum();
+
+        assert_eq!(x, 9);
+        assert_eq!(v, Vector::from([1, 2, 3]));
+    }
+
+    #[cfg(feature = "parallel")]
+    #[test]
+    fn vector_trait_intoparalleliterator_mut_ref() {
+        let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+
+        (&mut v).into_par_iter().enumerate().for_each(|(i, x)| *x = i as i32);
+
+        assert_eq!(v, Vector::from([0, 1, 2]));
+    }
+
+    #[cfg(feature = "parallel")]
+    #[test]
+    fn vector_trait_intoparallelrefiterator() {
+        let v = Vector::<i32, 3>::from([1, 2, 3]);
+
+        let x: i32 = v.par_iter().map(|&x| x + 1_i32).sum();
+
+        assert_eq!(x, 9);
+        assert_eq!(v, Vector::from([1, 2, 3]));
+    }
+
+    #[cfg(feature = "parallel")]
+    #[test]
+    fn vector_trait_intoparallelrefmutiterator() {
+        let mut v = Vector::<i32, 3>::from([5, 6, 7]);
+        v.par_iter_mut().enumerate().for_each(|(i, x)| *x = i as i32);
+
+        assert_eq!(v, Vector::from([0, 1, 2]));
     }
 
     #[test]
