@@ -11,8 +11,8 @@ on:
 name: beta toolchain unit tests
 
 jobs:
-  unit-stable:
-    name: beta toolchain unit tests
+  unit-beta:
+    name: default unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -26,3 +26,20 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
+
+  unit-beta-all-features:
+    name: all features unit tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: beta
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features
