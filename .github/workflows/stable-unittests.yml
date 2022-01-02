@@ -28,7 +28,7 @@ jobs:
           command: test
 
   unit-stable-all-features:
-    name: stable toolchain unit tests
+    name: stable toolchain all features unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

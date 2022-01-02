@@ -28,7 +28,7 @@ jobs:
           command: test
 
   unit-beta-all-features:
-    name: beta toolchain unit tests
+    name: beta toolchain all features unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

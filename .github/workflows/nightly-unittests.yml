@@ -28,7 +28,7 @@ jobs:
           command: test
 
   unit-nightly-all-features:
-    name: nightly toolchain unit tests
+    name: nightly toolchain all features unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
