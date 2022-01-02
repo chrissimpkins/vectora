@@ -18,6 +18,9 @@ use rayon::iter::{
     IntoParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator,
 };
 
+#[cfg(feature = "parallel")]
+use rayon::slice::{ParallelSlice, ParallelSliceMut};
+
 use crate::errors::VectorError;
 
 // ================================
@@ -3140,6 +3143,61 @@ where
     }
 }
 
+// =====================================================
+//
+// Optional rayon::slice::ParallelSlice trait impl
+// Optional rayon::slice::ParallelSliceMut trait impl
+//
+// =====================================================
+
+#[cfg(feature = "parallel")]
+impl<T, const N: usize> ParallelSlice<T> for Vector<T, N>
+where
+    T: Num + Copy + Sync + Send,
+{
+    /// Returns an immutable slice of scalar data for use with Rayon
+    /// parallel slice methods.
+    fn as_parallel_slice(&self) -> &[T] {
+        &self.components[..]
+    }
+}
+
+#[cfg(feature = "parallel")]
+impl<T, const N: usize> ParallelSlice<T> for &Vector<T, N>
+where
+    T: Num + Copy + Sync + Send,
+{
+    /// Returns an immutable slice of scalar data for use with Rayon
+    /// parallel slice methods.
+    fn as_parallel_slice(&self) -> &[T] {
+        &self.components[..]
+    }
+}
+
+#[cfg(feature = "parallel")]
+impl<T, const N: usize> ParallelSliceMut<T> for Vector<T, N>
+where
+    T: Num + Copy + Sync + Send,
+{
+    /// Returns a mutable slice of scalar data for use with Rayon
+    /// parallel slice methods.
+    fn as_parallel_slice_mut(&mut self) -> &mut [T] {
+        &mut self.components[..]
+    }
+}
+
+#[cfg(feature = "parallel")]
+impl<T, const N: usize> ParallelSliceMut<T> for &mut Vector<T, N>
+where
+    T: Num + Copy + Sync + Send,
+{
+    /// Returns a mutable slice of scalar data for use with Rayon
+    /// parallel slice methods.
+    fn as_parallel_slice_mut(&mut self) -> &mut [T] {
+        &mut self.components[..]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -5579,6 +5637,8 @@ mod tests {
     // IntoParallelIterator trait tests
     // IntoParallelRefIterator trait tests
     // IntoParallelRefMutIterator trait tests
+    // ParallelSlice trait tests
+    // ParallelSliceMut trait tests
     //
     // =======================================
 
@@ -5632,6 +5692,33 @@ mod tests {
         v.par_iter_mut().enumerate().for_each(|(i, x)| *x = i as i32);
 
         assert_eq!(v, Vector::from([0, 1, 2]));
+    }
+
+    #[cfg(feature = "parallel")]
+    #[test]
+    fn vector_trait_parallelslice() {
+        let v = Vector::<i32, 3>::from([1, 2, 3]);
+
+        let windows: Vec<_> = v.as_parallel_slice().par_windows(2).collect();
+        assert_eq!(vec![[1, 2], [2, 3]], windows);
+
+        let windows: Vec<_> = (&v).as_parallel_slice().par_windows(2).collect();
+        assert_eq!(vec![[1, 2], [2, 3]], windows);
+    }
+
+    #[cfg(feature = "parallel")]
+    #[test]
+    fn vector_trait_parallelslicemut() {
+        let mut v = Vector::<i32, 5>::from([1, 2, 3, 4, 5]);
+
+        v.as_parallel_slice_mut().par_chunks_mut(2).for_each(|slice| slice.reverse());
+        assert_eq!(v, Vector::from([2, 1, 4, 3, 5]));
+
+        // reset
+        let mut v = Vector::<i32, 5>::from([1, 2, 3, 4, 5]);
+
+        (&mut v).as_parallel_slice_mut().par_chunks_mut(2).for_each(|slice| slice.reverse());
+        assert_eq!(v, Vector::from([2, 1, 4, 3, 5]));
     }
 
     #[test]
