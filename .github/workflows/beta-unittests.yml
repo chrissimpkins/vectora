@@ -12,7 +12,7 @@ name: beta toolchain unit tests
 
 jobs:
   unit-beta:
-    name: beta toolchain unit tests
+    name: default unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -28,7 +28,7 @@ jobs:
           command: test
 
   unit-beta-all-features:
-    name: beta toolchain all features unit tests
+    name: all features unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

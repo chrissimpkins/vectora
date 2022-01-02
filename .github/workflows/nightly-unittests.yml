@@ -12,7 +12,7 @@ name: nightly toolchain unit tests
 
 jobs:
   unit-nightly:
-    name: nightly toolchain unit tests
+    name: default unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -28,7 +28,7 @@ jobs:
           command: test
 
   unit-nightly-all-features:
-    name: nightly toolchain all features unit tests
+    name: all features unit tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
