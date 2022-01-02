@@ -39,7 +39,4 @@ jobs:
         with:
           toolchain: beta
           override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all-features
+      - run: cargo +beta test --all-features
