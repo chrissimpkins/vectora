@@ -13,9 +13,6 @@ use approx::{AbsDiffEq, Relative, RelativeEq, UlpsEq};
 use num::{Complex, Float, Num, ToPrimitive};
 
 #[cfg(feature = "parallel")]
-// clippy with --all-features does not seem to appropriately detect
-// use of the following imported trait implmentations so we mark with
-// allow unused_imports
 #[allow(unused_imports)]
 use rayon::iter::{
     IntoParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator,
