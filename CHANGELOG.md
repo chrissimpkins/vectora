@@ -16,6 +16,7 @@
 
 ### Changed
 
+- release.toml: updated the regular expression for lib.rs automated version number replacements
 - docs: revised Getting Started guide with available optional feature support
 - docs: revised Getting Started guide installation instructions with new, optional feature Cargo.toml configuration
 - docs: revised Getting Started guide, Iteration and Loops section, with information on new, optional parallel iterator support
