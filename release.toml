@@ -1,4 +1,4 @@
 pre-release-replacements = [
   {file="README.md", search="vectora = .*", replace="{{crate_name}} = \"{{version}}\""},
-  {file="src/lib.rs", search="vectora = .*", replace="{{crate_name}} = \"{{version}}\""},
+  {file="src/lib.rs", search="vectora = \".*\"", replace="{{crate_name}} = \"{{version}}\""},
 ]
