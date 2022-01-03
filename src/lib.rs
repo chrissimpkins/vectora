@@ -106,10 +106,12 @@
 //!
 //! ```yaml
 //! [dependencies]
-//! vectora = { version = "0.7.0", features = ["parallel"] }
+//! vectora = { version = "VERSION_NUMBER", features = ["parallel"] }
 //! ```
 //!
-//! Conditional compilation and dependency installation are available for the following features:
+//! Replace `VERSION_NUMBER` in the example above with the vectora crate version number.
+//!
+//! Conditional compilation and optional dependency installation are available for the following features:
 //!
 //! - **`parallel`**: Installs an optional [rayon crate](https://docs.rs/crate/rayon/latest) dependency and broadens the [`Vector`] API with
 //! parallel iterator and parallel slice support. This feature includes implementations of `Vector::into_par_iter`, `Vector::par_iter`,
