@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.8.0
+
+### Added
+
+- `parallel` feature
+- Optional `parallel` feature rayon parallel iterators over `Vector` scalars
+- Optional `parallel` feature rayon immutable parallel slices over `Vector` scalars
+- Optional `parallel` feature rayon mutable parallel slices over `Vector` scalars
+- Optional `parallel` feature `Vector::into_par_iter` method
+- Optional `parallel` feature `Vector::par_iter` method
+- Optional `parallel` feature `Vector::par_iter_mut` method
+- Optional `parallel` feature `Vector::as_parallel_slice` method
+- Optional `parallel` feature `Vector::as_parallel_slice_mut` method
+
+### Changed
+
+- docs: revised Getting Started guide with available optional feature support
+- docs: revised Getting Started guide installation instructions with new, optional feature Cargo.toml configuration
+- docs: revised Getting Started guide, Iteration and Loops section, with information on new, optional parallel iterator support
+
 ## v0.7.0
 
 ### Added
