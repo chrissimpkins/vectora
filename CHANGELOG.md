@@ -6,8 +6,8 @@
 
 - `parallel` feature
 - Optional `parallel` feature rayon parallel iterators over `Vector` scalars
-- Optional `parallel` feature rayon immutable parallel slices over `Vector` scalars
-- Optional `parallel` feature rayon mutable parallel slices over `Vector` scalars
+- Optional `parallel` feature rayon parallel slices over immutable `Vector` scalar references
+- Optional `parallel` feature rayon parallel slices over mutable `Vector` scalar references
 - Optional `parallel` feature `Vector::into_par_iter` method
 - Optional `parallel` feature `Vector::par_iter` method
 - Optional `parallel` feature `Vector::par_iter_mut` method
