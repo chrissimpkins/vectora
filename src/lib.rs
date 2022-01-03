@@ -13,6 +13,7 @@
 //! - [License](#license)
 //! - [Getting Started](#getting-started)
 //!     - [Add Vectora to Your Project](#add-vectora-to-your-project)
+//!     - [Optional Crate Features](#optional-crate-features)
 //!     - [Numeric Type Support](#numeric-type-support)
 //!     - [Initialization](#initialization)
 //!     - [Numeric Type Casts](#numeric-type-casts)
@@ -98,6 +99,25 @@
 //! ```
 //! use vectora::Vector;
 //! ```
+//!
+//! ## Optional Crate Features
+//!
+//! Optional features are defined in your `Cargo.toml` configuration file:
+//!
+//! ```yaml
+//! [dependencies]
+//! vectora = { version = "0.7.0", features = ["parallel"] }
+//! ```
+//!
+//! Conditional compilation and dependency installation are available for the following features:
+//!
+//! - **`parallel`**: Installs an optional [rayon crate](https://docs.rs/crate/rayon/latest) dependency and broadens the [`Vector`] API with
+//! parallel iterator and parallel slice support. This feature includes implementations of `Vector::into_par_iter`, `Vector::par_iter`,
+//! `Vector::par_iter_mut`, `Vector::as_parallel_slice`, and `Vector::as_parallel_slice_mut` methods with support for the rayon trait-defined
+//! [parallel iterator](https://docs.rs/rayon/latest/rayon/iter/trait.ParallelIterator.html#provided-methods),
+//! [immutable parallel slice](https://docs.rs/rayon/latest/rayon/slice/trait.ParallelSlice.html), and
+//! [mutable parallel slice](https://docs.rs/rayon/latest/rayon/slice/trait.ParallelSliceMut.html) APIs.
+//!
 //!
 //! ## Numeric Type Support
 //!
@@ -539,6 +559,17 @@
 //!     // do things
 //! }
 //! ```
+//!
+//! ### Parallel iteration (Optional crate feature)
+//!
+//! *Optional* rayon parallel iterator support may be installed with the vectora crate
+//! `parallel` feature.  With activation of this feature, you may use the `Vector::into_par_iter`,
+//! `Vector::par_iter`, or `Vector::par_iter_mut` methods to create a parallel iterator over owned
+//! [`Vector`] scalars or scalar references.  The `parallel` feature provides access to the
+//! [rayon parallel iterator API](https://docs.rs/rayon/latest/rayon/iter/trait.ParallelIterator.html#provided-methods).
+//!
+//! See the [Optional Crate Features](#optional-crate-features) section above for
+//! installation instructions and refer to the [`Vector`] API docs for additional details.
 //!
 //! ## Vector Arithmetic
 //!
