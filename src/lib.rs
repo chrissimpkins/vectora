@@ -90,7 +90,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! vectora = "0.7.0"
+//! vectora = "0.8.0"
 //! ```
 //!
 //! The examples below assume the following [`Vector`] struct import in
@@ -106,7 +106,7 @@
 //!
 //! ```yaml
 //! [dependencies]
-//! vectora = { version = "VERSION_NUMBER", features = ["parallel"] }
+//! vectora = "0.8.0"
 //! ```
 //!
 //! Replace `VERSION_NUMBER` in the example above with the vectora crate version number.
