@@ -54,6 +54,34 @@ where
         }
     }
 
+    /// Returns a new M-by-N [`Matrix`] initialized with default (zero) `T` numeric
+    /// type scalar values, row number defined by the `rows` parameter,
+    /// and column number as defined by `N`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use vectora::Matrix;
+    ///
+    /// let m: Matrix<i32> = Matrix::zero(2, 3);
+    /// assert_eq!(m.rows.len(), 2);
+    ///
+    /// assert_eq!(m[0].len(), 3);
+    /// assert_eq!(m[0][0], 0_i32);
+    /// assert_eq!(m[0][1], 0_i32);
+    /// assert_eq!(m[0][2], 0_i32);
+    ///
+    /// assert_eq!(m[1].len(), 3);
+    /// assert_eq!(m[1][0], 0_i32);
+    /// assert_eq!(m[1][1], 0_i32);
+    /// assert_eq!(m[1][2], 0_i32);
+    /// ```
+    pub fn zero(rows: usize, columns: usize) -> Self {
+        Self::new(rows, columns)
+    }
+
     /// Returns a new M-by-N [`Matrix`] initialized with `T` numeric
     /// type scalar values as defined in the `rows` collection, row number
     /// as defined by the length of the `rows` collection, and column number
