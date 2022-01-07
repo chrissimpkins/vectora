@@ -22,8 +22,8 @@ impl<T> Matrix<T>
 where
     T: Num + Copy + Sync + Send + Default,
 {
-    /// Returns a new M-by-N [`Matrix`] initialized with default (zero) `T` numeric
-    /// type scalar values, row number defined by the `rows` parameter,
+    /// Returns a new M-by-N [`Matrix`] initialized with `T` numeric
+    /// type zero scalar values, row number defined by the `rows` parameter,
     /// and column number as defined by `N`.
     ///
     /// # Examples
@@ -211,7 +211,7 @@ where
     ///
     /// - lhs number of columns == rhs number of rows
     ///
-    /// This test is required for matrix multiplication.
+    /// This criterion must be met for matrix multiplication.
     pub fn validate_shape_lhs_n_eq_rhs_m(&self, rhs: &Matrix<T>) -> Result<(), MatrixError> {
         if self.rows[0].len() != rhs.rows.len() {
             return Err(MatrixError::InvalidMatrixShapeError(format!(
@@ -227,7 +227,7 @@ where
     ///
     /// - lhs M, N dimensions are the same as rhs M, N dimensions
     ///
-    /// This test is required for matrix addition and subtraction.
+    /// This criterion must be met for matrix addition and subtraction.
     pub fn validate_shape_lhs_mn_eq_rhs_mn(&self, rhs: &Matrix<T>) -> Result<(), MatrixError> {
         if self.dim() != rhs.dim() {
             return Err(MatrixError::InvalidMatrixShapeError(format!(
