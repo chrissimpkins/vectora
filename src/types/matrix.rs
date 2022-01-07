@@ -104,7 +104,8 @@ where
         }
     }
 
-    /// Returns the M-by-N [`Matrix`] `(number of row vectors = M, number of column vectors = N)` as [`usize`] values.
+    /// Returns the M-by-N [`Matrix`] `(number of row vectors = M, number of column vectors = N)`
+    /// as [`usize`] values.
     ///
     /// TODO:
     pub fn dim(&self) -> (usize, usize) {
@@ -281,9 +282,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     #[allow(unused_imports)]
     use approx::{assert_relative_eq, assert_relative_ne};
-    use matrix::*;
     use num::complex::Complex;
     #[allow(unused_imports)]
     use pretty_assertions::{assert_eq, assert_ne};
