@@ -1,7 +1,7 @@
 //! Matrix types
 
 use std::fmt::Debug;
-use std::ops::{Index, IndexMut, Mul};
+use std::ops::{Index, IndexMut};
 use std::slice::SliceIndex;
 
 use num::Num;
@@ -135,11 +135,11 @@ where
         }
     }
 
-    /// Returns a [`Matrix`] column vector given the one-based column index parameter `column_index.
+    /// Returns a [`Matrix`] column vector given the one-based column index parameter `column_index`.
     ///
     /// Returns `None` if the index is out of range or the [`Matrix`] is empty.
     ///
-    /// note: index is one-based, not zero-based
+    /// Note: index is one-based, not zero-based
     ///
     /// TODO:
     pub fn get_column_vec(&self, column_index: usize) -> Option<Vec<T>> {
@@ -155,6 +155,23 @@ where
         }
 
         Some(v)
+    }
+
+    /// Returns a [`Matrix`] row vector given the one-based row index parameter `row_index`.
+    ///
+    /// Returns `None` if the index is out of range or the [`Matrix`] is empty.
+    ///
+    /// Note: index is one-based, not zero-based.
+    ///
+    /// TODO:
+    pub fn get_row_vec(&self, row_index: usize) -> Option<Vec<T>> {
+        if self.rows.is_empty() || row_index == 0 || self.rows.len() < row_index {
+            return None;
+        }
+
+        // the index is row_index - 1 b/c the index is one-based,
+        // not zero-based, whereas the Vec has zero-based indices
+        Some(self.rows[row_index - 1].clone())
     }
 
     /// Returns `true` if the [`Matrix`] is empty.
@@ -541,6 +558,35 @@ mod tests {
         let m: Matrix<i32> = Matrix::from_rows(&vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
 
         assert!(m.get_column_vec(10).is_none());
+    }
+
+    // ================================
+    //
+    // get_row_vec method tests
+    //
+    // ================================
+
+    #[test]
+    fn matrix_method_get_row_vec() {
+        let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+
+        assert_eq!(m.get_row_vec(1).unwrap(), vec![1, 2, 3]);
+        assert_eq!(m.get_row_vec(2).unwrap(), vec![4, 5, 6]);
+        assert_eq!(m.get_row_vec(3).unwrap(), vec![7, 8, 9]);
+    }
+
+    #[test]
+    fn matrix_method_get_row_vec_panics_on_column_out_of_bounds_low() {
+        let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+
+        assert!(m.get_row_vec(0).is_none());
+    }
+
+    #[test]
+    fn matrix_method_get_row_vec_panics_on_column_out_of_bounds_high() {
+        let m: Matrix<i32> = Matrix::from_rows(&vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+
+        assert!(m.get_row_vec(10).is_none());
     }
 
     // ===================================
