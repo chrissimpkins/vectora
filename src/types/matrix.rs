@@ -184,7 +184,7 @@ where
     /// - lhs number of columns == rhs number of rows
     ///
     /// This test is required for matrix multiplication.
-    fn validate_shape_lhs_n_eq_rhs_m(&self, rhs: &Matrix<T>) -> Result<(), MatrixError> {
+    pub fn validate_shape_lhs_n_eq_rhs_m(&self, rhs: &Matrix<T>) -> Result<(), MatrixError> {
         if self.rows[0].len() != rhs.rows.len() {
             return Err(MatrixError::InvalidMatrixShapeError(format!(
                 "the lhs matrix column number ({}) must match the rhs matrix row number ({}) with this operation.",
@@ -200,7 +200,7 @@ where
     /// - lhs M, N dimensions are the same as rhs M, N dimensions
     ///
     /// This test is required for matrix addition and subtraction.
-    fn validate_shape_lhs_mn_eq_rhs_mn(&self, rhs: &Matrix<T>) -> Result<(), MatrixError> {
+    pub fn validate_shape_lhs_mn_eq_rhs_mn(&self, rhs: &Matrix<T>) -> Result<(), MatrixError> {
         if self.dim() != rhs.dim() {
             return Err(MatrixError::InvalidMatrixShapeError(format!(
                 "the matrix dimensions must be the same with this operation. Received dimensions {:?} and {:?}",
