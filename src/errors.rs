@@ -42,6 +42,9 @@ pub enum MatrixError {
     EmptyMatrixError(String),
     /// Occurs when an operation receives an invalid matrix shape
     InvalidMatrixShapeError(String),
+    /// Occurs when there is invalid data during a fallible attempt to convert
+    /// a [`crate::Matrix`] row or column to another type
+    TryFromMatrixError(String),
 }
 
 impl std::fmt::Display for MatrixError {
@@ -52,6 +55,9 @@ impl std::fmt::Display for MatrixError {
             }
             MatrixError::InvalidMatrixShapeError(s) => {
                 write!(f, "MatrixError::InvalidMatrixShapeError: {}", s)
+            }
+            MatrixError::TryFromMatrixError(s) => {
+                write!(f, "MatrixError::TryFromMatrixError: {}", s)
             }
         }
     }
