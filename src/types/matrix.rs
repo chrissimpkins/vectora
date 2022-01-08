@@ -164,46 +164,38 @@ where
         }
     }
 
-    /// Returns a [`Matrix`] column [`Vec`] given the one-based column index parameter `column_index`.
+    /// Returns a [`Matrix`] column [`Vec`] given the zero-based column index parameter `column_index`.
     ///
     /// Returns `None` if the index is out of range or the [`Matrix`] is empty.
     ///
-    /// Note: index is one-based, not zero-based
-    ///
     /// TODO:
     pub fn get_column_vec(&self, column_index: usize) -> Option<Vec<T>> {
-        if self.rows.is_empty() || column_index == 0 || self.rows[0].len() < column_index {
+        if self.rows.is_empty() || self.rows[0].len() < column_index + 1 {
             return None;
         }
 
         let mut v = Vec::<T>::with_capacity(self.dim_column());
         for row in self.rows.iter() {
-            // the index is column_index - 1 b/c the number is one-based
-            // not zero-based, whereas the Vec has zero-based indices
-            v.push(row[column_index - 1]);
+            v.push(row[column_index]);
         }
 
         Some(v)
     }
 
-    /// Returns a [`Matrix`] row vector given the one-based row index parameter `row_index`.
+    /// Returns a [`Matrix`] row vector given the zero-based row index parameter `row_index`.
     ///
     /// Returns `None` if the index is out of range or the [`Matrix`] is empty.
     ///
-    /// Note: index is one-based, not zero-based.
-    ///
     /// TODO:
     pub fn get_row_vec(&self, row_index: usize) -> Option<Vec<T>> {
-        if self.rows.is_empty() || row_index == 0 || self.rows.len() < row_index {
+        if self.rows.is_empty() || self.rows.len() < row_index + 1 {
             return None;
         }
 
-        // the index is row_index - 1 b/c the index is one-based,
-        // not zero-based, whereas the Vec has zero-based indices
-        Some(self.rows[row_index - 1].clone())
+        Some(self.rows[row_index].clone())
     }
 
-    /// Returns a [`Matrix`] column [`Vector`] given the one-based column index parameter
+    /// Returns a [`Matrix`] column [`Vector`] given the zero-based column index parameter
     /// `column_index`.
     ///
     /// # Errors
@@ -221,18 +213,9 @@ where
     where
         Vector<T, N>: TryFrom<Vec<T>>,
     {
-        // validate the column request
-        // this must be a one-based index value
-        if column_index == 0 {
-            return Err(MatrixError::TryFromMatrixError(
-                "the column index 0 is not a valid request, use one-based index values."
-                    .to_string(),
-            ));
-        }
-
         // validate the Matrix shape and request
         // the matrix dimensions must support the data request
-        if self.rows.is_empty() || self.rows[0].len() < column_index {
+        if self.rows.is_empty() || self.rows[0].len() < column_index + 1 {
             return Err(MatrixError::TryFromMatrixError(format!(
                 "the Matrix dimensions {:?} do not support the request.",
                 self.dim()
@@ -256,7 +239,7 @@ where
         }
     }
 
-    /// Returns a [`Matrix`] row [`Vector`] given the one-based row index parameter
+    /// Returns a [`Matrix`] row [`Vector`] given the zero-based row index parameter
     /// `row_index`.
     ///
     /// # Errors
@@ -274,17 +257,9 @@ where
     where
         Vector<T, N>: TryFrom<&'a Vec<T>> + 'a,
     {
-        // validate the row
-        // this must be a one-based index value
-        if row_index == 0 {
-            return Err(MatrixError::TryFromMatrixError(
-                "the row index 0 is not a valid request, use one-based index values.".to_string(),
-            ));
-        }
-
         // validate the Matrix shape and request
         // the matrix dimensions must support the data request
-        if self.rows.is_empty() || self.rows.len() < row_index {
+        if self.rows.is_empty() || self.rows.len() < row_index + 1 {
             return Err(MatrixError::TryFromMatrixError(format!(
                 "the Matrix dimensions {:?} do not support the request.",
                 self.dim()
@@ -293,7 +268,7 @@ where
 
         // validate the length of the row vs. the length of the requested Vector
         // the Matrix row vector length must be identical to the requested Vector length
-        let row_vec = &self.rows[row_index - 1];
+        let row_vec = &self.rows[row_index];
         if row_vec.len() != N {
             return Err(MatrixError::TryFromMatrixError(format!(
                 "the requested Matrix row vector length ({}) does not match the requested Vector length ({})",
@@ -676,23 +651,16 @@ mod tests {
     fn matrix_method_get_column_vec() {
         let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
 
-        assert_eq!(m.get_column_vec(1).unwrap(), vec![1, 4, 7]);
-        assert_eq!(m.get_column_vec(2).unwrap(), vec![2, 5, 8]);
-        assert_eq!(m.get_column_vec(3).unwrap(), vec![3, 6, 9]);
-    }
-
-    #[test]
-    fn matrix_method_get_column_vec_panics_on_column_out_of_bounds_low() {
-        let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
-
-        assert!(m.get_column_vec(0).is_none());
+        assert_eq!(m.get_column_vec(0).unwrap(), vec![1, 4, 7]);
+        assert_eq!(m.get_column_vec(1).unwrap(), vec![2, 5, 8]);
+        assert_eq!(m.get_column_vec(2).unwrap(), vec![3, 6, 9]);
     }
 
     #[test]
     fn matrix_method_get_column_vec_panics_on_column_out_of_bounds_high() {
         let m: Matrix<i32> = Matrix::from_rows(&vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
 
-        assert!(m.get_column_vec(10).is_none());
+        assert!(m.get_column_vec(3).is_none());
     }
 
     // ================================
@@ -705,23 +673,16 @@ mod tests {
     fn matrix_method_get_row_vec() {
         let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
 
-        assert_eq!(m.get_row_vec(1).unwrap(), vec![1, 2, 3]);
-        assert_eq!(m.get_row_vec(2).unwrap(), vec![4, 5, 6]);
-        assert_eq!(m.get_row_vec(3).unwrap(), vec![7, 8, 9]);
-    }
-
-    #[test]
-    fn matrix_method_get_row_vec_panics_on_column_out_of_bounds_low() {
-        let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
-
-        assert!(m.get_row_vec(0).is_none());
+        assert_eq!(m.get_row_vec(0).unwrap(), vec![1, 2, 3]);
+        assert_eq!(m.get_row_vec(1).unwrap(), vec![4, 5, 6]);
+        assert_eq!(m.get_row_vec(2).unwrap(), vec![7, 8, 9]);
     }
 
     #[test]
     fn matrix_method_get_row_vec_panics_on_column_out_of_bounds_high() {
         let m: Matrix<i32> = Matrix::from_rows(&vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
 
-        assert!(m.get_row_vec(10).is_none());
+        assert!(m.get_row_vec(3).is_none());
     }
 
     // ================================
@@ -734,26 +695,16 @@ mod tests {
     fn matrix_method_get_column_vector() {
         let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
 
-        assert_eq!(m.get_column_vector(1).unwrap(), vector![1, 4, 7]);
-        assert_eq!(m.get_column_vector(2).unwrap(), vector![2, 5, 8]);
-        assert_eq!(m.get_column_vector(3).unwrap(), vector![3, 6, 9]);
-    }
-
-    #[test]
-    fn matrix_method_get_column_vector_out_of_bounds_low() {
-        let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
-
-        let res: Result<Vector<i32, 3>, MatrixError> = m.get_column_vector(0);
-
-        assert!(res.is_err());
-        assert!(matches!(res, Err(MatrixError::TryFromMatrixError(_))));
+        assert_eq!(m.get_column_vector(0).unwrap(), vector![1, 4, 7]);
+        assert_eq!(m.get_column_vector(1).unwrap(), vector![2, 5, 8]);
+        assert_eq!(m.get_column_vector(2).unwrap(), vector![3, 6, 9]);
     }
 
     #[test]
     fn matrix_method_get_column_vector_out_of_bounds_high() {
         let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
 
-        let res: Result<Vector<i32, 3>, MatrixError> = m.get_column_vector(4);
+        let res: Result<Vector<i32, 3>, MatrixError> = m.get_column_vector(3);
 
         assert!(res.is_err());
         assert!(matches!(res, Err(MatrixError::TryFromMatrixError(_))));
@@ -779,26 +730,16 @@ mod tests {
     fn matrix_method_get_row_vector() {
         let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
 
-        assert_eq!(m.get_row_vector(1).unwrap(), vector![1, 2, 3]);
-        assert_eq!(m.get_row_vector(2).unwrap(), vector![4, 5, 6]);
-        assert_eq!(m.get_row_vector(3).unwrap(), vector![7, 8, 9]);
-    }
-
-    #[test]
-    fn matrix_method_get_row_vector_out_of_bounds_low() {
-        let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
-
-        let res: Result<Vector<i32, 3>, MatrixError> = m.get_row_vector(0);
-
-        assert!(res.is_err());
-        assert!(matches!(res, Err(MatrixError::TryFromMatrixError(_))));
+        assert_eq!(m.get_row_vector(0).unwrap(), vector![1, 2, 3]);
+        assert_eq!(m.get_row_vector(1).unwrap(), vector![4, 5, 6]);
+        assert_eq!(m.get_row_vector(2).unwrap(), vector![7, 8, 9]);
     }
 
     #[test]
     fn matrix_method_get_row_vector_out_of_bounds_high() {
         let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
 
-        let res: Result<Vector<i32, 3>, MatrixError> = m.get_row_vector(4);
+        let res: Result<Vector<i32, 3>, MatrixError> = m.get_row_vector(3);
 
         assert!(res.is_err());
         assert!(matches!(res, Err(MatrixError::TryFromMatrixError(_))));
