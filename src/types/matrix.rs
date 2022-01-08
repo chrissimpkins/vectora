@@ -186,6 +186,23 @@ where
         Some(v)
     }
 
+    /// Returns a [`Matrix`] row vector given the one-based row index parameter `row_index`.
+    ///
+    /// Returns `None` if the index is out of range or the [`Matrix`] is empty.
+    ///
+    /// Note: index is one-based, not zero-based.
+    ///
+    /// TODO:
+    pub fn get_row_vec(&self, row_index: usize) -> Option<Vec<T>> {
+        if self.rows.is_empty() || row_index == 0 || self.rows.len() < row_index {
+            return None;
+        }
+
+        // the index is row_index - 1 b/c the index is one-based,
+        // not zero-based, whereas the Vec has zero-based indices
+        Some(self.rows[row_index - 1].clone())
+    }
+
     /// Returns a [`Matrix`] column [`Vector`] given the one-based column index parameter
     /// `column_index`.
     ///
@@ -289,23 +306,6 @@ where
             Ok(v) => Ok(v),
             Err(_) => panic!(),
         }
-    }
-
-    /// Returns a [`Matrix`] row vector given the one-based row index parameter `row_index`.
-    ///
-    /// Returns `None` if the index is out of range or the [`Matrix`] is empty.
-    ///
-    /// Note: index is one-based, not zero-based.
-    ///
-    /// TODO:
-    pub fn get_row_vec(&self, row_index: usize) -> Option<Vec<T>> {
-        if self.rows.is_empty() || row_index == 0 || self.rows.len() < row_index {
-            return None;
-        }
-
-        // the index is row_index - 1 b/c the index is one-based,
-        // not zero-based, whereas the Vec has zero-based indices
-        Some(self.rows[row_index - 1].clone())
     }
 
     /// Returns `true` if the [`Matrix`] is empty.
