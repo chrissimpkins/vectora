@@ -7,6 +7,7 @@ use std::slice::SliceIndex;
 use num::Num;
 
 use crate::errors::MatrixError;
+use crate::Vector;
 
 /// A generic M-by-N matrix type parameterized by the numeric type `T`.
 #[derive(Clone, Debug)]
@@ -163,7 +164,7 @@ where
         }
     }
 
-    /// Returns a [`Matrix`] column vector given the one-based column index parameter `column_index`.
+    /// Returns a [`Matrix`] column [`Vec`] given the one-based column index parameter `column_index`.
     ///
     /// Returns `None` if the index is out of range or the [`Matrix`] is empty.
     ///
@@ -183,6 +184,111 @@ where
         }
 
         Some(v)
+    }
+
+    /// Returns a [`Matrix`] column [`Vector`] given the one-based column index parameter
+    /// `column_index`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MatrixError::TryFromMatrixError`] when:
+    ///
+    /// - the `column_index` request is out of bounds
+    /// - the [`Matrix`] is empty
+    ///
+    /// TODO:
+    pub fn get_column_vector<const N: usize>(
+        &self,
+        column_index: usize,
+    ) -> Result<Vector<T, N>, MatrixError>
+    where
+        Vector<T, N>: TryFrom<Vec<T>>,
+    {
+        // validate the column request
+        // this must be a one-based index value
+        if column_index == 0 {
+            return Err(MatrixError::TryFromMatrixError(
+                "the column index 0 is not a valid request, use one-based index values."
+                    .to_string(),
+            ));
+        }
+
+        // validate the Matrix shape and request
+        // the matrix dimensions must support the data request
+        if self.rows.is_empty() || self.rows[0].len() < column_index {
+            return Err(MatrixError::TryFromMatrixError(format!(
+                "the Matrix dimensions {:?} do not support the request.",
+                self.dim()
+            )));
+        }
+
+        // validate the length of the column vs. the length of the requested Vector
+        // the Matrix column vector length must be identical to the requested Vector length
+        let col_vec = self.get_column_vec(column_index).unwrap();
+        if col_vec.len() != N {
+            return Err(MatrixError::TryFromMatrixError(format!(
+                "the requested Matrix column vector length ({}) does not match the requested Vector length ({})",
+                col_vec.len(),
+                N
+            )));
+        }
+
+        match Vector::<T, N>::try_from(col_vec) {
+            Ok(v) => Ok(v),
+            Err(_) => panic!(),
+        }
+    }
+
+    /// Returns a [`Matrix`] row [`Vector`] given the one-based row index parameter
+    /// `row_index`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MatrixError::TryFromMatrixError`] when:
+    ///
+    /// - the `row_index` request is out of bounds
+    /// - the [`Matrix`] is empty
+    ///
+    /// TODO:
+    pub fn get_row_vector<'a, const N: usize>(
+        &'a self,
+        row_index: usize,
+    ) -> Result<Vector<T, N>, MatrixError>
+    where
+        Vector<T, N>: TryFrom<&'a Vec<T>> + 'a,
+    {
+        // validate the row
+        // this must be a one-based index value
+        if row_index == 0 {
+            return Err(MatrixError::TryFromMatrixError(
+                "the row index 0 is not a valid request, use one-based index values.".to_string(),
+            ));
+        }
+
+        // validate the Matrix shape and request
+        // the matrix dimensions must support the data request
+        if self.rows.is_empty() || self.rows.len() < row_index {
+            return Err(MatrixError::TryFromMatrixError(format!(
+                "the Matrix dimensions {:?} do not support the request.",
+                self.dim()
+            )));
+        }
+
+        // validate the length of the row vs. the length of the requested Vector
+        // the Matrix row vector length must be identical to the requested Vector length
+        let row_vec = &self.rows[row_index - 1];
+        if row_vec.len() != N {
+            return Err(MatrixError::TryFromMatrixError(format!(
+                "the requested Matrix row vector length ({}) does not match the requested Vector length ({})",
+                row_vec.len(),
+                N
+            )));
+        }
+
+        match Vector::<T, N>::try_from(row_vec) {
+            Ok(v) => Ok(v),
+            Err(_) => panic!(),
+        }
     }
 
     /// Returns a [`Matrix`] row vector given the one-based row index parameter `row_index`.
@@ -328,6 +434,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{vector, Vector};
     #[allow(unused_imports)]
     use approx::{assert_relative_eq, assert_relative_ne};
     use num::complex::Complex;
@@ -615,6 +722,96 @@ mod tests {
         let m: Matrix<i32> = Matrix::from_rows(&vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
 
         assert!(m.get_row_vec(10).is_none());
+    }
+
+    // ================================
+    //
+    // get_column_vector method tests
+    //
+    // ================================
+
+    #[test]
+    fn matrix_method_get_column_vector() {
+        let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+
+        assert_eq!(m.get_column_vector(1).unwrap(), vector![1, 4, 7]);
+        assert_eq!(m.get_column_vector(2).unwrap(), vector![2, 5, 8]);
+        assert_eq!(m.get_column_vector(3).unwrap(), vector![3, 6, 9]);
+    }
+
+    #[test]
+    fn matrix_method_get_column_vector_out_of_bounds_low() {
+        let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+
+        let res: Result<Vector<i32, 3>, MatrixError> = m.get_column_vector(0);
+
+        assert!(res.is_err());
+        assert!(matches!(res, Err(MatrixError::TryFromMatrixError(_))));
+    }
+
+    #[test]
+    fn matrix_method_get_column_vector_out_of_bounds_high() {
+        let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+
+        let res: Result<Vector<i32, 3>, MatrixError> = m.get_column_vector(4);
+
+        assert!(res.is_err());
+        assert!(matches!(res, Err(MatrixError::TryFromMatrixError(_))));
+    }
+
+    #[test]
+    fn matrix_method_get_column_vector_empty_matrix() {
+        let m: Matrix<i32> = Matrix::from_rows(&[]);
+
+        let res: Result<Vector<i32, 3>, MatrixError> = m.get_column_vector(1);
+
+        assert!(res.is_err());
+        assert!(matches!(res, Err(MatrixError::TryFromMatrixError(_))));
+    }
+
+    // ================================
+    //
+    // get_row_vector method tests
+    //
+    // ================================
+
+    #[test]
+    fn matrix_method_get_row_vector() {
+        let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+
+        assert_eq!(m.get_row_vector(1).unwrap(), vector![1, 2, 3]);
+        assert_eq!(m.get_row_vector(2).unwrap(), vector![4, 5, 6]);
+        assert_eq!(m.get_row_vector(3).unwrap(), vector![7, 8, 9]);
+    }
+
+    #[test]
+    fn matrix_method_get_row_vector_out_of_bounds_low() {
+        let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+
+        let res: Result<Vector<i32, 3>, MatrixError> = m.get_row_vector(0);
+
+        assert!(res.is_err());
+        assert!(matches!(res, Err(MatrixError::TryFromMatrixError(_))));
+    }
+
+    #[test]
+    fn matrix_method_get_row_vector_out_of_bounds_high() {
+        let m: Matrix<i32> = Matrix::from_rows(&[vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]);
+
+        let res: Result<Vector<i32, 3>, MatrixError> = m.get_row_vector(4);
+
+        assert!(res.is_err());
+        assert!(matches!(res, Err(MatrixError::TryFromMatrixError(_))));
+    }
+
+    #[test]
+    fn matrix_method_get_row_vector_empty_matrix() {
+        let m: Matrix<i32> = Matrix::from_rows(&[]);
+
+        let res: Result<Vector<i32, 3>, MatrixError> = m.get_row_vector(1);
+
+        assert!(res.is_err());
+        assert!(matches!(res, Err(MatrixError::TryFromMatrixError(_))));
     }
 
     // ===================================
