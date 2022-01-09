@@ -8,11 +8,11 @@ on:
       - "test-*" # Push events to branches matching refs/heads/test-[ANYTHING]
   pull_request:
 
-name: stable toolchain unit tests
+name: unit tests (stable toolchain)
 
 jobs:
   unit-stable:
-    name: default unit tests
+    name: default
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -26,9 +26,10 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --lib
 
   unit-stable-all-features:
-    name: all features unit tests
+    name: all features
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -42,4 +43,4 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --all-features
+          args: --all-features --lib
