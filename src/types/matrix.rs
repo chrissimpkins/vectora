@@ -858,7 +858,7 @@ mod tests {
 
     // ================================
     //
-    // inverse method tests
+    // additive_inverse method tests
     //
     // ================================
 
@@ -1280,6 +1280,73 @@ mod tests {
         let expected_rows_zeroes = [
             vec![Complex::new(0_i32, 0), Complex::new(0_i32, 0)],
             vec![Complex::new(0_i32, 0), Complex::new(0_i32, 0)],
+        ];
+
+        assert_eq!((&m1 + &m2).rows, expected_rows_1_plus_2);
+        assert_eq!((&m2 + &m1).rows, expected_rows_1_plus_2); // commutative
+        assert_eq!((&(&m1 + &m2) + &m2).rows, expected_rows_1_plus_2_plus_2); // associative
+        assert_eq!((&m1 + &(&m2 + &m2)).rows, expected_rows_1_plus_2_plus_2); // associative
+        assert_eq!((&m1 + &Matrix::zero(2, 2)).rows, rows_1); // additive identity (zero matrix) does not change values
+        assert_eq!((&m1 + &m1_neg).rows, expected_rows_zeroes); // additive inverse yields zero matrix
+        assert_eq!((&m1 + &m1.additive_inverse()).rows, expected_rows_zeroes); // additive inverse tested with method
+        assert_eq!((&m1 + &(-&m1)).rows, expected_rows_zeroes); // additive inverse tested with unary neg operator
+    }
+
+    #[test]
+    fn matrix_trait_add_matrix_matrix_complex_f64_owned() {
+        let rows_1 = [
+            vec![Complex::new(0.0_f64, -1.0), Complex::new(-1.0_f64, 0.0)],
+            vec![Complex::new(3.0_f64, -4.0), Complex::new(-4.0_f64, 3.0)],
+        ];
+        let rows_2 = [
+            vec![Complex::new(0.0_f64, -10.0), Complex::new(-10.0_f64, 0.0)],
+            vec![Complex::new(30.0_f64, -40.0), Complex::new(-40.0_f64, 30.0)],
+        ];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_plus_2 = [
+            vec![Complex::new(0.0_f64, -11.0), Complex::new(-11.0_f64, 0.0)],
+            vec![Complex::new(33.0_f64, -44.0), Complex::new(-44.0_f64, 33.0)],
+        ];
+
+        // can only test this once because move occurs without use of references
+        assert_eq!((m1 + m2).rows, expected_rows_1_plus_2);
+    }
+
+    #[test]
+    fn matrix_trait_add_matrix_matrix_complex_f64_ref() {
+        let rows_1 = [
+            vec![Complex::new(0.0_f64, -1.0), Complex::new(-1.0_f64, 0.0)],
+            vec![Complex::new(3.0_f64, -4.0), Complex::new(-4.0_f64, 3.0)],
+        ];
+        let rows_2 = [
+            vec![Complex::new(0.0_f64, -10.0), Complex::new(-10.0_f64, 0.0)],
+            vec![Complex::new(30.0_f64, -40.0), Complex::new(-40.0_f64, 30.0)],
+        ];
+        let rows_1_neg = [
+            vec![Complex::new(0.0_f64, 1.0), Complex::new(1.0_f64, 0.0)],
+            vec![Complex::new(-3.0_f64, 4.0), Complex::new(4.0_f64, -3.0)],
+        ];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+        let m1_neg = Matrix::from_rows(&rows_1_neg);
+
+        let expected_rows_1_plus_2 = [
+            vec![Complex::new(0.0_f64, -11.0), Complex::new(-11.0_f64, 0.0)],
+            vec![Complex::new(33.0_f64, -44.0), Complex::new(-44.0_f64, 33.0)],
+        ];
+
+        let expected_rows_1_plus_2_plus_2 = [
+            vec![Complex::new(0.0_f64, -21.0), Complex::new(-21.0_f64, 0.0)],
+            vec![Complex::new(63.0_f64, -84.0), Complex::new(-84.0_f64, 63.0)],
+        ];
+
+        let expected_rows_zeroes = [
+            vec![Complex::new(0.0_f64, 0.0), Complex::new(0.0_f64, 0.0)],
+            vec![Complex::new(0.0_f64, 0.0), Complex::new(0.0_f64, 0.0)],
         ];
 
         assert_eq!((&m1 + &m2).rows, expected_rows_1_plus_2);
