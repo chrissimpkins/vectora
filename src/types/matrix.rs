@@ -1,7 +1,7 @@
 //! Matrix types
 
 use std::fmt::Debug;
-use std::ops::{Index, IndexMut};
+use std::ops::{Index, IndexMut, Neg};
 use std::slice::SliceIndex;
 
 use num::Num;
@@ -284,8 +284,21 @@ where
     }
 
     /// Returns `true` if the [`Matrix`] is empty.
+    ///
+    /// # Examples
+    ///
+    /// // TODO:
     pub fn is_empty(&self) -> bool {
         self.rows.is_empty()
+    }
+
+    /// Returns the additive inverse [`Matrix`].
+    ///
+    /// # Examples
+    ///
+    /// // TODO:
+    pub fn additive_inverse(&self) -> Self {
+        -self
     }
 
     /// Returns `Ok(())` if lhs and rhs matrix shapes validate on:
@@ -319,11 +332,6 @@ where
         }
         Ok(())
     }
-
-    // fn dot(&self, rhs: &Self) -> Self {
-    //     //
-
-    // }
 }
 
 // ================================
@@ -360,51 +368,43 @@ where
 //
 // ================================
 
-// impl<T, const M: usize, const N: usize> Mul<Vector<T, M>> for Matrix<T>
-// where
-//     T: Num + Copy + Sync + Send + Default + Debug,
-// {
-//     type Output = Vector<T, N>;
+// Unary
 
-//     /// Binary multiplication operator overload implementation for matrix : vector
-//     /// multiplication.
-//     fn mul(self, rhs: Vector<T, M>) -> Self::Output {
-//         let mut a = [T::zero(); N];
+impl<T> Neg for Matrix<T>
+where
+    T: Num + Copy + Default + Sync + Send,
+{
+    type Output = Self;
 
-//         for (i, rhs_scalar) in rhs.enumerate() {
-//             let col_vec = self.get_column_vec(i + 1).unwrap();
-//             for (j, x) in col_vec.iter().enumerate() {
-//                 a[j] = a[j] + (*x * *rhs_scalar);
-//             }
-//         }
+    /// Unary negation operator overload implementation.
+    fn neg(self) -> Self::Output {
+        let mut rows_collection = Vec::with_capacity(self.rows.len());
+        for row in &self.rows {
+            let v: Vec<T> = row.iter().map(|x| T::zero() - (*x)).collect();
+            rows_collection.push(v);
+        }
 
-//         // return the Vector
-//         Vector { components: a }
-//     }
-// }
+        Self { rows: rows_collection }
+    }
+}
 
-// impl<T> Mul<Matrix<T>> for Matrix<T>
-// where
-//     T: Num + Copy + Sync + Send + Default + Debug,
-// {
-//     type Output = Matrix<T>;
+impl<T> Neg for &Matrix<T>
+where
+    T: Num + Copy + Default + Sync + Send,
+{
+    type Output = Matrix<T>;
 
-//     /// Binary multiplication operator overload implementation for matrix : matrix
-//     /// multiplication.
-//     fn mul(self, rhs: Matrix<T>) -> Self::Output {
-//         let mut a = [T::zero(); N];
+    /// Unary negation operator overload implementation.
+    fn neg(self) -> Self::Output {
+        let mut rows_collection = Vec::with_capacity(self.rows.len());
+        for row in &self.rows {
+            let v: Vec<T> = row.iter().map(|x| T::zero() - (*x)).collect();
+            rows_collection.push(v);
+        }
 
-//         for (i, rhs_scalar) in rhs.enumerate() {
-//             let col_vec = self.get_column_vec(i + 1).unwrap();
-//             for (j, x) in col_vec.iter().enumerate() {
-//                 a[j] = a[j] + (*x * *rhs_scalar);
-//             }
-//         }
-
-//         // return the Vector
-//         Vector { components: a }
-//     }
-// }
+        Matrix::from_rows(&rows_collection)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -813,6 +813,79 @@ mod tests {
 
     // ================================
     //
+    // inverse method tests
+    //
+    // ================================
+
+    #[test]
+    fn matrix_method_additive_inverse_i32() {
+        let rows = [vec![0_i32, -1, 2], vec![3, -4, 5]];
+        let rows_expected_neg = [vec![0, 1, -2], vec![-3, 4, -5]];
+
+        let m = Matrix::from_rows(&rows);
+
+        // the method should borrow, it does not move contents
+        assert_eq!(m.additive_inverse().rows, rows_expected_neg);
+        // and can be used again
+        let _ = m.additive_inverse();
+    }
+
+    #[test]
+    fn matrix_method_additive_inverse_f64() {
+        let rows = [vec![0.0_f64, -1.0, 2.0], vec![3.0_f64, -4.0, 5.0]];
+        let rows_expected_neg = [vec![0.0_f64, 1.0, -2.0], vec![-3.0_f64, 4.0, -5.0]];
+
+        let m = Matrix::from_rows(&rows);
+
+        assert_relative_eq!(m.additive_inverse()[0][0], rows_expected_neg[0][0]);
+        assert_relative_eq!(m.additive_inverse()[0][1], rows_expected_neg[0][1]);
+        assert_relative_eq!(m.additive_inverse()[0][2], rows_expected_neg[0][2]);
+        assert_relative_eq!(m.additive_inverse()[1][0], rows_expected_neg[1][0]);
+        assert_relative_eq!(m.additive_inverse()[1][1], rows_expected_neg[1][1]);
+        assert_relative_eq!(m.additive_inverse()[1][2], rows_expected_neg[1][2]);
+    }
+
+    #[test]
+    fn matrix_method_additive_inverse_complex_i32() {
+        let rows = [
+            vec![Complex::new(0_i32, -1), Complex::new(-2_i32, 3)],
+            vec![Complex::new(4_i32, -5), Complex::new(-6_i32, 7)],
+        ];
+        let rows_expected_neg = [
+            vec![Complex::new(-0_i32, 1), Complex::new(2_i32, -3)],
+            vec![Complex::new(-4_i32, 5), Complex::new(6_i32, -7)],
+        ];
+
+        let m = Matrix::from_rows(&rows);
+
+        assert_eq!(m.additive_inverse().rows, rows_expected_neg);
+    }
+
+    #[test]
+    fn matrix_method_additive_inverse_complex_f64() {
+        let rows = [
+            vec![Complex::new(0.0_f64, -1.0), Complex::new(-2.0_f64, 3.0)],
+            vec![Complex::new(4.0_f64, -5.0), Complex::new(-6.0_f64, 7.0)],
+        ];
+        let rows_expected_neg = [
+            vec![Complex::new(-0.0_f64, 1.0), Complex::new(2.0_f64, -3.0)],
+            vec![Complex::new(-4.0_f64, 5.0), Complex::new(6.0_f64, -7.0)],
+        ];
+
+        let m = Matrix::from_rows(&rows);
+
+        assert_relative_eq!(m.additive_inverse()[0][0].re, rows_expected_neg[0][0].re);
+        assert_relative_eq!(m.additive_inverse()[0][0].im, rows_expected_neg[0][0].im);
+        assert_relative_eq!(m.additive_inverse()[0][1].re, rows_expected_neg[0][1].re);
+        assert_relative_eq!(m.additive_inverse()[0][1].im, rows_expected_neg[0][1].im);
+        assert_relative_eq!(m.additive_inverse()[1][0].re, rows_expected_neg[1][0].re);
+        assert_relative_eq!(m.additive_inverse()[1][0].im, rows_expected_neg[1][0].im);
+        assert_relative_eq!(m.additive_inverse()[1][1].re, rows_expected_neg[1][1].re);
+        assert_relative_eq!(m.additive_inverse()[1][1].im, rows_expected_neg[1][1].im);
+    }
+
+    // ================================
+    //
     // Index and IndexMut trait tests
     //
     // ================================
@@ -947,15 +1020,80 @@ mod tests {
     //
     // ================================
 
-    // #[test]
-    // fn matrix_trait_mul_operator_matrix_vector() {
-    //     let mut m: Matrix<i32, 2> = Matrix::new(2);
-    //     m.rows[0][0] = 2;
-    //     m.rows[0][1] = 3;
-    //     m.rows[1][0] = -1;
-    //     m.rows[1][1] = 5;
-    //     let v: Vector<i32, 2> = Vector::from([2, 1]);
+    // ================================
+    //
+    // Neg trait tests
+    //
+    // ================================
 
-    //     assert_eq!(m * v, Vector::from([7, 3]));
-    // }
+    #[test]
+    fn matrix_trait_neg_i32() {
+        let rows = [vec![0_i32, -1, 2], vec![3, -4, 5]];
+        let rows_expected_neg = [vec![0, 1, -2], vec![-3, 4, -5]];
+
+        let m = Matrix::from_rows(&rows);
+
+        // borrow does not move contents
+        assert_eq!((-&m).rows, rows_expected_neg);
+        // but unary neg on owned type does, `m` cannot be used again after unary neg here
+        assert_eq!((-m).rows, rows_expected_neg);
+    }
+
+    #[test]
+    fn matrix_trait_neg_f64() {
+        let rows = [vec![0.0_f64, -1.0, 2.0], vec![3.0_f64, -4.0, 5.0]];
+        let rows_expected_neg = [vec![0.0_f64, 1.0, -2.0], vec![-3.0_f64, 4.0, -5.0]];
+
+        let m = Matrix::from_rows(&rows);
+
+        let neg_m = -m;
+
+        assert_relative_eq!(neg_m[0][0], rows_expected_neg[0][0]);
+        assert_relative_eq!(neg_m[0][1], rows_expected_neg[0][1]);
+        assert_relative_eq!(neg_m[0][2], rows_expected_neg[0][2]);
+        assert_relative_eq!(neg_m[1][0], rows_expected_neg[1][0]);
+        assert_relative_eq!(neg_m[1][1], rows_expected_neg[1][1]);
+        assert_relative_eq!(neg_m[1][2], rows_expected_neg[1][2]);
+    }
+
+    #[test]
+    fn matrix_trait_neg_complex_i32() {
+        let rows = [
+            vec![Complex::new(0_i32, -1), Complex::new(-2_i32, 3)],
+            vec![Complex::new(4_i32, -5), Complex::new(-6_i32, 7)],
+        ];
+        let rows_expected_neg = [
+            vec![Complex::new(-0_i32, 1), Complex::new(2_i32, -3)],
+            vec![Complex::new(-4_i32, 5), Complex::new(6_i32, -7)],
+        ];
+
+        let m = Matrix::from_rows(&rows);
+
+        assert_eq!((-m).rows, rows_expected_neg);
+    }
+
+    #[test]
+    fn matrix_trait_neg_complex_f64() {
+        let rows = [
+            vec![Complex::new(0.0_f64, -1.0), Complex::new(-2.0_f64, 3.0)],
+            vec![Complex::new(4.0_f64, -5.0), Complex::new(-6.0_f64, 7.0)],
+        ];
+        let rows_expected_neg = [
+            vec![Complex::new(-0.0_f64, 1.0), Complex::new(2.0_f64, -3.0)],
+            vec![Complex::new(-4.0_f64, 5.0), Complex::new(6.0_f64, -7.0)],
+        ];
+
+        let m = Matrix::from_rows(&rows);
+
+        let neg_m = -m;
+
+        assert_relative_eq!(neg_m[0][0].re, rows_expected_neg[0][0].re);
+        assert_relative_eq!(neg_m[0][0].im, rows_expected_neg[0][0].im);
+        assert_relative_eq!(neg_m[0][1].re, rows_expected_neg[0][1].re);
+        assert_relative_eq!(neg_m[0][1].im, rows_expected_neg[0][1].im);
+        assert_relative_eq!(neg_m[1][0].re, rows_expected_neg[1][0].re);
+        assert_relative_eq!(neg_m[1][0].im, rows_expected_neg[1][0].im);
+        assert_relative_eq!(neg_m[1][1].re, rows_expected_neg[1][1].re);
+        assert_relative_eq!(neg_m[1][1].im, rows_expected_neg[1][1].im);
+    }
 }
