@@ -418,7 +418,7 @@ where
 
     /// Binary add operator overload implemenatation for matrix : matrix addition.
     fn add(self, rhs: Self) -> Self::Output {
-        if &self.dim() != &rhs.dim() {
+        if self.dim() != rhs.dim() {
             panic!("lhs Matrix and rhs Matrix must have the same row and column dimensions to support matrix addition.")
         }
         let mut rows_collection = Vec::with_capacity(self.rows.len());
@@ -438,7 +438,7 @@ where
 
     /// Binary add operator overload implemenatation for matrix : matrix addition.
     fn add(self, rhs: Self) -> Self::Output {
-        if &self.dim() != &rhs.dim() {
+        if self.dim() != rhs.dim() {
             panic!("lhs Matrix and rhs Matrix must have the same row and column dimensions to support matrix addition.")
         }
         let mut rows_collection = Vec::with_capacity(self.rows.len());
@@ -1225,6 +1225,6 @@ mod tests {
         assert_eq!((&m1 + &(-&m1)).rows, expected_rows_zeroes); // additive inverse tested with unary neg operator
     }
 
-    // TODO: add Complex number tests
+    // TODO: add Complex number testsf
     // TODO: add panic tests for matrices that do not have the same dimensions
 }
