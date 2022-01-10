@@ -1,7 +1,7 @@
 //! Matrix types
 
 use std::fmt::Debug;
-use std::ops::{Index, IndexMut, Neg};
+use std::ops::{Add, Index, IndexMut, Neg};
 use std::slice::SliceIndex;
 
 use num::Num;
@@ -400,6 +400,51 @@ where
         for row in &self.rows {
             let v: Vec<T> = row.iter().map(|x| T::zero() - (*x)).collect();
             rows_collection.push(v);
+        }
+
+        Matrix::from_rows(&rows_collection)
+    }
+}
+
+// Binary
+
+// TODO: refactor duplicate code to private method on Matrix type
+
+impl<T> Add for Matrix<T>
+where
+    T: Num + Copy + Sync + Send + Default,
+{
+    type Output = Self;
+
+    /// Binary add operator overload implemenatation for matrix : matrix addition.
+    fn add(self, rhs: Self) -> Self::Output {
+        if &self.dim() != &rhs.dim() {
+            panic!("lhs Matrix and rhs Matrix must have the same row and column dimensions to support matrix addition.")
+        }
+        let mut rows_collection = Vec::with_capacity(self.rows.len());
+
+        for (lhs_vec, rhs_vec) in self.rows.iter().zip(rhs.rows.iter()) {
+            rows_collection.push(lhs_vec.iter().zip(rhs_vec).map(|(x, y)| *x + *y).collect());
+        }
+        Self { rows: rows_collection }
+    }
+}
+
+impl<T> Add for &Matrix<T>
+where
+    T: Num + Copy + Sync + Send + Default,
+{
+    type Output = Matrix<T>;
+
+    /// Binary add operator overload implemenatation for matrix : matrix addition.
+    fn add(self, rhs: Self) -> Self::Output {
+        if &self.dim() != &rhs.dim() {
+            panic!("lhs Matrix and rhs Matrix must have the same row and column dimensions to support matrix addition.")
+        }
+        let mut rows_collection = Vec::with_capacity(self.rows.len());
+
+        for (lhs_vec, rhs_vec) in self.rows.iter().zip(rhs.rows.iter()) {
+            rows_collection.push(lhs_vec.iter().zip(rhs_vec).map(|(x, y)| *x + *y).collect());
         }
 
         Matrix::from_rows(&rows_collection)
@@ -1096,4 +1141,90 @@ mod tests {
         assert_relative_eq!(neg_m[1][1].re, rows_expected_neg[1][1].re);
         assert_relative_eq!(neg_m[1][1].im, rows_expected_neg[1][1].im);
     }
+
+    // ================================
+    //
+    // Add trait tests
+    //
+    // ================================
+
+    #[test]
+    fn matrix_trait_add_matrix_matrix_i32_owned() {
+        let rows_1 = [vec![0_i32, -1, 2], vec![3, -4, 5]];
+        let rows_2 = [vec![0_i32, 10, -8], vec![5, -12, 3]];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_plus_2 = [vec![0_i32, 9, -6], vec![8, -16, 8]];
+
+        // can only test this once because move occurs without use of references
+        assert_eq!((m1 + m2).rows, expected_rows_1_plus_2);
+    }
+
+    #[test]
+    fn matrix_trait_add_matrix_matrix_i32_ref() {
+        let rows_1 = [vec![0_i32, -1, 2], vec![3, -4, 5]];
+        let rows_1_neg = [vec![0, 1, -2], vec![-3, 4, -5]];
+        let rows_2 = [vec![0_i32, 10, -8], vec![5, -12, 3]];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m1_neg = Matrix::from_rows(&rows_1_neg);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_plus_2 = [vec![0_i32, 9, -6], vec![8_i32, -16, 8]];
+        let expected_rows_1_plus_2_plus_2 = [vec![0_i32, 19, -14], vec![13_i32, -28, 11]];
+        let expected_rows_zeroes = [vec![0_i32, 0_i32, 0_i32], vec![0_i32, 0_i32, 0_i32]];
+
+        assert_eq!((&m1 + &m2).rows, expected_rows_1_plus_2);
+        assert_eq!((&m2 + &m1).rows, expected_rows_1_plus_2); // commutative
+        assert_eq!((&(&m1 + &m2) + &m2).rows, expected_rows_1_plus_2_plus_2); // associative
+        assert_eq!((&m1 + &(&m2 + &m2)).rows, expected_rows_1_plus_2_plus_2); // associative
+        assert_eq!((&m1 + &Matrix::zero(2, 3)).rows, rows_1); // additive identity (zero matrix) does not change values
+        assert_eq!((&m1 + &m1_neg).rows, expected_rows_zeroes); // additive inverse yields zero matrix
+        assert_eq!((&m1 + &m1.additive_inverse()).rows, expected_rows_zeroes); // additive inverse tested with method
+        assert_eq!((&m1 + &(-&m1)).rows, expected_rows_zeroes); // additive inverse tested with unary neg operator
+    }
+
+    #[test]
+    fn matrix_trait_add_matrix_matrix_f64_owned() {
+        let rows_1 = [vec![0.0_f64, -1.0, 2.0], vec![3.0_f64, -4.0, 5.0]];
+        let rows_2 = [vec![0.0_f64, 10.0, -8.0], vec![5.0, -12.0, 3.0]];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_plus_2 = [vec![0.0_f64, 9.0, -6.0], vec![8.0_f64, -16.0, 8.0]];
+
+        // can only test this once because move occurs without use of references
+        assert_eq!((m1 + m2).rows, expected_rows_1_plus_2);
+    }
+
+    #[test]
+    fn matrix_trait_add_matrix_matrix_f64_ref() {
+        let rows_1 = [vec![0.0_f64, -1.0, 2.0], vec![3.0_f64, -4.0, 5.0]];
+        let rows_2 = [vec![0.0_f64, 10.0, -8.0], vec![5.0, -12.0, 3.0]];
+        let rows_1_neg = [vec![0.0_f64, 1.0, -2.0], vec![-3.0_f64, 4.0, -5.0]];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m1_neg = Matrix::from_rows(&rows_1_neg);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_plus_2 = [vec![0.0_f64, 9.0, -6.0], vec![8.0_f64, -16.0, 8.0]];
+        let expected_rows_1_plus_2_plus_2 =
+            [vec![0.0_f64, 19.0, -14.0], vec![13.0_f64, -28.0, 11.0]];
+        let expected_rows_zeroes = [vec![0.0_f64, 0.0, 0.0], vec![0.0_f64, 0.0, 0.0]];
+
+        assert_eq!((&m1 + &m2).rows, expected_rows_1_plus_2);
+        assert_eq!((&m2 + &m1).rows, expected_rows_1_plus_2); // commutative
+        assert_eq!((&(&m1 + &m2) + &m2).rows, expected_rows_1_plus_2_plus_2); // associative
+        assert_eq!((&m1 + &(&m2 + &m2)).rows, expected_rows_1_plus_2_plus_2); // associative
+        assert_eq!((&m1 + &Matrix::zero(2, 3)).rows, rows_1); // additive identity (zero matrix) does not change values
+        assert_eq!((&m1 + &m1_neg).rows, expected_rows_zeroes); // additive inverse yields zero matrix
+        assert_eq!((&m1 + &m1.additive_inverse()).rows, expected_rows_zeroes); // additive inverse tested with method
+        assert_eq!((&m1 + &(-&m1)).rows, expected_rows_zeroes); // additive inverse tested with unary neg operator
+    }
+
+    // TODO: add Complex number tests
+    // TODO: add panic tests for matrices that do not have the same dimensions
 }
