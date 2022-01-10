@@ -1225,6 +1225,72 @@ mod tests {
         assert_eq!((&m1 + &(-&m1)).rows, expected_rows_zeroes); // additive inverse tested with unary neg operator
     }
 
-    // TODO: add Complex number testsf
+    #[test]
+    fn matrix_trait_add_matrix_matrix_complex_i32_owned() {
+        let rows_1 = [
+            vec![Complex::new(0_i32, -1), Complex::new(-1_i32, 0)],
+            vec![Complex::new(3_i32, -4), Complex::new(-4_i32, 3)],
+        ];
+        let rows_2 = [
+            vec![Complex::new(0_i32, -10), Complex::new(-10_i32, 0)],
+            vec![Complex::new(30_i32, -40), Complex::new(-40_i32, 30)],
+        ];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_plus_2 = [
+            vec![Complex::new(0_i32, -11), Complex::new(-11_i32, 0)],
+            vec![Complex::new(33_i32, -44), Complex::new(-44_i32, 33)],
+        ];
+
+        // can only test this once because move occurs without use of references
+        assert_eq!((m1 + m2).rows, expected_rows_1_plus_2);
+    }
+
+    #[test]
+    fn matrix_trait_add_matrix_matrix_complex_i32_ref() {
+        let rows_1 = [
+            vec![Complex::new(0_i32, -1), Complex::new(-1_i32, 0)],
+            vec![Complex::new(3_i32, -4), Complex::new(-4_i32, 3)],
+        ];
+        let rows_2 = [
+            vec![Complex::new(0_i32, -10), Complex::new(-10_i32, 0)],
+            vec![Complex::new(30_i32, -40), Complex::new(-40_i32, 30)],
+        ];
+        let rows_1_neg = [
+            vec![Complex::new(0_i32, 1), Complex::new(1_i32, 0)],
+            vec![Complex::new(-3_i32, 4), Complex::new(4_i32, -3)],
+        ];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+        let m1_neg = Matrix::from_rows(&rows_1_neg);
+
+        let expected_rows_1_plus_2 = [
+            vec![Complex::new(0_i32, -11), Complex::new(-11_i32, 0)],
+            vec![Complex::new(33_i32, -44), Complex::new(-44_i32, 33)],
+        ];
+
+        let expected_rows_1_plus_2_plus_2 = [
+            vec![Complex::new(0_i32, -21), Complex::new(-21_i32, 0)],
+            vec![Complex::new(63_i32, -84), Complex::new(-84_i32, 63)],
+        ];
+
+        let expected_rows_zeroes = [
+            vec![Complex::new(0_i32, 0), Complex::new(0_i32, 0)],
+            vec![Complex::new(0_i32, 0), Complex::new(0_i32, 0)],
+        ];
+
+        assert_eq!((&m1 + &m2).rows, expected_rows_1_plus_2);
+        assert_eq!((&m2 + &m1).rows, expected_rows_1_plus_2); // commutative
+        assert_eq!((&(&m1 + &m2) + &m2).rows, expected_rows_1_plus_2_plus_2); // associative
+        assert_eq!((&m1 + &(&m2 + &m2)).rows, expected_rows_1_plus_2_plus_2); // associative
+        assert_eq!((&m1 + &Matrix::zero(2, 2)).rows, rows_1); // additive identity (zero matrix) does not change values
+        assert_eq!((&m1 + &m1_neg).rows, expected_rows_zeroes); // additive inverse yields zero matrix
+        assert_eq!((&m1 + &m1.additive_inverse()).rows, expected_rows_zeroes); // additive inverse tested with method
+        assert_eq!((&m1 + &(-&m1)).rows, expected_rows_zeroes); // additive inverse tested with unary neg operator
+    }
+
     // TODO: add panic tests for matrices that do not have the same dimensions
 }
