@@ -332,6 +332,28 @@ where
         }
         Ok(())
     }
+
+    // ================================
+    //
+    // Private methods
+    //
+    // ================================
+
+    // Returns a `<Vec<Vec<T>>` row vector data collection following matrix : matrix addition
+    // of M-by-N matrices with the same row and column dimensions.
+    fn impl_matrix_matrix_add(&self, rhs: &Matrix<T>) -> Vec<Vec<T>> {
+        if self.dim() != rhs.dim() {
+            panic!("the lhs Matrix and rhs Matrix must have the same row and column dimensions to support matrix addition.")
+        }
+
+        let mut rows_collection = Vec::with_capacity(self.rows.len());
+
+        for (lhs_vec, rhs_vec) in self.rows.iter().zip(rhs.rows.iter()) {
+            rows_collection.push(lhs_vec.iter().zip(rhs_vec).map(|(x, y)| *x + *y).collect());
+        }
+
+        rows_collection
+    }
 }
 
 // ================================
@@ -408,8 +430,6 @@ where
 
 // Binary
 
-// TODO: refactor duplicate code to private method on Matrix type
-
 impl<T> Add for Matrix<T>
 where
     T: Num + Copy + Sync + Send + Default,
@@ -418,15 +438,7 @@ where
 
     /// Binary add operator overload implemenatation for matrix : matrix addition.
     fn add(self, rhs: Self) -> Self::Output {
-        if self.dim() != rhs.dim() {
-            panic!("lhs Matrix and rhs Matrix must have the same row and column dimensions to support matrix addition.")
-        }
-        let mut rows_collection = Vec::with_capacity(self.rows.len());
-
-        for (lhs_vec, rhs_vec) in self.rows.iter().zip(rhs.rows.iter()) {
-            rows_collection.push(lhs_vec.iter().zip(rhs_vec).map(|(x, y)| *x + *y).collect());
-        }
-        Self { rows: rows_collection }
+        Self { rows: self.impl_matrix_matrix_add(&rhs) }
     }
 }
 
@@ -438,16 +450,7 @@ where
 
     /// Binary add operator overload implemenatation for matrix : matrix addition.
     fn add(self, rhs: Self) -> Self::Output {
-        if self.dim() != rhs.dim() {
-            panic!("lhs Matrix and rhs Matrix must have the same row and column dimensions to support matrix addition.")
-        }
-        let mut rows_collection = Vec::with_capacity(self.rows.len());
-
-        for (lhs_vec, rhs_vec) in self.rows.iter().zip(rhs.rows.iter()) {
-            rows_collection.push(lhs_vec.iter().zip(rhs_vec).map(|(x, y)| *x + *y).collect());
-        }
-
-        Matrix::from_rows(&rows_collection)
+        Matrix::from_rows(&self.impl_matrix_matrix_add(&rhs))
     }
 }
 
