@@ -436,7 +436,8 @@ where
 {
     type Output = Self;
 
-    /// Binary add operator overload implemenatation for matrix : matrix addition.
+    /// Binary add operator overload implementation for matrix : matrix addition with
+    /// owned [`Matrix`].
     fn add(self, rhs: Self) -> Self::Output {
         Self { rows: self.impl_matrix_matrix_add(&rhs) }
     }
@@ -448,9 +449,10 @@ where
 {
     type Output = Matrix<T>;
 
-    /// Binary add operator overload implemenatation for matrix : matrix addition.
+    /// Binary add operator overload implementation for matrix : matrix addition with
+    /// [`Matrix`] references.
     fn add(self, rhs: Self) -> Self::Output {
-        Matrix::from_rows(&self.impl_matrix_matrix_add(&rhs))
+        Matrix::from_rows(&self.impl_matrix_matrix_add(rhs))
     }
 }
 
