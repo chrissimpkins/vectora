@@ -1359,5 +1359,30 @@ mod tests {
         assert_eq!((&m1 + &(-&m1)).rows, expected_rows_zeroes); // additive inverse tested with unary neg operator
     }
 
-    // TODO: add panic tests for matrices that do not have the same dimensions
+    #[test]
+    #[should_panic]
+    fn matrix_trait_add_panics_on_different_row_dim() {
+        let m1: Matrix<i32> = Matrix::zero(2, 3);
+        let m2: Matrix<i32> = Matrix::zero(3, 3);
+
+        let _ = m1 + m2;
+    }
+
+    #[test]
+    #[should_panic]
+    fn matrix_trait_add_panics_on_different_column_dim() {
+        let m1: Matrix<i32> = Matrix::zero(3, 3);
+        let m2: Matrix<i32> = Matrix::zero(3, 4);
+
+        let _ = m1 + m2;
+    }
+
+    #[test]
+    #[should_panic]
+    fn matrix_trait_add_panics_on_different_row_and_column_dim() {
+        let m1: Matrix<i32> = Matrix::zero(2, 3);
+        let m2: Matrix<i32> = Matrix::zero(3, 4);
+
+        let _ = m1 + m2;
+    }
 }
