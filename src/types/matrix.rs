@@ -392,6 +392,12 @@ where
 
 // Unary
 
+// ================================
+//
+// Neg trait
+//
+// ================================
+
 impl<T> Neg for Matrix<T>
 where
     T: Num + Copy + Default + Sync + Send,
@@ -429,6 +435,12 @@ where
 }
 
 // Binary
+
+// ================================
+//
+// Add trait
+//
+// ================================
 
 impl<T> Add for Matrix<T>
 where
