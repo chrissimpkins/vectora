@@ -1532,4 +1532,163 @@ mod tests {
         assert_eq!((&m1 - &(-m1.additive_inverse())).rows, expected_rows_zeroes); // subtraction with the negative of the additive inverse yields a zero matrix
         assert_eq!((&m1 - &m1).rows, expected_rows_zeroes); // subtraction with self yields the zero matrix
     }
+
+    #[test]
+    fn matrix_trait_sub_matrix_matrix_complex_i32_owned() {
+        let rows_1 = [
+            vec![Complex::new(0_i32, -1), Complex::new(-1_i32, 0)],
+            vec![Complex::new(3_i32, -4), Complex::new(-4_i32, 3)],
+        ];
+        let rows_2 = [
+            vec![Complex::new(0_i32, -10), Complex::new(-10_i32, 0)],
+            vec![Complex::new(30_i32, -40), Complex::new(-40_i32, 30)],
+        ];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_minus_2 = [
+            vec![Complex::new(0_i32, 9), Complex::new(9_i32, 0)],
+            vec![Complex::new(-27_i32, 36), Complex::new(36_i32, -27)],
+        ];
+
+        // can only test this once because move occurs without use of references
+        assert_eq!((m1 - m2).rows, expected_rows_1_minus_2);
+    }
+
+    #[test]
+    fn matrix_trait_sub_matrix_matrix_complex_i32_ref() {
+        let rows_1 = [
+            vec![Complex::new(0_i32, -1), Complex::new(-1_i32, 0)],
+            vec![Complex::new(3_i32, -4), Complex::new(-4_i32, 3)],
+        ];
+        let rows_2 = [
+            vec![Complex::new(0_i32, -10), Complex::new(-10_i32, 0)],
+            vec![Complex::new(30_i32, -40), Complex::new(-40_i32, 30)],
+        ];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_minus_2 = [
+            vec![Complex::new(0_i32, 9), Complex::new(9_i32, 0)],
+            vec![Complex::new(-27_i32, 36), Complex::new(36_i32, -27)],
+        ];
+
+        let expected_rows_1_minus_2_neg = [
+            vec![Complex::new(0_i32, -9), Complex::new(-9_i32, 0)],
+            vec![Complex::new(27_i32, -36), Complex::new(-36_i32, 27)],
+        ];
+
+        let expected_rows_1_minus_2_minus_2 = [
+            vec![Complex::new(0_i32, 19), Complex::new(19_i32, 0)],
+            vec![Complex::new(-57_i32, 76), Complex::new(76_i32, -57)],
+        ];
+
+        let expected_rows_zeroes = [
+            vec![Complex::new(0_i32, 0), Complex::new(0_i32, 0)],
+            vec![Complex::new(0_i32, 0), Complex::new(0_i32, 0)],
+        ];
+
+        assert_eq!((&m1 - &m2).rows, expected_rows_1_minus_2);
+        assert_eq!((&m2 - &m1).rows, expected_rows_1_minus_2_neg); // anti-commutative
+        assert_eq!((&(&m1 - &m2) - &m2).rows, expected_rows_1_minus_2_minus_2); // non-associative
+        assert_eq!((&m1 - &(&m2 - &m2)).rows, rows_1); // non-associative
+        assert_eq!((&m1 - &Matrix::zero(2, 2)).rows, rows_1); // additive identity (zero matrix) subtraction does not change values
+        assert_eq!((&m1 - &(-m1.additive_inverse())).rows, expected_rows_zeroes); // subtraction with the negative of the additive inverse yields a zero matrix
+        assert_eq!((&m1 - &m1).rows, expected_rows_zeroes); // subtraction with self yields the zero matrix
+    }
+
+    #[test]
+    fn matrix_trait_sub_matrix_matrix_complex_f64_owned() {
+        let rows_1 = [
+            vec![Complex::new(0.0_f64, -1.0), Complex::new(-1.0_f64, 0.0)],
+            vec![Complex::new(3.0_f64, -4.0), Complex::new(-4.0_f64, 3.0)],
+        ];
+        let rows_2 = [
+            vec![Complex::new(0.0_f64, -10.0), Complex::new(-10.0_f64, 0.0)],
+            vec![Complex::new(30.0_f64, -40.0), Complex::new(-40.0_f64, 30.0)],
+        ];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_minus_2 = [
+            vec![Complex::new(0.0_f64, 9.0), Complex::new(9.0_f64, 0.0)],
+            vec![Complex::new(-27.0_f64, 36.0), Complex::new(36.0_f64, -27.0)],
+        ];
+
+        // can only test this once because move occurs without use of references
+        assert_eq!((m1 - m2).rows, expected_rows_1_minus_2);
+    }
+
+    #[test]
+    fn matrix_trait_sub_matrix_matrix_complex_f64_ref() {
+        let rows_1 = [
+            vec![Complex::new(0.0_f64, -1.0), Complex::new(-1.0_f64, 0.0)],
+            vec![Complex::new(3.0_f64, -4.0), Complex::new(-4.0_f64, 3.0)],
+        ];
+        let rows_2 = [
+            vec![Complex::new(0.0_f64, -10.0), Complex::new(-10.0_f64, 0.0)],
+            vec![Complex::new(30.0_f64, -40.0), Complex::new(-40.0_f64, 30.0)],
+        ];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_minus_2 = [
+            vec![Complex::new(0.0_f64, 9.0), Complex::new(9.0_f64, 0.0)],
+            vec![Complex::new(-27.0_f64, 36.0), Complex::new(36.0_f64, -27.0)],
+        ];
+
+        let expected_rows_1_minus_2_neg = [
+            vec![Complex::new(0.0_f64, -9.0), Complex::new(-9.0_f64, 0.0)],
+            vec![Complex::new(27.0_f64, -36.0), Complex::new(-36.0_f64, 27.0)],
+        ];
+
+        let expected_rows_1_minus_2_minus_2 = [
+            vec![Complex::new(0.0_f64, 19.0), Complex::new(19.0_f64, 0.0)],
+            vec![Complex::new(-57.0_f64, 76.0), Complex::new(76.0_f64, -57.0)],
+        ];
+
+        let expected_rows_zeroes = [
+            vec![Complex::new(0.0_f64, 0.0), Complex::new(0.0_f64, 0.0)],
+            vec![Complex::new(0.0_f64, 0.0), Complex::new(0.0_f64, 0.0)],
+        ];
+
+        assert_eq!((&m1 - &m2).rows, expected_rows_1_minus_2);
+        assert_eq!((&m2 - &m1).rows, expected_rows_1_minus_2_neg); // anti-commutative
+        assert_eq!((&(&m1 - &m2) - &m2).rows, expected_rows_1_minus_2_minus_2); // non-associative
+        assert_eq!((&m1 - &(&m2 - &m2)).rows, rows_1); // non-associative
+        assert_eq!((&m1 - &Matrix::zero(2, 2)).rows, rows_1); // additive identity (zero matrix) subtraction does not change values
+        assert_eq!((&m1 - &(-m1.additive_inverse())).rows, expected_rows_zeroes); // subtraction with the negative of the additive inverse yields a zero matrix
+        assert_eq!((&m1 - &m1).rows, expected_rows_zeroes); // subtraction with self yields the zero matrix
+    }
+
+    #[test]
+    #[should_panic]
+    fn matrix_trait_sub_panics_on_different_row_dim() {
+        let m1: Matrix<i32> = Matrix::zero(2, 3);
+        let m2: Matrix<i32> = Matrix::zero(3, 3);
+
+        let _ = m1 - m2;
+    }
+
+    #[test]
+    #[should_panic]
+    fn matrix_trait_sub_panics_on_different_column_dim() {
+        let m1: Matrix<i32> = Matrix::zero(3, 3);
+        let m2: Matrix<i32> = Matrix::zero(3, 4);
+
+        let _ = m1 - m2;
+    }
+
+    #[test]
+    #[should_panic]
+    fn matrix_trait_sub_panics_on_different_row_and_column_dim() {
+        let m1: Matrix<i32> = Matrix::zero(2, 3);
+        let m2: Matrix<i32> = Matrix::zero(3, 4);
+
+        let _ = m1 - m2;
+    }
 }
