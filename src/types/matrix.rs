@@ -1450,4 +1450,86 @@ mod tests {
 
         let _ = m1 + m2;
     }
+
+    // ================================
+    //
+    // Sub trait tests
+    //
+    // ================================
+
+    #[test]
+    fn matrix_trait_sub_matrix_matrix_i32_owned() {
+        let rows_1 = [vec![0_i32, -1, 2], vec![3, -4, 5]];
+        let rows_2 = [vec![0_i32, 10, -8], vec![5, -12, 3]];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_minus_2 = [vec![0_i32, -11, 10], vec![-2, 8, 2]];
+
+        // can only test this once because move occurs without use of references
+        assert_eq!((m1 - m2).rows, expected_rows_1_minus_2);
+    }
+
+    #[test]
+    fn matrix_trait_sub_matrix_matrix_i32_ref() {
+        let rows_1 = [vec![0_i32, -1, 2], vec![3, -4, 5]];
+        let rows_2 = [vec![0_i32, 10, -8], vec![5, -12, 3]];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_minus_2 = [vec![0_i32, -11, 10], vec![-2_i32, 8, 2]];
+        let expected_rows_1_minus_2_neg = [vec![0_i32, 11, -10], vec![2_i32, -8, -2]];
+
+        let expected_rows_1_minus_2_minus_2 = [vec![0_i32, -21, 18], vec![-7_i32, 20, -1]];
+        let expected_rows_zeroes = [vec![0_i32, 0_i32, 0_i32], vec![0_i32, 0_i32, 0_i32]];
+
+        assert_eq!((&m1 - &m2).rows, expected_rows_1_minus_2);
+        assert_eq!((&m2 - &m1).rows, expected_rows_1_minus_2_neg); // anti-commutative
+        assert_eq!((&(&m1 - &m2) - &m2).rows, expected_rows_1_minus_2_minus_2); // non-associative
+        assert_eq!((&m1 - &(&m2 - &m2)).rows, rows_1); // non-associative
+        assert_eq!((&m1 - &Matrix::zero(2, 3)).rows, rows_1); // additive identity (zero matrix) subtraction does not change values
+        assert_eq!((&m1 - &(-m1.additive_inverse())).rows, expected_rows_zeroes); // subtraction with the negative of the additive inverse yields a zero matrix
+        assert_eq!((&m1 - &m1).rows, expected_rows_zeroes); // subtraction with self yields the zero matrix
+    }
+
+    #[test]
+    fn matrix_trait_sub_matrix_matrix_f64_owned() {
+        let rows_1 = [vec![0.0_f64, -1.0, 2.0], vec![3.0_f64, -4.0, 5.0]];
+        let rows_2 = [vec![0.0_f64, 10.0, -8.0], vec![5.0_f64, -12.0, 3.0]];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_minus_2 =
+            [vec![0.0_f64, -11.0_f64, 10.0_f64], vec![-2.0_f64, 8.0, 2.0]];
+
+        // can only test this once because move occurs without use of references
+        assert_eq!((m1 - m2).rows, expected_rows_1_minus_2);
+    }
+
+    #[test]
+    fn matrix_trait_sub_matrix_matrix_f64_ref() {
+        let rows_1 = [vec![0.0_f64, -1.0, 2.0], vec![3.0_f64, -4.0, 5.0]];
+        let rows_2 = [vec![0.0_f64, 10.0, -8.0], vec![5.0_f64, -12.0, 3.0]];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_1_minus_2 = [vec![0.0_f64, -11.0, 10.0], vec![-2.0_f64, 8.0, 2.0]];
+        let expected_rows_1_minus_2_neg = [vec![0.0_f64, 11.0, -10.0], vec![2_f64, -8.0, -2.0]];
+
+        let expected_rows_1_minus_2_minus_2 =
+            [vec![0.0_f64, -21.0, 18.0], vec![-7.0_f64, 20.0, -1.0]];
+        let expected_rows_zeroes = [vec![0.0_f64, 0.0, 0.0], vec![0.0_f64, 0.0, 0.0]];
+
+        assert_eq!((&m1 - &m2).rows, expected_rows_1_minus_2);
+        assert_eq!((&m2 - &m1).rows, expected_rows_1_minus_2_neg); // anti-commutative
+        assert_eq!((&(&m1 - &m2) - &m2).rows, expected_rows_1_minus_2_minus_2); // non-associative
+        assert_eq!((&m1 - &(&m2 - &m2)).rows, rows_1); // non-associative
+        assert_eq!((&m1 - &Matrix::zero(2, 3)).rows, rows_1); // additive identity (zero matrix) subtraction does not change values
+        assert_eq!((&m1 - &(-m1.additive_inverse())).rows, expected_rows_zeroes); // subtraction with the negative of the additive inverse yields a zero matrix
+        assert_eq!((&m1 - &m1).rows, expected_rows_zeroes); // subtraction with self yields the zero matrix
+    }
 }
