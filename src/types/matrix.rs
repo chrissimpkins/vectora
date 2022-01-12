@@ -1,7 +1,7 @@
 //! Matrix types
 
 use std::fmt::Debug;
-use std::ops::{Add, Index, IndexMut, Neg};
+use std::ops::{Add, Index, IndexMut, Neg, Sub};
 use std::slice::SliceIndex;
 
 use num::Num;
@@ -354,6 +354,22 @@ where
 
         rows_collection
     }
+
+    // Returns a `<Vec<Vec<T>>` row vector data collection following matrix : matrix subtraction
+    // of M-by-N matrices with the same row and column dimensions.
+    fn impl_matrix_matrix_sub(&self, rhs: &Matrix<T>) -> Vec<Vec<T>> {
+        if self.dim() != rhs.dim() {
+            panic!("the lhs Matrix and rhs Matrix must have the same row and column dimensions to support matrix subtraction.")
+        }
+
+        let mut rows_collection = Vec::with_capacity(self.rows.len());
+
+        for (lhs_vec, rhs_vec) in self.rows.iter().zip(rhs.rows.iter()) {
+            rows_collection.push(lhs_vec.iter().zip(rhs_vec).map(|(x, y)| *x - *y).collect());
+        }
+
+        rows_collection
+    }
 }
 
 // ================================
@@ -465,6 +481,38 @@ where
     /// [`Matrix`] references.
     fn add(self, rhs: Self) -> Self::Output {
         Matrix::from_rows(&self.impl_matrix_matrix_add(rhs))
+    }
+}
+
+// ================================
+//
+// Sub trait
+//
+// ================================
+
+impl<T> Sub for Matrix<T>
+where
+    T: Num + Copy + Sync + Send + Default,
+{
+    type Output = Self;
+
+    /// Binary subtraction operator overload implementation for matrix : matrix subtraction with
+    /// owned [`Matrix`].
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self { rows: self.impl_matrix_matrix_sub(&rhs) }
+    }
+}
+
+impl<T> Sub for &Matrix<T>
+where
+    T: Num + Copy + Sync + Send + Default,
+{
+    type Output = Matrix<T>;
+
+    /// Binary subtraction operator overload implementation for matrix : matrix subtraction with
+    /// [`Matrix`] references.
+    fn sub(self, rhs: Self) -> Self::Output {
+        Matrix::from_rows(&self.impl_matrix_matrix_sub(rhs))
     }
 }
 
