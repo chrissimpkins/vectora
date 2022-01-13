@@ -544,7 +544,7 @@ where
     /// Binary multiplication operator overload implementation for matrix
     /// scalar multiplication with owned [`Matrix`].
     fn mul(self, rhs: T) -> Self::Output {
-        Self { rows: self.impl_matrix_scalar_mul(&rhs) }
+        Matrix { rows: self.impl_matrix_scalar_mul(&rhs) }
     }
 }
 
@@ -557,7 +557,8 @@ where
     /// Binary multiplication operator overload implementation for matrix
     /// scalar multiplication with [`Matrix`] references.
     fn mul(self, rhs: T) -> Self::Output {
-        Matrix::from_rows(&self.impl_matrix_scalar_mul(&rhs))
+        Matrix { rows: self.impl_matrix_scalar_mul(&rhs) }
+        // Matrix::from_rows(&self.impl_matrix_scalar_mul(&rhs))
     }
 }
 
