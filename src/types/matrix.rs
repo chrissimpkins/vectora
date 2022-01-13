@@ -1,7 +1,7 @@
 //! Matrix types
 
 use std::fmt::Debug;
-use std::ops::{Add, Index, IndexMut, Neg, Sub};
+use std::ops::{Add, Index, IndexMut, Mul, Neg, Sub};
 use std::slice::SliceIndex;
 
 use num::Num;
@@ -355,6 +355,17 @@ where
         rows_collection
     }
 
+    // Returns a `<Vec<Vec<T>>` row vector data collection following matrix scalar multiplication
+    fn impl_matrix_scalar_mul(&self, rhs: &T) -> Vec<Vec<T>> {
+        let mut rows_collection = Vec::with_capacity(self.rows.len());
+
+        for lhs_vec in self.rows.iter() {
+            rows_collection.push(lhs_vec.iter().map(|x| *x * *rhs).collect());
+        }
+
+        rows_collection
+    }
+
     // Returns a `<Vec<Vec<T>>` row vector data collection following matrix : matrix subtraction
     // of M-by-N matrices with the same row and column dimensions.
     fn impl_matrix_matrix_sub(&self, rhs: &Matrix<T>) -> Vec<Vec<T>> {
@@ -513,6 +524,40 @@ where
     /// [`Matrix`] references.
     fn sub(self, rhs: Self) -> Self::Output {
         Matrix::from_rows(&self.impl_matrix_matrix_sub(rhs))
+    }
+}
+
+// ================================
+//
+// Mul trait
+//
+// ================================
+
+// Scalar multiplication
+
+impl<T> Mul<T> for Matrix<T>
+where
+    T: Num + Copy + Sync + Send + Default,
+{
+    type Output = Self;
+
+    /// Binary multiplication operator overload implementation for matrix
+    /// scalar multiplication with owned [`Matrix`].
+    fn mul(self, rhs: T) -> Self::Output {
+        Self { rows: self.impl_matrix_scalar_mul(&rhs) }
+    }
+}
+
+impl<T> Mul<T> for &Matrix<T>
+where
+    T: Num + Copy + Sync + Send + Default,
+{
+    type Output = Matrix<T>;
+
+    /// Binary multiplication operator overload implementation for matrix
+    /// scalar multiplication with [`Matrix`] references.
+    fn mul(self, rhs: T) -> Self::Output {
+        Matrix::from_rows(&self.impl_matrix_scalar_mul(&rhs))
     }
 }
 
