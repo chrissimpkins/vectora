@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use std::ops::{Add, Index, IndexMut, Mul, Neg, Sub};
 use std::slice::SliceIndex;
 
-use num::Num;
+use num::{Complex, Num};
 
 use crate::errors::MatrixError;
 use crate::Vector;
@@ -559,6 +559,50 @@ where
     fn mul(self, rhs: T) -> Self::Output {
         Matrix { rows: self.impl_matrix_scalar_mul(&rhs) }
         // Matrix::from_rows(&self.impl_matrix_scalar_mul(&rhs))
+    }
+}
+
+impl<T> Mul<T> for Matrix<Complex<T>>
+where
+    T: Num + Copy + Sync + Send + Default,
+{
+    type Output = Self;
+
+    /// Binary multiplication operator overload implementation for matrix
+    /// scalar multiplication with owned [`Matrix`] of Complex<T> numeric types.
+    fn mul(self, rhs: T) -> Self::Output {
+        let mut rows_collection = Vec::with_capacity(self.rows.len());
+
+        for lhs_vec in self.rows.iter() {
+            let mut v: Vec<Complex<T>> = Vec::with_capacity(lhs_vec.len());
+            for complex_num in lhs_vec {
+                v.push(Complex::new(complex_num.re * rhs, complex_num.im * rhs));
+            }
+            rows_collection.push(v);
+        }
+        Matrix { rows: rows_collection }
+    }
+}
+
+impl<T> Mul<T> for &Matrix<Complex<T>>
+where
+    T: Num + Copy + Sync + Send + Default,
+{
+    type Output = Matrix<Complex<T>>;
+
+    /// Binary multiplication operator overload implementation for matrix
+    /// scalar multiplication with owned [`Matrix`] of Complex<T> numeric types.
+    fn mul(self, rhs: T) -> Self::Output {
+        let mut rows_collection = Vec::with_capacity(self.rows.len());
+
+        for lhs_vec in self.rows.iter() {
+            let mut v: Vec<Complex<T>> = Vec::with_capacity(lhs_vec.len());
+            for complex_num in lhs_vec {
+                v.push(Complex::new(complex_num.re * rhs, complex_num.im * rhs));
+            }
+            rows_collection.push(v);
+        }
+        Matrix { rows: rows_collection }
     }
 }
 
@@ -1821,5 +1865,121 @@ mod tests {
         assert_eq!(distrib_2_left.rows, distrib_2_right.rows); // distributive 2
         assert_eq!((&m1 * 1.0).rows, m1.rows); // multiplicative identity (mul by 1)
         assert_eq!((&m1 * 0.0).rows, Matrix::zero(2, 3).rows); // multiplicative property with zero, converts to zero matrix
+    }
+
+    #[test]
+    fn matrix_trait_mul_scalar_complex_i32_owned() {
+        let rows_1 = [
+            vec![Complex::new(0_i32, -1), Complex::new(2, 3)],
+            vec![Complex::new(3, -4), Complex::new(-5, 6)],
+        ];
+
+        let m1 = Matrix::from_rows(&rows_1);
+
+        let expected_rows_mul_3 = [
+            vec![Complex::new(0_i32, -3), Complex::new(6, 9)],
+            vec![Complex::new(9, -12), Complex::new(-15, 18)],
+        ];
+
+        // can only test this once because move occurs without use of references
+        assert_eq!((m1 * 3).rows, expected_rows_mul_3);
+    }
+
+    #[test]
+    fn matrix_trait_mul_scalar_complex_i32_ref() {
+        let rows_1 = [
+            vec![Complex::new(0_i32, -1), Complex::new(2, 3)],
+            vec![Complex::new(3, -4), Complex::new(-5, 6)],
+        ];
+
+        let rows_2 = [
+            vec![Complex::new(-3_i32, 4), Complex::new(6, -5)],
+            vec![Complex::new(-1, 0), Complex::new(-3, 2)],
+        ];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_mul_3 = [
+            vec![Complex::new(0_i32, -3), Complex::new(6, 9)],
+            vec![Complex::new(9, -12), Complex::new(-15, 18)],
+        ];
+        let expected_rows_mul_neg_3 = [
+            vec![Complex::new(0_i32, 3), Complex::new(-6, -9)],
+            vec![Complex::new(-9, 12), Complex::new(15, -18)],
+        ];
+
+        let assoc_left = &m1 * (2 * 3);
+        let assoc_right = (&m1 * 2) * 3;
+        let distrib_1_left = (&m1 + &m2) * 3;
+        let distrib_1_right = (&m1 * 3) + (&m2 * 3);
+        let distrib_2_left = &m1 * (3 + 5);
+        let distrib_2_right = (&m1 * 3) + (&m1 * 5);
+
+        assert_eq!((&m1 * 3).rows, expected_rows_mul_3);
+        assert_eq!((&m1 * -3).rows, expected_rows_mul_neg_3);
+        assert_eq!(assoc_left.rows, assoc_right.rows); // associative
+        assert_eq!(distrib_1_left.rows, distrib_1_right.rows); // distributive 1
+        assert_eq!(distrib_2_left.rows, distrib_2_right.rows); // distributive 2
+        assert_eq!((&m1 * 1).rows, m1.rows); // multiplicative identity (mul by 1)
+        assert_eq!((&m1 * 0).rows, Matrix::zero(2, 2).rows); // multiplicative property with zero, converts to zero matrix
+    }
+
+    #[test]
+    fn matrix_trait_mul_scalar_complex_f64_owned() {
+        let rows_1 = [
+            vec![Complex::new(0.0_f64, -1.0), Complex::new(2.0, 3.0)],
+            vec![Complex::new(3.0_f64, -4.0), Complex::new(-5.0, 6.0)],
+        ];
+
+        let m1 = Matrix::from_rows(&rows_1);
+
+        let expected_rows_mul_3 = [
+            vec![Complex::new(0.0_f64, -3.0), Complex::new(6.0, 9.0)],
+            vec![Complex::new(9.0_f64, -12.0), Complex::new(-15.0, 18.0)],
+        ];
+
+        // can only test this once because move occurs without use of references
+        assert_eq!((m1 * 3.0).rows, expected_rows_mul_3);
+    }
+
+    #[test]
+    fn matrix_trait_mul_scalar_complex_f64_ref() {
+        let rows_1 = [
+            vec![Complex::new(0.0_f64, -1.0), Complex::new(2.0, 3.0)],
+            vec![Complex::new(3.0_f64, -4.0), Complex::new(-5.0, 6.0)],
+        ];
+
+        let rows_2 = [
+            vec![Complex::new(-3.0_f64, 4.0), Complex::new(6.0, -5.0)],
+            vec![Complex::new(-1.0_f64, 0.0), Complex::new(-3.0_f64, 2.0)],
+        ];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_mul_3 = [
+            vec![Complex::new(0.0_f64, -3.0), Complex::new(6.0, 9.0)],
+            vec![Complex::new(9.0_f64, -12.0), Complex::new(-15.0, 18.0)],
+        ];
+        let expected_rows_mul_neg_3 = [
+            vec![Complex::new(0.0_f64, 3.0), Complex::new(-6.0, -9.0)],
+            vec![Complex::new(-9.0_f64, 12.0), Complex::new(15.0, -18.0)],
+        ];
+
+        let assoc_left = &m1 * (2.0 * 3.0);
+        let assoc_right = (&m1 * 2.0) * 3.0;
+        let distrib_1_left = (&m1 + &m2) * 3.0;
+        let distrib_1_right = (&m1 * 3.0) + (&m2 * 3.0);
+        let distrib_2_left = &m1 * (3.0 + 5.0);
+        let distrib_2_right = (&m1 * 3.0) + (&m1 * 5.0);
+
+        assert_eq!((&m1 * 3.0).rows, expected_rows_mul_3);
+        assert_eq!((&m1 * -3.0).rows, expected_rows_mul_neg_3);
+        assert_eq!(assoc_left.rows, assoc_right.rows); // associative
+        assert_eq!(distrib_1_left.rows, distrib_1_right.rows); // distributive 1
+        assert_eq!(distrib_2_left.rows, distrib_2_right.rows); // distributive 2
+        assert_eq!((&m1 * 1.0).rows, m1.rows); // multiplicative identity (mul by 1)
+        assert_eq!((&m1 * 0.0).rows, Matrix::zero(2, 2).rows); // multiplicative property with zero, converts to zero matrix
     }
 }
