@@ -1736,4 +1736,89 @@ mod tests {
 
         let _ = m1 - m2;
     }
+
+    // ================================
+    //
+    // Mul trait tests
+    //   Scalar multiplication
+    //
+    // ================================
+
+    #[test]
+    fn matrix_trait_mul_scalar_i32_owned() {
+        let rows_1 = [vec![0_i32, -1, 2], vec![3, -4, 5]];
+
+        let m1 = Matrix::from_rows(&rows_1);
+
+        let expected_rows_mul_3 = [vec![0_i32, -3, 6], vec![9, -12, 15]];
+
+        // can only test this once because move occurs without use of references
+        assert_eq!((m1 * 3).rows, expected_rows_mul_3);
+    }
+
+    #[test]
+    fn matrix_trait_mul_scalar_i32_ref() {
+        let rows_1 = [vec![0_i32, -1, 2], vec![3, -4, 5]];
+        let rows_2 = [vec![0_i32, 4, -6], vec![-2, 1, -3]];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_mul_3 = [vec![0_i32, -3, 6], vec![9, -12, 15]];
+        let expected_rows_mul_neg_3 = [vec![0_i32, 3, -6], vec![-9, 12, -15]];
+
+        let assoc_left = &m1 * (2 * 3);
+        let assoc_right = (&m1 * 2) * 3;
+        let distrib_1_left = (&m1 + &m2) * 3;
+        let distrib_1_right = (&m1 * 3) + (&m2 * 3);
+        let distrib_2_left = &m1 * (3 + 5);
+        let distrib_2_right = (&m1 * 3) + (&m1 * 5);
+
+        assert_eq!((&m1 * 3).rows, expected_rows_mul_3);
+        assert_eq!((&m1 * -3).rows, expected_rows_mul_neg_3);
+        assert_eq!(assoc_left.rows, assoc_right.rows); // associative
+        assert_eq!(distrib_1_left.rows, distrib_1_right.rows); // distributive 1
+        assert_eq!(distrib_2_left.rows, distrib_2_right.rows); // distributive 2
+        assert_eq!((&m1 * 1).rows, m1.rows); // multiplicative identity (mul by 1)
+        assert_eq!((&m1 * 0).rows, Matrix::zero(2, 3).rows); // multiplicative property with zero, converts to zero matrix
+    }
+
+    #[test]
+    fn matrix_trait_mul_scalar_f64_owned() {
+        let rows_1 = [vec![0.0_f64, -1.0, 2.0], vec![3.0_f64, -4.0, 5.0]];
+
+        let m1 = Matrix::from_rows(&rows_1);
+
+        let expected_rows_mul_3 = [vec![0.0_f64, -3.0, 6.0], vec![9.0_f64, -12.0, 15.0]];
+
+        // can only test this once because move occurs without use of references
+        assert_eq!((m1 * 3.0).rows, expected_rows_mul_3);
+    }
+
+    #[test]
+    fn matrix_trait_mul_scalar_f64_ref() {
+        let rows_1 = [vec![0.0_f64, -1.0, 2.0], vec![3.0_f64, -4.0, 5.0]];
+        let rows_2 = [vec![0.0_f64, 4.0, -6.0], vec![-2.0_f64, 1.0, -3.0]];
+
+        let m1 = Matrix::from_rows(&rows_1);
+        let m2 = Matrix::from_rows(&rows_2);
+
+        let expected_rows_mul_3 = [vec![0.0_f64, -3.0, 6.0], vec![9.0_f64, -12.0, 15.0]];
+        let expected_rows_mul_neg_3 = [vec![0.0_f64, 3.0, -6.0], vec![-9.0_f64, 12.0, -15.0]];
+
+        let assoc_left = &m1 * (2.0 * 3.0);
+        let assoc_right = (&m1 * 2.0) * 3.0;
+        let distrib_1_left = (&m1 + &m2) * 3.0;
+        let distrib_1_right = (&m1 * 3.0) + (&m2 * 3.0);
+        let distrib_2_left = &m1 * (3.0 + 5.0);
+        let distrib_2_right = (&m1 * 3.0) + (&m1 * 5.0);
+
+        assert_eq!((&m1 * 3.0).rows, expected_rows_mul_3);
+        assert_eq!((&m1 * -3.0).rows, expected_rows_mul_neg_3);
+        assert_eq!(assoc_left.rows, assoc_right.rows); // associative
+        assert_eq!(distrib_1_left.rows, distrib_1_right.rows); // distributive 1
+        assert_eq!(distrib_2_left.rows, distrib_2_right.rows); // distributive 2
+        assert_eq!((&m1 * 1.0).rows, m1.rows); // multiplicative identity (mul by 1)
+        assert_eq!((&m1 * 0.0).rows, Matrix::zero(2, 3).rows); // multiplicative property with zero, converts to zero matrix
+    }
 }
