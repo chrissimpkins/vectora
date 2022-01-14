@@ -102,6 +102,7 @@ pub type Vector3dUsize = Vector<usize, 3>;
 
 /// A generic, fixed length, ordered vector type that supports
 /// computation with N-dimensional real and complex scalar data.
+#[must_use]
 #[derive(Copy, Clone, Debug)]
 pub struct Vector<T, const N: usize>
 where
