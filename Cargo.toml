@@ -1,6 +1,6 @@
 [package]
 name = "vectora"
-version = "0.8.1"
+version = "0.8.2-dev.0"
 authors = ["Chris Simpkins <chris@sourcefoundry.org>"]
 license = "Apache-2.0"
 edition = "2021"
