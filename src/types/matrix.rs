@@ -10,6 +10,7 @@ use crate::errors::MatrixError;
 use crate::Vector;
 
 /// A generic M-by-N matrix type parameterized by the numeric type `T`.
+#[must_use]
 #[derive(Clone, Debug)]
 pub struct Matrix<T>
 where
