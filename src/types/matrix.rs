@@ -591,7 +591,7 @@ where
     type Output = Matrix<Complex<T>>;
 
     /// Binary multiplication operator overload implementation for matrix
-    /// scalar multiplication with owned [`Matrix`] of Complex<T> numeric types.
+    /// scalar multiplication with references of [`Matrix`] Complex<T> numeric types.
     fn mul(self, rhs: T) -> Self::Output {
         let mut rows_collection = Vec::with_capacity(self.rows.len());
 
