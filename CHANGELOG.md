@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.8.1
+
+### Added
+
+- None
+
+### Changed
+
+- added `must_use` attribute to `Vector` struct (new clippy +beta lint fail on `Vector` methods returning `Self` without attribute)
+
 ## v0.8.0
 
 ### Added
