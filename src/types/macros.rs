@@ -711,4 +711,70 @@ mod tests {
         assert_relative_eq!(v[1].re, 3.0_f64);
         assert_relative_eq!(v[1].im, 4.0_f64);
     }
+
+    #[test]
+    fn macro_matrix_i32() {
+        let m1 = matrix!([1_i32, 2, 3], [4, 5, 6]);
+        let m2 = matrix!([1_i32, 2], [3, 4], [5, 6],); // trailing comma
+        let m3 = matrix!([1_i32; 3], [1; 3]);
+        let m4 = matrix!([1_i32]);
+
+        assert_eq!(m1.dim(), (2, 3));
+        assert_eq!(m1[0][0], 1);
+        assert_eq!(m1[0][1], 2);
+        assert_eq!(m1[0][2], 3);
+        assert_eq!(m1[1][0], 4);
+        assert_eq!(m1[1][1], 5);
+        assert_eq!(m1[1][2], 6);
+
+        assert_eq!(m2.dim(), (3, 2));
+        assert_eq!(m2[0][0], 1);
+        assert_eq!(m2[0][1], 2);
+        assert_eq!(m2[1][0], 3);
+        assert_eq!(m2[1][1], 4);
+
+        assert_eq!(m3.dim(), (2, 3));
+        assert_eq!(m3[0][0], 1);
+        assert_eq!(m3[0][1], 1);
+        assert_eq!(m3[0][2], 1);
+        assert_eq!(m3[1][0], 1);
+        assert_eq!(m3[1][1], 1);
+        assert_eq!(m3[1][2], 1);
+
+        assert_eq!(m4.dim(), (1, 1));
+        assert_eq!(m4[0][0], 1);
+    }
+
+    #[test]
+    fn macro_matrix_f64() {
+        let m1 = matrix!([1.0_f64, 2.0, 3.0], [4.0_f64, 5.0, 6.0]);
+        let m2 = matrix!([1.0_f64, 2.0], [3.0_f64, 4.0], [5.0_f64, 6.0],); // trailing comma
+        let m3 = matrix!([1.0_f64; 3], [1.0_f64; 3]);
+        let m4 = matrix!([1.0_f64]);
+
+        assert_eq!(m1.dim(), (2, 3));
+        assert_relative_eq!(m1[0][0], 1.0_f64);
+        assert_relative_eq!(m1[0][1], 2.0);
+        assert_relative_eq!(m1[0][2], 3.0);
+        assert_relative_eq!(m1[1][0], 4.0);
+        assert_relative_eq!(m1[1][1], 5.0);
+        assert_relative_eq!(m1[1][2], 6.0);
+
+        assert_eq!(m2.dim(), (3, 2));
+        assert_relative_eq!(m2[0][0], 1.0_f64);
+        assert_relative_eq!(m2[0][1], 2.0);
+        assert_relative_eq!(m2[1][0], 3.0);
+        assert_relative_eq!(m2[1][1], 4.0);
+
+        assert_eq!(m3.dim(), (2, 3));
+        assert_relative_eq!(m3[0][0], 1.0_f64);
+        assert_relative_eq!(m3[0][1], 1.0);
+        assert_relative_eq!(m3[0][2], 1.0);
+        assert_relative_eq!(m3[1][0], 1.0);
+        assert_relative_eq!(m3[1][1], 1.0);
+        assert_relative_eq!(m3[1][2], 1.0);
+
+        assert_eq!(m4.dim(), (1, 1));
+        assert_relative_eq!(m4[0][0], 1.0_f64);
+    }
 }
