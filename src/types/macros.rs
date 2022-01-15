@@ -175,6 +175,73 @@ macro_rules! try_vector {
     };
 }
 
+/// Returns a [`crate::Matrix`] with row and column number, and numeric type
+/// defined by the row vector arguments.
+///
+/// The row vector arguments have an [`array`]-like syntax
+/// that supports the [T; N] repeat expression idiom.
+///
+/// **Note**: The user is responsible for validation of the matrix shape
+/// with this macro.  There are no shape validity checks.
+///
+/// # Examples
+///
+/// ## With each row vector scalar defined
+///
+/// ```
+/// use vectora::matrix;
+///
+/// let m = matrix!(
+///     [1, 2, 3],
+///     [4, 5, 6],
+///     [7, 8, 9]
+/// );
+///
+/// assert_eq!(m.dim(), (3, 3));
+/// assert_eq!(m[0][0], 1_i32);
+/// assert_eq!(m[0][1], 2);
+/// assert_eq!(m[0][2], 3);
+/// assert_eq!(m[1][0], 4);
+/// assert_eq!(m[1][1], 5);
+/// assert_eq!(m[1][2], 6);
+/// assert_eq!(m[2][0], 7);
+/// assert_eq!(m[2][1], 8);
+/// assert_eq!(m[2][2], 9);
+/// ```
+///
+/// ## With an array-like repeat expression idiom
+///
+/// The first number defines the scalar value that is repeated.  
+/// The number following the semicolon defines the number of columns
+/// in the row.
+///
+/// ```
+/// use vectora::matrix;
+///
+/// let m = matrix!(
+///     [1; 2],
+///     [1; 2],
+///     [1; 2]
+/// );
+///
+/// assert_eq!(m.dim(), (3, 2));
+/// assert_eq!(m[0][0], 1_i32);
+/// assert_eq!(m[0][1], 1);
+/// assert_eq!(m[1][0], 1);
+/// assert_eq!(m[1][1], 1);
+/// assert_eq!(m[2][0], 1);
+/// assert_eq!(m[2][1], 1);
+/// ```
+#[macro_export]
+macro_rules! matrix {
+    ([$elem:expr; $n:expr],+ $(,)?) => (
+        $crate::types::matrix::Matrix {rows: vec![$([$elem; $n].to_vec()),+]};
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::types::matrix::Matrix {rows: vec![$($x.to_vec()),+]}
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Vector;
