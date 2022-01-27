@@ -34,3 +34,31 @@ impl std::fmt::Display for VectorError {
         }
     }
 }
+
+/// Errors that occur while working with [`crate::types::matrices::Matrix`]
+#[derive(Debug)]
+pub enum MatrixError {
+    /// Occurs when an operation receives an invalid empty matrix
+    EmptyMatrixError(String),
+    /// Occurs when an operation receives an invalid matrix shape
+    InvalidMatrixShapeError(String),
+    /// Occurs when there is invalid data during a fallible attempt to convert
+    /// a [`crate::Matrix`] row or column to another type
+    TryFromMatrixError(String),
+}
+
+impl std::fmt::Display for MatrixError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            MatrixError::EmptyMatrixError(s) => {
+                write!(f, "MatrixError::EmptyMatrixError: {}", s)
+            }
+            MatrixError::InvalidMatrixShapeError(s) => {
+                write!(f, "MatrixError::InvalidMatrixShapeError: {}", s)
+            }
+            MatrixError::TryFromMatrixError(s) => {
+                write!(f, "MatrixError::TryFromMatrixError: {}", s)
+            }
+        }
+    }
+}
