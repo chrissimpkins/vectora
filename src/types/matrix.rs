@@ -119,15 +119,19 @@ where
     /// assert_eq!(m[2][1], 7);
     /// assert_eq!(m[2][2], 8);
     /// ```
-    pub fn from_rows(rows: &[Vec<T>]) -> Self {
+    pub fn from_rows<V>(rows: &[V]) -> Self
+    where
+        V: Into<Vec<T>> + std::clone::Clone,
+        Vec<Vec<T>>: FromIterator<V>,
+    {
         if rows.is_empty() {
             // Instantiate with an empty Vec when the row vector length is zero.
             Self { rows: vec![] }
         } else {
             let mut new_rows = Vec::<Vec<T>>::with_capacity(rows.len());
 
-            for row in rows.iter() {
-                new_rows.push(row.to_vec());
+            for row in rows.iter().cloned().map(|x| x.into()) {
+                new_rows.push(row);
             }
 
             Self { rows: new_rows }
