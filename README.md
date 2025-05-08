@@ -108,7 +108,7 @@ cargo +nightly fuzz run fuzz_vectora
 
 Please see the [Fuzzing with cargo-fuzz chapter](https://rust-fuzz.github.io/book/cargo-fuzz.html) of the Rust Fuzz book for additional documentation.
 
-#### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Documentation contributions
+#### Documentation contributions
 
 The docs.rs documentation is authored in the Rust source files.  Edit the text and build a local version of the project documentation for review with the command:
 
