@@ -1,10 +1,12 @@
 on:
   push:
-    branches:
-      - main
-      - "test/**" # Push events to branches matching refs/heads/test/[ANYTHING]
-      - "test-*" # Push events to branches matching refs/heads/test-[ANYTHING]
+    branches: [main]
+    tags: ["*"]
   pull_request:
+    types: [opened, synchronize, reopened]
+  release:
+    # A release, pre-release, or draft of a release was published
+    types: [published]
 
 name: clippy lints
 
@@ -13,7 +15,7 @@ jobs:
     name: stable toolchain lints
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -27,7 +29,7 @@ jobs:
     name: beta toolchain lints
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: beta
