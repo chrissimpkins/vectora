@@ -1,12 +1,12 @@
 on:
-  schedule:
-    - cron: "0 6 * * *"
   push:
-    branches:
-      - main
-      - "test/**" # Push events to branches matching refs/heads/test/[ANYTHING]
-      - "test-*" # Push events to branches matching refs/heads/test-[ANYTHING]
+    branches: [main]
+    tags: ["*"]
   pull_request:
+    types: [opened, synchronize, reopened]
+  release:
+    # A release, pre-release, or draft of a release was published
+    types: [published]
 
 name: unit tests (nightly toolchain)
 
