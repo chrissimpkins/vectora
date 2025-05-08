@@ -12,20 +12,7 @@
 //! - [Contributing](#contributing)
 //! - [License](#license)
 //! - [Getting Started](#getting-started)
-//!     - [Add Vectora to Your Project](#add-vectora-to-your-project)
-//!     - [Optional Crate Features](#optional-crate-features)
-//!     - [Numeric Type Support](#numeric-type-support)
-//!     - [Initialization](#initialization)
-//!     - [Numeric Type Casts](#numeric-type-casts)
-//!     - [Access and Assignment with Indexing](#access-and-assignment-with-indexing)
-//!     - [Slicing](#slicing)
-//!     - [Partial Equivalence Testing](#partial-equivalence-testing)
-//!     - [Iteration and Loops](#iteration-and-loops)
-//!     - [Vector Arithmetic](#vector-arithmetic)
-//!     - [Methods for Vector Operations](#methods-for-vector-operations)
-//!     - [Descriptive Statistics](#descriptive-statistics)
-//!     - [Working with Rust Standard Library Types](#working-with-rust-standard-library-types)
-//!     
+//! - [Advanced Usage](#advanced-usage)
 //!
 //! # About
 //!
@@ -77,28 +64,50 @@
 //!
 //! # Getting Started
 //!
-//! See the [`Vector`] page for detailed API documentation of the main library
-//! entry point.
+//! ## Quick Start
 //!
-//! The following section provides an overview of common tasks and will get you up
-//! and running with the library quickly.
+//! ```
+//! use vectora::Vector;
 //!
-//! ## Add Vectora to Your Project
+//! let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+//! v += Vector::from([4, 5, 6]);
+//! v *= 2;
+//! assert_eq!(v, Vector::from([10, 14, 18]));
+//! ```
 //!
-//! Import the vectora library in the `[dependencies]` section
-//! of your `Cargo.toml` file:
+//! ## Adding Vectora to Your Project
 //!
+//! In your `Cargo.toml`:
 //! ```toml
 //! [dependencies]
 //! vectora = "0.8.1"
 //! ```
 //!
-//! The examples below assume the following [`Vector`] struct import in
-//! your Rust source files:
+//! ## Creating Vectors
 //!
-//! ```
-//! use vectora::Vector;
-//! ```
+//! - **Default values:** `Vector::<i32, 3>::new()`
+//! - **Additive identity (all zeroes):** `Vector::<i32, 3>::zero()`
+//! - **Multiplicative identity (all ones):** `Vector::<i32, 3>::one()`
+//! - **Filled with constant:** `Vector::<i32, 3>::filled(7)`
+//! - **From array:** `Vector::from([1, 2, 3])`
+//! - **From slice/vec:** `Vector::<i32, 3>::from_slice(&[1,2,3])?`, `Vector::<i32, 3>::from_vec(vec![1,2,3])?`
+//!
+//! ## Arithmetic
+//!
+//! - `+`, `-`, `*` for vector addition, subtraction, and scalar multiplication
+//! - `+=`, `-=`, `*=` for in-place operations
+//!
+//! ## Supported Types
+//!
+//! - Integers: i8, i16, i32, i64, i128, u8, u16, u32, u64, u128, usize, isize
+//! - Floats: f32, f64
+//! - Complex: [`num::Complex<T>`]
+//!
+//! ## More Examples
+//!
+//! See the [API docs](https://docs.rs/vectora) for advanced features, error handling, and trait implementations.
+//!
+//! # Advanced Usage
 //!
 //! ## Optional Crate Features
 //!
@@ -172,97 +181,6 @@
 //! the implementation. In these cases, you can replace integer or floating point
 //! numbers in the following examples with [`num::Complex`] types.  Please raise an
 //! issue on the repository if this is not the case.
-//!
-//! ## Initialization
-//!
-//! A [`Vector`] can have mutable values, but it cannot grow in length.  The
-//! dimension length is fixed at instantiation, and all fields are *initialized*
-//! at instantiation.  The maximum dimension length is [`usize::MAX`].
-//!
-//! The [`crate::vector`] macro is available for shorthand initialization of the [`Vector`] type
-//! with standard library [`array`]-like syntax.
-//!
-//! ### Zero Vector
-//!
-//! Use the [`Vector::zero`] method to initialize a [`Vector`] with zero values
-//! of the respective numeric type:
-//!
-//! ```
-//! use vectora::Vector;
-//!
-//! let v_zero_int: Vector<i32, 3> = Vector::zero();
-//!
-//! let v_zero_float: Vector<f64, 2> = Vector::zero();
-//!
-//! // Note: the following complex number example requires an import of the `num::Complex` type!
-//! use num::Complex;
-//!
-//! let v_zero_complex: Vector<Complex<f64>, 2> = Vector::zero();
-//! ```
-//!
-//! ### With Predefined Data in Other Types
-//!
-//! Use the [`Vector::from`] method or the [`crate::vector`] macro
-//! with an ordered [`array`] of data when possible:
-//!
-//! ```
-//! use vectora::{vector, Vector};
-//!
-//! // example three dimensional f64 Vector
-//! let v: Vector<f64, 3> = Vector::from([1.0, 2.0, 3.0]);
-//! let v_alt = vector![1.0_f64, 2.0_f64, 3.0_f64];
-//!
-//! // example two dimensional i32 Vector
-//! let v: Vector<i32, 2> = Vector::from([4, -5]);
-//! let v_alt = vector![4_i32, -5_i32];
-//!
-//! // with num crate Complex numbers
-//! // Note: the following complex number example requires an import of the `num::Complex` type!
-//! use num::Complex;
-//!
-//! let v: Vector<Complex<f64>, 2> = Vector::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
-//! let v_alt = vector![Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)];
-//!
-//! // with a library type alias
-//! use vectora::types::vector::Vector3dF64;
-//!
-//! let v: Vector3dF64 = Vector::from([1.0, 2.0, 3.0]);
-//! let v_alt: Vector3dF64 = vector![1.0, 2.0, 3.0];
-//! ```
-//!
-//! or use one of the alternate initialization approaches with data
-//! in iterator, [`array`], [`slice`], or [`Vec`] types.  The
-//! [`crate::try_vector`] macro is a shorthand approach to fallible
-//! initialization with data in these standard library types.
-//!
-//! ```
-//! use vectora::{try_vector, Vector};
-//!
-//! // from an iterator over an array or Vec with collect
-//! let v: Vector<i32, 3> = [1, 2, 3].into_iter().collect();
-//! let v: Vector<f64, 2> = vec![1.0, 2.0].into_iter().collect();
-//!
-//! // from a standard lib slice type with the try_from function or try_vector! macro
-//! let arr = [1, 2, 3];
-//! let vec = vec![1.0, 2.0, 3.0];
-//!
-//! let v: Vector<i32, 3> = Vector::try_from(&arr[..]).unwrap();
-//! let v_alt: Vector<i32, 3> = try_vector!(&arr[..]).unwrap();
-//!
-//! let v: Vector<f64, 3> = Vector::try_from(&vec[..]).unwrap();
-//! let v_alt: Vector<f64, 3> = try_vector!(&vec[..]).unwrap();
-//!
-//! // from a standard lib Vec type with the try_from function or try_vector! macro
-//! let vec = vec![1, 2, 3];
-//!
-//! let v: Vector<i32, 3> = Vector::try_from(&vec).unwrap();
-//! let v_alt: Vector<i32, 3> = try_vector!(&vec).unwrap();
-//! ```
-//!
-//! Please see the API docs for more information about overflow and underflow handling with the
-//! [`FromIterator`](types/vector/struct.Vector.html#impl-FromIterator<T>)
-//! trait implementation that supports the `collect` approach, and additional
-//! information about returned error types for fallible initializations.
 //!
 //! ## Numeric Type Casts
 //!
@@ -409,8 +327,7 @@
 //!
 //! Why a different strategy for floats?
 //!
-//! Some floating point numbers are not considered equivalent due to
-//! floating point precision:
+//! "Equivalence" with floating point numbers can be challenging:
 //!
 //! ```should_panic
 //! // panics!
@@ -654,6 +571,34 @@
 //! let c: Complex<f64> = Complex::new(1.0, 7.0);
 //!
 //! assert_eq!(v * c, Vector::from([Complex::new(-11.0, 23.0), Complex::new(11.0, -23.0)]));
+//! ```
+//!
+//! #### Operator Assignment In-Place
+//!
+//! ```
+//! # use vectora::Vector;
+//! let mut v1: Vector<i32, 3> = Vector::from([1, 2, 3]);
+//! let v2: Vector<i32, 3> = Vector::from([4, 5, 6]);
+//!
+//! v1 += v2; // In-place addition
+//! assert_eq!(v1, Vector::from([5, 7, 9]));
+//!
+//! v1 -= Vector::from([1, 1, 1]); // In-place subtraction
+//! assert_eq!(v1, Vector::from([4, 6, 8]));
+//!
+//! v1 *= 2; // In-place scalar multiplication
+//! assert_eq!(v1, Vector::from([8, 12, 16]));
+//! ```
+//!
+//! For vectors of complex numbers, you can also multiply by a real scalar:
+//!
+//! ```
+//! # use vectora::Vector;
+//! use num::Complex;
+//!
+//! let mut v = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+//! v *= 2.0;
+//! assert_eq!(v, Vector::from([Complex::new(2.0, 4.0), Complex::new(6.0, 8.0)]));
 //! ```
 //!
 //! ## Methods for Vector Operations
