@@ -944,6 +944,8 @@
 
 #![warn(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links, unsafe_code)]
+#![forbid(unsafe_code)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod errors;
 pub mod types;
