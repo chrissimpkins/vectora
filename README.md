@@ -23,7 +23,7 @@ User documentation is available at https://docs.rs/vectora.
 
 ### Minimum Rust Version Compatibility Policy
 
-This project parameterizes generics by constants and relies on the [constant generics feature support stabilized in Rust v1.51.0](https://github.com/rust-lang/rust/pull/79135).   
+This project parameterizes generics by constants and relies on the [constant generics feature support stabilized in Rust v1.51.0](https://github.com/rust-lang/rust/pull/79135).
 
 The minimum supported `rustc` version is believed to be v1.51.0.
 
@@ -42,21 +42,21 @@ vectora = "0.8.1"
 
 ### Contributing
 
-#### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Issues
+#### Issues
 
 The [issue tracker](https://github.com/chrissimpkins/vectora/issues) is available on the GitHub repository. Don't be shy. Please report any issues that you identify so that we can address them.
 
-#### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Source contributions
+#### Source contributions
 
 Contributions are welcomed.  Submit your changes as a GitHub pull request. Please add new tests for source contributions that our current test suite does not cover.
 
-#### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Clone the repository
+#### Clone the repository
 
 ```txt
 git clone https://github.com/chrissimpkins/vectora.git
 ```
 
-#### ![L4 Header](https://via.placeholder.com/12/B01721/000000?text=+) Testing
+#### Testing
 
 The project is tested with the latest GitHub Actions macOS, Linux (Ubuntu), and Windows environment runners using the stable and beta `rustc` toolchains.
 
