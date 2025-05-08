@@ -114,7 +114,7 @@ where
 
 // ================================
 //
-// Instantiation method impl
+// Constructors
 //
 // ================================
 impl<T, const N: usize> Vector<T, N>
@@ -192,12 +192,15 @@ where
         Self { components: [T::default(); N] }
     }
 
-    /// Returns a new [`Vector`] initialized with scalar zero values
-    /// for the corresponding numeric type.
+    /// Returns a new [`Vector`] initialized with scalar zero values for the corresponding numeric type.
+    ///
+    /// This is the additive identity vector.
+    ///
+    /// # Type Requirements
+    ///
+    /// - `T` must implement [`Zero`] (from the `num` crate).
     ///
     /// # Examples
-    ///
-    /// Basic usage:
     ///
     /// ## Integer scalars
     ///
@@ -240,6 +243,162 @@ where
     /// ```
     pub fn zero() -> Self {
         Self { components: [T::zero(); N] }
+    }
+
+    /// Returns a new [`Vector`] initialized with scalar one values for the corresponding numeric type.
+    ///
+    /// For real types, this is `[1, 1, ...]`. For complex types, this is `[Complex::new(1, 0), ...]`.
+    /// This is the multiplicative identity vector.
+    ///
+    /// # Type Requirements
+    ///
+    /// - `T` must implement [`One`] (from the `num` crate).
+    ///
+    /// # Examples
+    ///
+    /// ## Integer scalars
+    ///
+    /// ```
+    /// # use vectora::Vector;
+    /// let v: Vector<i32, 3> = Vector::one();
+    ///
+    /// assert_eq!(v.len(), 3);
+    /// assert_eq!(v[0], 1_i32);
+    /// assert_eq!(v[1], 1_i32);
+    /// assert_eq!(v[2], 1_i32);
+    /// ```
+    ///
+    /// ## Floating point scalars
+    ///
+    /// ```
+    /// # use vectora::Vector;
+    /// let v: Vector<f64, 3> = Vector::one();
+    ///
+    /// assert_eq!(v.len(), 3);
+    /// assert_eq!(v[0], 1.0_f64);
+    /// assert_eq!(v[1], 1.0_f64);
+    /// assert_eq!(v[2], 1.0_f64);
+    /// ```
+    ///
+    /// ## Complex number scalars
+    ///
+    /// ```
+    ///# use vectora::Vector;
+    /// use approx::assert_relative_eq;
+    /// use num::Complex;
+    ///
+    /// let v: Vector<Complex<f64>, 2> = Vector::one();
+    ///
+    /// assert_eq!(v.len(), 2);
+    /// assert_relative_eq!(v[0].re, 1.0_f64);
+    /// assert_relative_eq!(v[0].im, 0.0_f64);
+    /// assert_relative_eq!(v[1].re, 1.0_f64);
+    /// assert_relative_eq!(v[1].im, 0.0_f64);
+    /// ```
+    pub fn one() -> Self {
+        Self { components: [T::one(); N] }
+    }
+
+    /// Creates a new [`Vector`] with all elements set to the given value.
+    ///
+    /// This is useful for initializing a vector where every component should start with the same value.
+    ///
+    /// # Type Requirements
+    ///
+    /// - `T` must implement [`Copy`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use vectora::Vector;
+    /// let v = Vector::<i32, 3>::filled(7);
+    /// assert_eq!(v, Vector::from([7, 7, 7]));
+    /// ```
+    pub fn filled(value: T) -> Self {
+        Self { components: [value; N] }
+    }
+
+    /// Creates a new [`Vector`] from a slice, returning an error if the slice length does not match the vector dimension.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`VectorError::TryFromSliceError`] if the slice length is not equal to `N`.
+    ///
+    /// # Performance
+    ///
+    /// This method copies the slice data into the vector's internal array. The input slice is not borrowed or mutated.
+    ///
+    /// # Type Requirements
+    ///
+    /// - `T` must implement [`Copy`] and [`Default`] to allow initialization and copying of elements.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::Vector;
+    /// let v = Vector::<i32, 3>::from_slice(&[1, 2, 3]).unwrap();
+    /// assert_eq!(v[0], 1);
+    /// assert_eq!(v[1], 2);
+    /// assert_eq!(v[2], 3);
+    /// ```
+    ///
+    /// Error case:
+    ///
+    /// ```
+    /// # use vectora::Vector;
+    /// let result = Vector::<i32, 3>::from_slice(&[1, 2]);
+    /// assert!(result.is_err());
+    /// ```
+    pub fn from_slice(slice: &[T]) -> Result<Self, VectorError> {
+        if slice.len() != N {
+            return Err(VectorError::TryFromSliceError(format!(
+                "expected slice with {} items, but received slice with {} items",
+                N,
+                slice.len()
+            )));
+        }
+        let mut components = [T::default(); N];
+        components.copy_from_slice(slice);
+        Ok(Self { components })
+    }
+
+    /// Creates a new [`Vector`] from a `Vec`, returning an error if the vector length does not match the vector dimension.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`VectorError::TryFromSliceError`] if the input `Vec` length is not equal to `N`.
+    ///
+    /// # Performance
+    ///
+    /// This method copies the data from the input `Vec` into the vector's internal array. The input `Vec` is not mutated.
+    ///
+    /// # Type Requirements
+    ///
+    /// - `T` must implement [`Copy`] and [`Default`] to allow initialization and copying of elements.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// # use vectora::Vector;
+    /// let v = Vector::<i32, 3>::from_vec(vec![1, 2, 3]).unwrap();
+    /// assert_eq!(v[0], 1);
+    /// assert_eq!(v[1], 2);
+    /// assert_eq!(v[2], 3);
+    /// ```
+    ///
+    /// Error case:
+    ///
+    /// ```
+    /// # use vectora::Vector;
+    /// let result = Vector::<i32, 3>::from_vec(vec![1, 2]);
+    /// assert!(result.is_err());
+    /// ```
+    pub fn from_vec(vec: Vec<T>) -> Result<Self, VectorError> {
+        Self::from_slice(&vec)
     }
 }
 
@@ -3303,12 +3462,12 @@ mod tests {
 
     // =======================================
     //
-    // Instantiation associated function tests
+    // Constructor associated function tests
     //
     // =======================================
 
     #[test]
-    fn vector_instantiation_new_i8() {
+    fn vector_constructor_new_i8() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<i8, 2>::new();
@@ -3340,7 +3499,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_i16() {
+    fn vector_constructor_new_i16() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<i16, 2>::new();
@@ -3372,7 +3531,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_i32() {
+    fn vector_constructor_new_i32() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<i32, 2>::new();
@@ -3404,7 +3563,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_i64() {
+    fn vector_constructor_new_i64() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<i64, 2>::new();
@@ -3436,7 +3595,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_i128() {
+    fn vector_contstructor_new_i128() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<i128, 2>::new();
@@ -3468,7 +3627,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_u8() {
+    fn vector_constructor_new_u8() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<u8, 2>::new();
@@ -3500,7 +3659,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_u16() {
+    fn vector_constructor_new_u16() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<u16, 2>::new();
@@ -3532,7 +3691,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_u32() {
+    fn vector_constructor_new_u32() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<u32, 2>::new();
@@ -3564,7 +3723,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_u64() {
+    fn vector_constructor_new_u64() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<u64, 2>::new();
@@ -3596,7 +3755,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_u128() {
+    fn vector_constructor_new_u128() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<u128, 2>::new();
@@ -3628,7 +3787,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_f32() {
+    fn vector_constructor_new_f32() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<f32, 2>::new();
@@ -3660,7 +3819,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_f64() {
+    fn vector_constructor_new_f64() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<f64, 2>::new();
@@ -3692,7 +3851,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_usize() {
+    fn vector_constructor_new_usize() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<usize, 2>::new();
@@ -3724,7 +3883,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_new_isize() {
+    fn vector_constructor_new_isize() {
         // Two dimension
         let mut tests = vec![];
         let v1 = Vector::<isize, 2>::new();
@@ -3756,7 +3915,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_complex_i32() {
+    fn vector_constructor_complex_i32() {
         let c1 = Complex::new(10_i32, 20_i32);
         let c2 = Complex::new(3_i32, -4_i32);
         let v: Vector<Complex<i32>, 2> = Vector::from([c1, c2]);
@@ -3767,7 +3926,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_complex_f64() {
+    fn vector_constructor_complex_f64() {
         let c1 = Complex::new(10.0_f64, 20.0_f64);
         let c2 = Complex::new(3.1_f64, -4.2_f64);
         let v: Vector<Complex<f64>, 2> = Vector::from([c1, c2]);
@@ -3778,7 +3937,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_default_u32() {
+    fn vector_constructor_default_u32() {
         // Two dimension
         let v = Vector::<u32, 2>::default();
         assert_eq!(v[0], 0 as u32);
@@ -3794,7 +3953,7 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_default_f64() {
+    fn vector_constructor_default_f64() {
         // Two dimension
         let v = Vector::<f64, 2>::default();
         assert_relative_eq!(v[0], 0.0 as f64);
@@ -3810,21 +3969,21 @@ mod tests {
     }
 
     #[test]
-    fn vector_instantiation_complex_i32_default() {
+    fn vector_constructor_complex_i32_default() {
         let v = Vector::<Complex<i32>, 2>::default();
         assert_eq!(v[0].re, 0_i32);
         assert_eq!(v[0].im, 0_i32);
     }
 
     #[test]
-    fn vector_instantiation_complex_f64_default() {
+    fn vector_constructor_complex_f64_default() {
         let v = Vector::<Complex<f64>, 2>::default();
         assert_relative_eq!(v[0].re, 0.0_f64);
         assert_relative_eq!(v[0].im, 0.0_f64);
     }
 
     #[test]
-    fn vector_instantiation_from_array() {
+    fn vector_constructor_from_array() {
         // Two dimension
         let v1 = Vector::<u32, 2>::from(&[1, 2]);
         let v2 = Vector::<f64, 2>::from(&[1.0, 2.0]);
@@ -3848,6 +4007,83 @@ mod tests {
         assert_relative_eq!(v2[1], 2.0 as f64);
         assert_relative_eq!(v2[2], 3.0 as f64);
         assert_eq!(v2.components.len(), 3);
+    }
+
+    #[test]
+    fn vector_constructor_zero_and_one() {
+        // Integer
+        let v = Vector::<i32, 3>::zero();
+        assert_eq!(v, Vector::from([0, 0, 0]));
+        let v = Vector::<i32, 3>::one();
+        assert_eq!(v, Vector::from([1, 1, 1]));
+
+        // Float
+        let v = Vector::<f64, 3>::zero();
+        assert_eq!(v, Vector::from([0.0, 0.0, 0.0]));
+        let v = Vector::<f64, 3>::one();
+        assert_eq!(v, Vector::from([1.0, 1.0, 1.0]));
+
+        // Complex
+        let v = Vector::<num::Complex<f64>, 2>::zero();
+        assert_eq!(v, Vector::from([num::Complex::new(0.0, 0.0), num::Complex::new(0.0, 0.0)]));
+        let v = Vector::<num::Complex<f64>, 2>::one();
+        assert_eq!(v, Vector::from([num::Complex::new(1.0, 0.0), num::Complex::new(1.0, 0.0)]));
+    }
+
+    #[test]
+    fn vector_constructor_filled() {
+        let v = Vector::<i32, 4>::filled(7);
+        assert_eq!(v, Vector::from([7, 7, 7, 7]));
+
+        let v = Vector::<f64, 2>::filled(-3.5);
+        assert_eq!(v, Vector::from([-3.5, -3.5]));
+
+        let v = Vector::<num::Complex<f64>, 2>::filled(num::Complex::new(2.0, -2.0));
+        assert_eq!(v, Vector::from([num::Complex::new(2.0, -2.0), num::Complex::new(2.0, -2.0)]));
+    }
+
+    #[test]
+    fn vector_constructor_from_slice_success() {
+        let v = Vector::<i32, 3>::from_slice(&[1, 2, 3]).unwrap();
+        assert_eq!(v, Vector::from([1, 2, 3]));
+
+        let v = Vector::<f64, 2>::from_slice(&[1.5, 2.5]).unwrap();
+        assert_eq!(v, Vector::from([1.5, 2.5]));
+    }
+
+    #[test]
+    fn vector_constructor_from_slice_error() {
+        // Too short
+        let err = Vector::<i32, 3>::from_slice(&[1, 2]);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(VectorError::TryFromSliceError(_))));
+
+        // Too long
+        let err = Vector::<i32, 2>::from_slice(&[1, 2, 3]);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(VectorError::TryFromSliceError(_))));
+    }
+
+    #[test]
+    fn vector_constructor_from_vec_success() {
+        let v = Vector::<i32, 3>::from_vec(vec![1, 2, 3]).unwrap();
+        assert_eq!(v, Vector::from([1, 2, 3]));
+
+        let v = Vector::<f64, 2>::from_vec(vec![1.5, 2.5]).unwrap();
+        assert_eq!(v, Vector::from([1.5, 2.5]));
+    }
+
+    #[test]
+    fn vector_constructor_from_vec_error() {
+        // Too short
+        let err = Vector::<i32, 3>::from_vec(vec![1, 2]);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(VectorError::TryFromSliceError(_))));
+
+        // Too long
+        let err = Vector::<i32, 2>::from_vec(vec![1, 2, 3]);
+        assert!(err.is_err());
+        assert!(matches!(err, Err(VectorError::TryFromSliceError(_))));
     }
 
     // ================================
