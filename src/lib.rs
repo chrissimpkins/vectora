@@ -114,11 +114,11 @@
 //! Conditional compilation and optional dependency installation are available for the following features:
 //!
 //! - **`parallel`**: Installs an optional [rayon crate](https://docs.rs/crate/rayon/latest) dependency and broadens the [`Vector`] API with
-//! parallel iterator and parallel slice support. This feature includes implementations of `Vector::into_par_iter`, `Vector::par_iter`,
-//! `Vector::par_iter_mut`, `Vector::as_parallel_slice`, and `Vector::as_parallel_slice_mut` methods with support for the rayon trait-defined
-//! [parallel iterator](https://docs.rs/rayon/latest/rayon/iter/trait.ParallelIterator.html#provided-methods),
-//! [immutable parallel slice](https://docs.rs/rayon/latest/rayon/slice/trait.ParallelSlice.html), and
-//! [mutable parallel slice](https://docs.rs/rayon/latest/rayon/slice/trait.ParallelSliceMut.html) APIs.
+//!   parallel iterator and parallel slice support. This feature includes implementations of `Vector::into_par_iter`, `Vector::par_iter`,
+//!   `Vector::par_iter_mut`, `Vector::as_parallel_slice`, and `Vector::as_parallel_slice_mut` methods with support for the rayon trait-defined
+//!   [parallel iterator](https://docs.rs/rayon/latest/rayon/iter/trait.ParallelIterator.html#provided-methods),
+//!   [immutable parallel slice](https://docs.rs/rayon/latest/rayon/slice/trait.ParallelSlice.html), and
+//!   [mutable parallel slice](https://docs.rs/rayon/latest/rayon/slice/trait.ParallelSliceMut.html) APIs.
 //!
 //!
 //! ## Numeric Type Support
