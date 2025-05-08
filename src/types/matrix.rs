@@ -386,6 +386,21 @@ where
 
         rows_collection
     }
+
+    // Returns the real number dot product of self Matrix row vector at row index `row_index` and
+    // right hand side Matrix column vector at column index `column_index`.
+    fn impl_dot_row_column_real(&self, row_index: usize, rhs: &Matrix<T>, col_index: usize) -> T
+    where
+        T: Num + Copy + Sync + Send + Default + std::ops::AddAssign,
+    {
+        let mut dot_product = T::zero();
+        for (i, row_value) in self.rows[row_index].iter().enumerate() {
+            dot_product += *row_value * rhs.rows[i][col_index];
+        }
+        dot_product
+    }
+
+    // TODO: impl dot product for complex numbers
 }
 
 // ================================
@@ -1087,6 +1102,54 @@ mod tests {
         assert_relative_eq!(m.additive_inverse()[1][0].im, rows_expected_neg[1][0].im);
         assert_relative_eq!(m.additive_inverse()[1][1].re, rows_expected_neg[1][1].re);
         assert_relative_eq!(m.additive_inverse()[1][1].im, rows_expected_neg[1][1].im);
+    }
+
+    // ================================
+    //
+    // Private methods
+    //
+    // ================================
+
+    #[test]
+    fn matrix_dot_row_column_real_i32() {
+        let m1 = crate::matrix!([3_i32, 4], [-1, 2], [0, 4]);
+        let m2 = crate::matrix!([5, 1], [3, 1]);
+
+        let x00 = m1.impl_dot_row_column_real(0, &m2, 0);
+        let x10 = m1.impl_dot_row_column_real(1, &m2, 0);
+        let x20 = m1.impl_dot_row_column_real(2, &m2, 0);
+        let x01 = m1.impl_dot_row_column_real(0, &m2, 1);
+        let x11 = m1.impl_dot_row_column_real(1, &m2, 1);
+        let x21 = m1.impl_dot_row_column_real(2, &m2, 1);
+
+        assert_eq!(x00, 27);
+        assert_eq!(x10, 1);
+        assert_eq!(x20, 12);
+
+        assert_eq!(x01, 7);
+        assert_eq!(x11, 1);
+        assert_eq!(x21, 4);
+    }
+
+    #[test]
+    fn matrix_dot_row_column_real_f64() {
+        let m1 = crate::matrix!([3.0_f64, 4.0], [-1.0, 2.0], [0.0, 4.0]);
+        let m2 = crate::matrix!([5.0_f64, 1.0], [3.0, 1.0]);
+
+        let x00 = m1.impl_dot_row_column_real(0, &m2, 0);
+        let x10 = m1.impl_dot_row_column_real(1, &m2, 0);
+        let x20 = m1.impl_dot_row_column_real(2, &m2, 0);
+        let x01 = m1.impl_dot_row_column_real(0, &m2, 1);
+        let x11 = m1.impl_dot_row_column_real(1, &m2, 1);
+        let x21 = m1.impl_dot_row_column_real(2, &m2, 1);
+
+        assert_relative_eq!(x00, 27.0);
+        assert_relative_eq!(x10, 1.0);
+        assert_relative_eq!(x20, 12.0);
+
+        assert_relative_eq!(x01, 7.0);
+        assert_relative_eq!(x11, 1.0);
+        assert_relative_eq!(x21, 4.0);
     }
 
     // ================================
