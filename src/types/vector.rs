@@ -5,7 +5,7 @@ use std::{
     cmp::Ordering,
     fmt,
     iter::{IntoIterator, Sum},
-    ops::{Add, Deref, DerefMut, Index, IndexMut, Mul, Neg, Sub},
+    ops::{Add, AddAssign, Deref, DerefMut, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign},
     slice::SliceIndex,
 };
 
@@ -3093,6 +3093,95 @@ where
             *x = self[i] * rhs;
         }
         Self { components: *new_components }
+    }
+}
+
+// Assign traits
+
+/// Implements the [`AddAssign`] trait for in-place vector addition (`+=`).
+///
+/// This allows idiomatic Rust usage such as:
+///
+/// ```
+/// # use vectora::types::vector::Vector;
+/// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+/// let w = Vector::<i32, 3>::from([4, 5, 6]);
+/// v += w;
+/// assert_eq!(v, Vector::from([5, 7, 9]));
+/// ```
+impl<T, const N: usize> AddAssign for Vector<T, N>
+where
+    T: num::Num + Copy + Sync + Send,
+{
+    fn add_assign(&mut self, rhs: Self) {
+        for i in 0..N {
+            self.components[i] = self.components[i] + rhs.components[i];
+        }
+    }
+}
+
+/// Implements the [`SubAssign`] trait for in-place vector subtraction (`-=`).
+///
+/// This allows idiomatic Rust usage such as:
+///
+/// ```
+/// # use vectora::types::vector::Vector;
+/// let mut v = Vector::<i32, 3>::from([4, 5, 6]);
+/// let w = Vector::<i32, 3>::from([1, 2, 3]);
+/// v -= w;
+/// assert_eq!(v, Vector::from([3, 3, 3]));
+/// ```
+impl<T, const N: usize> SubAssign for Vector<T, N>
+where
+    T: num::Num + Copy + Sync + Send,
+{
+    fn sub_assign(&mut self, rhs: Self) {
+        for i in 0..N {
+            self.components[i] = self.components[i] - rhs.components[i];
+        }
+    }
+}
+
+/// Implements the [`MulAssign`] trait for in-place scalar multiplication (`*=`).
+///
+/// This allows idiomatic Rust usage such as:
+///
+/// ```
+/// # use vectora::types::vector::Vector;
+/// let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+/// v *= 2;
+/// assert_eq!(v, Vector::from([2, 4, 6]));
+/// ```
+impl<T, const N: usize> MulAssign<T> for Vector<T, N>
+where
+    T: num::Num + Copy + Sync + Send,
+{
+    fn mul_assign(&mut self, rhs: T) {
+        for i in 0..N {
+            self.components[i] = self.components[i] * rhs;
+        }
+    }
+}
+
+/// Implements the [`MulAssign`] trait for in-place scalar multiplication of a vector of complex numbers by a real scalar (`*=`).
+///
+/// This allows idiomatic Rust usage such as:
+///
+/// ```
+/// # use vectora::types::vector::Vector;
+/// # use num::complex::Complex;
+/// let mut v = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+/// v *= 2.0;
+/// assert_eq!(v, Vector::from([Complex::new(2.0, 4.0), Complex::new(6.0, 8.0)]));
+/// ```
+impl<T, const N: usize> MulAssign<T> for Vector<Complex<T>, N>
+where
+    T: num::Num + Copy + Sync + Send,
+{
+    fn mul_assign(&mut self, rhs: T) {
+        for i in 0..N {
+            self.components[i] = self.components[i] * rhs;
+        }
     }
 }
 
@@ -7577,6 +7666,138 @@ mod tests {
     fn vector_method_mut_mul_overflow_panic() {
         let mut v1: Vector<u8, 2> = Vector::from([2, 2]);
         let _ = v1.mut_mul(u8::MAX);
+    }
+
+    #[test]
+    fn add_assign_trait_in_place_addition() {
+        // Basic addition
+        let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+        let w = Vector::<i32, 3>::from([4, 5, 6]);
+        v += w;
+        assert_eq!(v, Vector::from([5, 7, 9]));
+
+        // Addition with zero vector
+        let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+        let zero = Vector::<i32, 3>::zero();
+        v += zero;
+        assert_eq!(v, Vector::from([1, 2, 3]));
+
+        // Addition with negative vector
+        let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+        let neg = Vector::<i32, 3>::from([-1, -2, -3]);
+        v += neg;
+        assert_eq!(v, Vector::from([0, 0, 0]));
+
+        // Chained addition
+        let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+        v += Vector::from([1, 1, 1]);
+        v += Vector::from([2, 2, 2]);
+        assert_eq!(v, Vector::from([4, 5, 6]));
+
+        // Complex numbers
+        let mut v =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let w = Vector::<Complex<f64>, 2>::from([Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        v += w;
+        assert_eq!(v, Vector::from([Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]));
+    }
+
+    #[test]
+    fn sub_assign_trait_in_place_subtraction() {
+        // Basic subtraction
+        let mut v = Vector::<i32, 3>::from([4, 5, 6]);
+        let w = Vector::<i32, 3>::from([1, 2, 3]);
+        v -= w;
+        assert_eq!(v, Vector::from([3, 3, 3]));
+
+        // Subtraction with zero vector
+        let mut v = Vector::<i32, 3>::from([4, 5, 6]);
+        let zero = Vector::<i32, 3>::zero();
+        v -= zero;
+        assert_eq!(v, Vector::from([4, 5, 6]));
+
+        // Subtraction with negative vector
+        let mut v = Vector::<i32, 3>::from([4, 5, 6]);
+        let neg = Vector::<i32, 3>::from([-1, -2, -3]);
+        v -= neg;
+        assert_eq!(v, Vector::from([5, 7, 9]));
+
+        // Chained subtraction
+        let mut v = Vector::<i32, 3>::from([10, 10, 10]);
+        v -= Vector::from([1, 2, 3]);
+        v -= Vector::from([2, 2, 2]);
+        assert_eq!(v, Vector::from([7, 6, 5]));
+
+        // Complex numbers
+        let mut v =
+            Vector::<Complex<f64>, 2>::from([Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let w = Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        v -= w;
+        assert_eq!(v, Vector::from([Complex::new(4.0, 4.0), Complex::new(4.0, 4.0)]));
+    }
+
+    #[test]
+    fn mul_assign_trait_in_place_scalar_multiplication() {
+        // Basic multiplication
+        let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+        v *= 2;
+        assert_eq!(v, Vector::from([2, 4, 6]));
+
+        // Multiplication by zero
+        let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+        v *= 0;
+        assert_eq!(v, Vector::zero());
+
+        // Multiplication by negative
+        let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+        v *= -1;
+        assert_eq!(v, Vector::from([-1, -2, -3]));
+
+        // Chained multiplication
+        let mut v = Vector::<i32, 3>::from([1, 2, 3]);
+        v *= 2;
+        v *= 3;
+        assert_eq!(v, Vector::from([6, 12, 18]));
+
+        // Complex numbers
+        let mut v =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        v *= Complex::<f64>::from(2.0);
+        assert_eq!(v, Vector::from([Complex::new(2.0, 4.0), Complex::new(6.0, 8.0)]));
+
+        // Complex numbers, negative scalar
+        let mut v =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        v *= Complex::<f64>::from(-1.0);
+        assert_eq!(v, Vector::from([Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]));
+    }
+
+    #[test]
+    fn mul_assign_trait_in_place_scalar_multiplication_complex_real_scalar() {
+        // Basic multiplication with real scalar
+        let mut v =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        v *= 2.0;
+        assert_eq!(v, Vector::from([Complex::new(2.0, 4.0), Complex::new(6.0, 8.0)]));
+
+        // Multiplication by zero
+        let mut v =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        v *= 0.0;
+        assert_eq!(v, Vector::from([Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)]));
+
+        // Multiplication by negative real scalar
+        let mut v =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        v *= -1.0;
+        assert_eq!(v, Vector::from([Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]));
+
+        // Chained multiplication
+        let mut v =
+            Vector::<Complex<f64>, 2>::from([Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        v *= 2.0;
+        v *= 3.0;
+        assert_eq!(v, Vector::from([Complex::new(6.0, 12.0), Complex::new(18.0, 24.0)]));
     }
 
     #[test]
