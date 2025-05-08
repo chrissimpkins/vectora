@@ -1999,8 +1999,8 @@ where
     /// approaches to underflow and overflow are:
     ///
     /// - On underflow: take all items in the iterator and fill subsequent
-    /// undefined data components with the default value for the numeric type
-    /// (`T::default`)
+    ///   undefined data components with the default value for the numeric type
+    ///   (`T::default`)
     /// - On overflow: truncate data after the first N items in the iterator
     ///
     /// # Examples
