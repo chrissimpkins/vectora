@@ -198,7 +198,7 @@ where
     ///
     /// # Type Requirements
     ///
-    /// - `T` must implement [`Zero`] (from the `num` crate).
+    /// - `T` must implement [`num::Zero`] (from the `num` crate).
     ///
     /// # Examples
     ///
@@ -252,7 +252,7 @@ where
     ///
     /// # Type Requirements
     ///
-    /// - `T` must implement [`One`] (from the `num` crate).
+    /// - `T` must implement [`num::One`] (from the `num` crate).
     ///
     /// # Examples
     ///
