@@ -420,7 +420,7 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
             .as_slice()
             .iter()
             .zip(other.as_slice())
-            .map(|(a, b)| (*a - *b).abs().powf(p.clone()))
+            .map(|(a, b)| (*a - *b).abs().powf(p))
             .sum::<T>()
             .powf(T::one() / p))
     }
@@ -600,7 +600,7 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
             .as_slice()
             .iter()
             .zip(other.as_slice())
-            .map(|(a, b)| (*a - *b).norm().powf(p.clone()))
+            .map(|(a, b)| (*a - *b).norm().powf(p))
             .sum::<N>()
             .powf(N::one() / p))
     }
@@ -637,7 +637,7 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
         if p < N::one() {
             return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
         }
-        Ok(self.as_slice().iter().map(|a| a.norm().powf(p.clone())).sum::<N>().powf(N::one() / p))
+        Ok(self.as_slice().iter().map(|a| a.norm().powf(p)).sum::<N>().powf(N::one() / p))
     }
 
     /// Alias for norm (magnitude).
