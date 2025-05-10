@@ -893,6 +893,8 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod errors;
+pub mod macros;
 pub mod types;
 
+pub use types::flexvector::FlexVector;
 pub use types::vector::Vector;

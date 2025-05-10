@@ -1,4 +1,4 @@
-//! Vector types.
+//! Vector type.
 
 use std::{
     borrow::{Borrow, BorrowMut},
@@ -402,6 +402,12 @@ where
     }
 }
 
+// ================================
+//
+// Default trait impl
+//
+// ================================
+
 impl<T, const N: usize> Default for Vector<T, N>
 where
     T: Num + Copy + Default + Sync + Send,
@@ -428,7 +434,6 @@ where
 // Display trait impl
 //
 // ================================
-
 impl<T, const N: usize> fmt::Display for Vector<T, N>
 where
     T: Num + Copy + Default + Sync + Send + fmt::Debug,
@@ -437,6 +442,42 @@ where
         write!(f, "{:?}", self.components)
     }
 }
+
+// ================================
+//
+// VectorOps trait impl
+//
+// ================================
+// TODO: add VectorOps trait impl and remove methods that it defines here
+// impl<T, const N: usize> VectorOps<T> for Vector<T, N>
+// where
+//     T: num::Num + Copy,
+// {
+//     type Output = Vector<T, N>;
+//
+//     fn translate(&self, other: &Self) -> Self::Output
+//     where
+//         T: num::Num + Copy,
+//     {
+//         let mut result = [T::zero(); N];
+//         for i in 0..N {
+//             result[i] = self.components[i] + other.components[i];
+//         }
+//         Vector { components: result }
+//     }
+//
+//     fn lerp(&self, end: &Self, weight: T) -> Self::Output
+//     where
+//         T: num::Num + Copy + PartialOrd,
+//     {
+//         assert!(weight >= T::zero() && weight <= T::one(), "weight must be in [0, 1]");
+//         let mut new_components = [T::zero(); N];
+//         for i in 0..N {
+//             new_components[i] = (T::one() - weight) * self.components[i] + weight * end.components[i];
+//         }
+//         Vector { components: new_components }
+//     }
+// }
 
 impl<T, const N: usize> Vector<T, N>
 where
@@ -734,6 +775,7 @@ where
     /// let i64_floor_v = v.to_num_cast(|x| x.floor() as i64);
     /// assert_eq!(i64_floor_v, Vector::<i64, 3>::from([1, 2, 3]));
     /// ```
+    // TODO: remove me
     pub fn to_num_cast<U, V>(&self, closur: U) -> Vector<V, N>
     where
         U: Fn(T) -> V,
@@ -742,6 +784,29 @@ where
         let mut new_components: [V; N] = [V::zero(); N];
         self.components.iter().enumerate().for_each(|(i, x)| new_components[i] = closur(*x));
         Vector { components: new_components }
+    }
+
+    /// Returns a new Vector with each element mapped to a new value using the provided closure or function.
+    // TODO: add tests (replacement for to_num_cast and other map_ functions)
+    pub fn map<U, F>(&self, mut f: F) -> Vector<U, N>
+    where
+        F: FnMut(T) -> U,
+        U: num::Num + Copy + Sync + Send + Default,
+    {
+        let mut new_components: [U; N] = [U::default(); N];
+        self.components.iter().enumerate().for_each(|(i, &x)| new_components[i] = f(x));
+        Vector { components: new_components }
+    }
+
+    /// Applies a closure or function to each element, modifying them in place.
+    // TODO: add tests
+    pub fn mut_map<F>(&mut self, mut f: F)
+    where
+        F: FnMut(T) -> T,
+    {
+        for x in self.components.iter_mut() {
+            *x = f(*x);
+        }
     }
 
     /// Returns a new, allocated [`array`] representation of the [`Vector`] scalar data.
@@ -877,6 +942,7 @@ where
     /// assert_eq!(v[1], 7);
     /// assert_eq!(v[2], 9);
     /// ```
+    // TODO: remove me (default to += operator overload instead)
     pub fn mut_add(&mut self, rhs: &Vector<T, N>) -> &mut Self {
         self.components.iter_mut().zip(rhs).for_each(|(a, b)| *a = *a + *b);
 
@@ -904,6 +970,7 @@ where
     /// assert_eq!(v[1], -3);
     /// assert_eq!(v[2], -3);
     /// ```
+    // TODO: remove me (default to -= overload instead)
     pub fn mut_sub(&mut self, rhs: &Vector<T, N>) -> &mut Self {
         self.components.iter_mut().zip(rhs.iter()).for_each(|(a, b)| *a = *a - *b);
 
@@ -930,6 +997,7 @@ where
     /// assert_eq!(v[1], 8);
     /// assert_eq!(v[2], 12);
     /// ```
+    // TODO: remove me (default to *= operator overload instead)
     pub fn mut_mul(&mut self, scale: T) -> &mut Self {
         self.components.iter_mut().for_each(|a| *a = *a * scale);
 
@@ -987,6 +1055,7 @@ where
     /// assert_eq!(v[1], -2);
     /// assert_eq!(v[2], -3);
     /// ```
+    // TODO: remove me (not necessary)
     pub fn displacement(&self, from: &Vector<T, N>) -> Self {
         self.sub(*from)
     }
@@ -1044,6 +1113,7 @@ where
     /// assert_eq!(v_s[1], 20);
     /// assert_eq!(v_s[2], 30);
     /// ```
+    // TODO: remove me (not necessary)
     pub fn scale(&self, scale: T) -> Self {
         self.mul(scale)
     }
@@ -1062,6 +1132,7 @@ where
     /// assert_eq!(v[1], 20);
     /// assert_eq!(v[2], 30);
     /// ```
+    // TODO: remove (not necessary)
     pub fn mut_scale(&mut self, scale: T) -> &mut Self {
         self.mut_mul(scale)
     }
@@ -1105,6 +1176,7 @@ where
     /// assert_eq!(v[1], 7);
     /// assert_eq!(v[2], 9);
     /// ```
+    // TODO: remove me (not necessary)
     pub fn mut_translate(&mut self, translation_vector: &Vector<T, N>) -> &mut Self {
         self.mut_add(translation_vector)
     }
@@ -1128,6 +1200,7 @@ where
     ///
     /// assert_eq!(squared_v, Vector::from([1, 4, 9]));
     /// ```
+    // TODO: remove me (replaced by map)
     pub fn map_closure<U>(&self, closur: U) -> Self
     where
         U: Fn(T) -> T,
@@ -1156,6 +1229,7 @@ where
     ///
     /// assert_eq!(v, Vector::from([1, 4, 9]));
     /// ```
+    // TODO: remove me (replaced by mut_map)
     pub fn mut_map_closure<U>(&mut self, mut closur: U) -> &mut Self
     where
         U: FnMut(T) -> T,
@@ -1186,6 +1260,7 @@ where
     ///
     /// assert_eq!(squared_v, Vector::from([1, 4, 9]));
     /// ```
+    // TODO: remove me (replaced by map)
     pub fn map_fn(&self, func: fn(T) -> T) -> Self {
         let mut new_components: [T; N] = [T::zero(); N];
         self.components.iter().enumerate().for_each(|(i, x)| new_components[i] = func(*x));
@@ -1214,6 +1289,7 @@ where
     ///
     /// assert_eq!(v, Vector::from([1, 4, 9]));
     /// ```
+    // TODO: remove me (replaced by mut_map)
     pub fn mut_map_fn(&mut self, func: fn(T) -> T) -> &mut Self {
         self.components.iter_mut().for_each(|x| *x = func(*x));
         self
@@ -1362,6 +1438,7 @@ where
     ///
     /// assert_eq!(v_zero_o, v_zero);
     /// ```
+    // TODO: remove me (not necessary)
     pub fn opposite(&self) -> Self {
         -*self
     }
@@ -1398,6 +1475,7 @@ where
     /// This method supports floating point [`Vector`] types only. Please
     /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
     /// documentation for details on casting to floating point types.
+    // TODO: remove me (in VectorOps trait)
     pub fn distance(&self, other: &Vector<T, N>) -> T {
         (*self - *other).magnitude()
     }
@@ -1434,6 +1512,7 @@ where
     /// This method supports floating point [`Vector`] types only. Please
     /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
     /// documentation for details on casting to floating point types.
+    // TODO: remove me (in VectorOpsFloat and VectorOpsComplexFloat traits)
     pub fn lerp(&self, end: &Vector<T, N>, weight: T) -> Result<Self, VectorError>
     where
         T: std::fmt::Debug,
@@ -1482,6 +1561,7 @@ where
     /// This method supports floating point [`Vector`] types only. Please
     /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
     /// documentation for details on casting to floating point types.
+    // TODO: remove me (in VectorOpsFloat and VectorOpsComplexFloat traits)
     pub fn midpoint(&self, end: &Vector<T, N>) -> Self
     where
         T: std::fmt::Debug,
@@ -1514,6 +1594,7 @@ where
     /// This method supports floating point [`Vector`] types only. Please
     /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
     /// documentation for details on casting to floating point types.
+    // TODO: remove me (in VectorOpsFloat and VectorOpsComplexFloat traits)
     pub fn magnitude(&self) -> T {
         let x: T = self.components.iter().map(|a| *a * *a).sum();
         x.sqrt()
@@ -1538,6 +1619,7 @@ where
     /// This method supports floating point [`Vector`] types only. Please
     /// see the [Numeric Type Casts](../../index.html#numeric-type-casts)
     /// documentation for details on casting to floating point types.
+    // TODO: remove me (in VectorOpsFloat and VectorOpsComplexFloat traits)
     pub fn normalize(&self) -> Self
     where
         T: Float + Copy + Sync + Send + Sum,
