@@ -2,6 +2,8 @@
 
 use num::Complex;
 
+use crate::errors::VectorError;
+
 pub trait VectorBase<T> {
     // --- Core accessors ---
     /// ...
@@ -183,12 +185,66 @@ pub trait VectorOps<T>: VectorBase<T> {
         }
     }
 
+    /// Returns a new vector scaled by the given scalar.
+    fn scale(&self, scalar: T) -> Self::Output
+    where
+        T: num::Num + Copy,
+        Self::Output: std::iter::FromIterator<T>;
+
+    /// Scales the vector in place by the given scalar.
+    fn mut_scale(&mut self, scalar: T)
+    where
+        T: num::Num + Copy,
+    {
+        for a in self.as_mut_slice().iter_mut() {
+            *a = *a * scalar;
+        }
+    }
+
+    /// Returns a new vector with all elements negated.
+    fn negate(&self) -> Self::Output
+    where
+        T: std::ops::Neg<Output = T> + Clone,
+        Self::Output: std::iter::FromIterator<T>;
+
+    /// Negates all elements in place.
+    fn mut_negate(&mut self)
+    where
+        T: std::ops::Neg<Output = T> + Clone,
+    {
+        for a in self.as_mut_slice().iter_mut() {
+            *a = -a.clone();
+        }
+    }
+
+    /// Sets all elements to zero in place.
+    fn mut_zero(&mut self)
+    where
+        T: num::Zero + Clone,
+    {
+        for a in self.as_mut_slice().iter_mut() {
+            *a = T::zero();
+        }
+    }
+
     /// ...
     fn dot(&self, other: &Self) -> T
     where
         T: num::Num + Copy + std::iter::Sum<T>,
     {
         self.as_slice().iter().zip(other.as_slice()).map(|(a, b)| *a * *b).sum()
+    }
+
+    /// Dot product as f64 (for integer and float types).
+    fn dot_to_f64(&self, other: &Self) -> f64
+    where
+        T: num::ToPrimitive,
+    {
+        self.as_slice()
+            .iter()
+            .zip(other.as_slice())
+            .map(|(a, b)| a.to_f64().unwrap() * b.to_f64().unwrap())
+            .sum()
     }
 
     /// ...
@@ -222,33 +278,101 @@ pub trait VectorOps<T>: VectorBase<T> {
     {
         self.as_slice().iter().copied().max()
     }
+
+    /// L1 norm (sum of absolute values).
+    fn l1_norm(&self) -> T
+    where
+        T: num::Signed + Copy + std::iter::Sum<T>,
+    {
+        self.as_slice().iter().map(|a| a.abs()).sum()
+    }
+
+    /// L∞ norm (maximum absolute value).
+    fn linf_norm(&self) -> T
+    where
+        T: num::Signed + Copy + PartialOrd,
+    {
+        self.as_slice()
+            .iter()
+            .map(|a| a.abs())
+            .fold(T::zero(), |acc, x| if acc > x { acc } else { x })
+    }
 }
 
 pub trait VectorOpsFloat<T>: VectorBase<T> {
     type Output;
 
     /// ...
-    fn normalize(&self) -> Self::Output
+    fn normalize(&self) -> Result<Self::Output, VectorError>
     where
         T: num::Float + Clone + std::iter::Sum<T>,
         Self::Output: std::iter::FromIterator<T>;
 
     /// ...
-    fn mut_normalize(&mut self)
+    fn mut_normalize(&mut self) -> Result<(), VectorError>
     where
-        T: num::Float + Copy + std::iter::Sum<T>;
+        T: num::Float + Copy + std::iter::Sum<T>,
+    {
+        let n = self.norm();
+        if n == T::zero() {
+            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
+        }
+        for a in self.as_mut_slice().iter_mut() {
+            *a = *a / n;
+        }
+        Ok(())
+    }
+
+    /// Returns a new vector with the same direction and the given magnitude.
+    fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+        Self::Output: std::iter::FromIterator<T>;
+
+    /// ...
+    fn mut_normalize_to(&mut self, magnitude: T) -> Result<(), VectorError>
+    where
+        T: num::Float + Copy + std::iter::Sum<T>,
+    {
+        let n = self.norm();
+        if n == T::zero() {
+            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
+        }
+        let scale = magnitude / n;
+        for a in self.as_mut_slice().iter_mut() {
+            *a = *a * scale;
+        }
+        Ok(())
+    }
 
     /// Linear interpolation between self and end by weight in [0, 1].
-    fn lerp(&self, end: &Self, weight: T) -> Self::Output
+    fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
     where
         T: num::Float + Clone + PartialOrd;
+
+    /// In-place linear interpolation between self and end by weight in [0, 1].
+    fn mut_lerp(&mut self, end: &Self, weight: T) -> Result<(), VectorError>
+    where
+        T: num::Float + Copy + PartialOrd,
+    {
+        if weight < T::zero() || weight > T::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        let w = weight;
+        let one_minus_w = T::one() - w;
+        for (a, b) in self.as_mut_slice().iter_mut().zip(end.as_slice()) {
+            *a = one_minus_w * *a + w * *b;
+        }
+        Ok(())
+    }
 
     /// Midpoint
     fn midpoint(&self, end: &Self) -> Self::Output
     where
         T: num::Float + Clone,
     {
-        self.lerp(end, num::cast(0.5).unwrap())
+        // OK to unwrap because by definition it uses an in-range weight
+        self.lerp(end, num::cast(0.5).unwrap()).unwrap()
     }
 
     /// Euclidean distance between self and other.
@@ -264,12 +388,60 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
             .sqrt()
     }
 
+    /// Manhattan (L1) distance between self and other.
+    fn manhattan_distance(&self, other: &Self) -> T
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        self.as_slice().iter().zip(other.as_slice()).map(|(a, b)| (*a - *b).abs()).sum()
+    }
+
+    /// Chebyshev (L∞) distance between self and other.
+    fn chebyshev_distance(&self, other: &Self) -> T
+    where
+        T: num::Float + Clone + PartialOrd,
+    {
+        self.as_slice()
+            .iter()
+            .zip(other.as_slice())
+            .map(|(a, b)| (*a - *b).abs())
+            .fold(T::zero(), |acc, x| acc.max(x))
+    }
+
+    /// Minkowski (Lp) distance between self and other.
+    fn minkowski_distance(&self, other: &Self, p: T) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        if p < T::one() {
+            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
+        }
+        Ok(self
+            .as_slice()
+            .iter()
+            .zip(other.as_slice())
+            .map(|(a, b)| (*a - *b).abs().powf(p.clone()))
+            .sum::<T>()
+            .powf(T::one() / p))
+    }
+
     /// Euclidean norm (magnitude) of the vector.
     fn norm(&self) -> T
     where
         T: num::Float + Clone + std::iter::Sum<T>,
     {
         self.as_slice().iter().map(|a| (*a).powi(2)).sum::<T>().sqrt()
+    }
+
+    /// Lp norm (generalized Minkowski norm).
+    fn lp_norm(&self, p: T) -> Result<T, VectorError>
+    where
+        T: num::Float + Copy + std::iter::Sum<T>,
+    {
+        if p < T::one() {
+            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
+        }
+        Ok(self.as_slice().iter().map(|a| a.abs().powf(p)).sum::<T>().powf(T::one() / p))
     }
 
     /// Alias for norm (magnitude).
@@ -281,37 +453,109 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
     }
 }
 
-pub trait VectorOpsComplexFloat<F>: VectorBase<Complex<F>> {
+pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
     type Output;
 
     /// ...
-    fn normalize(&self) -> Self::Output
+    fn normalize(&self) -> Result<Self::Output, VectorError>
     where
-        F: num::Float + Clone + std::iter::Sum<F>,
-        Self::Output: std::iter::FromIterator<Complex<F>>;
+        N: num::Float + Clone + std::iter::Sum<N>,
+        Self::Output: std::iter::FromIterator<Complex<N>>;
 
     /// ...
-    fn mut_normalize(&mut self)
+    fn mut_normalize(&mut self) -> Result<(), VectorError>
     where
-        F: num::Float + Copy + std::iter::Sum<F>;
+        N: num::Float + Copy + std::iter::Sum<N>,
+    {
+        let n = self.norm();
+        if n == N::zero() {
+            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
+        }
+        for a in self.as_mut_slice().iter_mut() {
+            *a = *a / n;
+        }
+        Ok(())
+    }
+
+    /// Returns a new vector with the same direction and the given magnitude (real).
+    fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+        Self::Output: std::iter::FromIterator<Complex<N>>;
+
+    /// Scales the complex vector in place to the given (real) magnitude.
+    fn mut_normalize_to(&mut self, magnitude: N) -> Result<(), VectorError>
+    where
+        N: num::Float + Copy + std::iter::Sum<N>,
+    {
+        let n = self.norm();
+        if n == N::zero() {
+            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
+        }
+        let scale = magnitude / n;
+        for a in self.as_mut_slice().iter_mut() {
+            *a = *a * scale;
+        }
+        Ok(())
+    }
+
+    /// Hermitian dot product: for all complex types
+    fn dot(&self, other: &Self) -> Complex<N>
+    where
+        N: num::Num + Copy + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+    {
+        self.as_slice().iter().zip(other.as_slice()).map(|(a, b)| *a * b.conj()).sum()
+    }
+
+    /// Hermitian dot product as f64 (sums real part): for all complex types.
+    fn dot_to_f64(&self, other: &Self) -> f64
+    where
+        N: num::Num + num::ToPrimitive + Copy + std::ops::Neg<Output = N>,
+    {
+        self.as_slice()
+            .iter()
+            .zip(other.as_slice())
+            .map(|(a, b)| {
+                let prod = *a * b.conj();
+                prod.re.to_f64().unwrap()
+            })
+            .sum()
+    }
 
     /// Linear interpolation between self and end by real weight in [0, 1].
-    fn lerp(&self, end: &Self, weight: F) -> Self::Output
+    fn lerp(&self, end: &Self, weight: N) -> Result<Self::Output, VectorError>
     where
-        F: num::Float + Clone + PartialOrd;
+        N: num::Float + Clone + PartialOrd;
+
+    /// In-place linear interpolation between self and end by real weight in [0, 1].
+    fn mut_lerp(&mut self, end: &Self, weight: N) -> Result<(), VectorError>
+    where
+        N: num::Float + Copy + PartialOrd,
+    {
+        if weight < N::zero() || weight > N::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        let w = Complex::new(weight, N::zero());
+        let one_minus_w = Complex::new(N::one() - weight, N::zero());
+        for (a, b) in self.as_mut_slice().iter_mut().zip(end.as_slice()) {
+            *a = one_minus_w * *a + w * *b;
+        }
+        Ok(())
+    }
 
     /// Midpoint
     fn midpoint(&self, end: &Self) -> Self::Output
     where
-        F: num::Float + Clone,
+        N: num::Float + Clone,
     {
-        self.lerp(end, num::cast(0.5).unwrap())
+        // OK to unwrap because by definition it uses an in-range weight
+        self.lerp(end, num::cast(0.5).unwrap()).unwrap()
     }
 
     /// Euclidean distance (L2 norm) between self and other (returns real).
-    fn distance(&self, other: &Self) -> F
+    fn distance(&self, other: &Self) -> N
     where
-        F: num::Float + Clone + std::iter::Sum<F>,
+        N: num::Float + Clone + std::iter::Sum<N>,
     {
         self.as_slice()
             .iter()
@@ -320,22 +564,86 @@ pub trait VectorOpsComplexFloat<F>: VectorBase<Complex<F>> {
                 let diff = *a - *b;
                 diff.norm_sqr()
             })
-            .sum::<F>()
+            .sum::<N>()
             .sqrt()
     }
 
-    /// Euclidean norm (magnitude) of the vector (returns real).
-    fn norm(&self) -> F
+    /// Manhattan (L1) distance between self and other (sum of magnitudes of differences).
+    fn manhattan_distance(&self, other: &Self) -> N
     where
-        F: num::Float + Clone + std::iter::Sum<F>,
+        N: num::Float + Clone + std::iter::Sum<N>,
     {
-        self.as_slice().iter().map(|a| a.norm_sqr()).sum::<F>().sqrt()
+        self.as_slice().iter().zip(other.as_slice()).map(|(a, b)| (*a - *b).norm()).sum()
+    }
+
+    /// Chebyshev (L∞) distance between self and other (maximum magnitude of differences).
+    fn chebyshev_distance(&self, other: &Self) -> N
+    where
+        N: num::Float + Clone + PartialOrd,
+    {
+        self.as_slice()
+            .iter()
+            .zip(other.as_slice())
+            .map(|(a, b)| (*a - *b).norm())
+            .fold(N::zero(), |acc, x| acc.max(x))
+    }
+
+    /// Minkowski (Lp) distance between self and other.
+    fn minkowski_distance(&self, other: &Self, p: N) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        if p < N::one() {
+            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
+        }
+        Ok(self
+            .as_slice()
+            .iter()
+            .zip(other.as_slice())
+            .map(|(a, b)| (*a - *b).norm().powf(p.clone()))
+            .sum::<N>()
+            .powf(N::one() / p))
+    }
+
+    /// Euclidean norm (magnitude) of the vector (returns real).
+    fn norm(&self) -> N
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        self.as_slice().iter().map(|a| a.norm_sqr()).sum::<N>().sqrt()
+    }
+
+    /// L1 norm (sum of magnitudes).
+    fn l1_norm(&self) -> N
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        self.as_slice().iter().map(|a| a.norm()).sum()
+    }
+
+    /// L∞ norm (maximum magnitude).
+    fn linf_norm(&self) -> N
+    where
+        N: num::Float + Clone + PartialOrd,
+    {
+        self.as_slice().iter().map(|a| a.norm()).fold(N::zero(), |acc, x| acc.max(x))
+    }
+
+    /// Lp norm (generalized Minkowski norm for complex).
+    fn lp_norm(&self, p: N) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        if p < N::one() {
+            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
+        }
+        Ok(self.as_slice().iter().map(|a| a.norm().powf(p.clone())).sum::<N>().powf(N::one() / p))
     }
 
     /// Alias for norm (magnitude).
-    fn magnitude(&self) -> F
+    fn magnitude(&self) -> N
     where
-        F: num::Float + Clone + std::iter::Sum<F>,
+        N: num::Float + Clone + std::iter::Sum<N>,
     {
         self.norm()
     }
