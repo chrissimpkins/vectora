@@ -1,5 +1,7 @@
 //! FlexVector type.
 
+use std::iter::FromIterator;
+
 use crate::{
     impl_vector_binop, impl_vector_binop_assign, impl_vector_scalar_div_op,
     impl_vector_scalar_div_op_assign, impl_vector_scalar_op, impl_vector_scalar_op_assign,
@@ -109,6 +111,20 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.components)
+    }
+}
+
+// ================================
+//
+// FromIter trait impl
+//
+// ================================
+impl<T> FromIterator<T> for FlexVector<T>
+where
+    T: num::Num + Clone + Sync + Send,
+{
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        FlexVector { components: iter.into_iter().collect() }
     }
 }
 
@@ -613,6 +629,36 @@ mod tests {
     fn test_display_empty() {
         let v = FlexVector::<i32>::new();
         assert_eq!(format!("{}", v), "[]");
+    }
+
+    // ================================
+    //
+    // FromIterator trait tests
+    //
+    // ================================
+    #[test]
+    fn test_from_iter_i32() {
+        let v: FlexVector<i32> = (1..4).collect();
+        assert_eq!(v.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_from_iter_f64() {
+        let v: FlexVector<f64> = vec![1.1, 2.2, 3.3].into_iter().collect();
+        assert_eq!(v.as_slice(), &[1.1, 2.2, 3.3]);
+    }
+
+    #[test]
+    fn test_from_iter_complex() {
+        let data = vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let v: FlexVector<Complex<f64>> = data.clone().into_iter().collect();
+        assert_eq!(v.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+    }
+
+    #[test]
+    fn test_from_iter_empty() {
+        let v: FlexVector<i32> = Vec::<i32>::new().into_iter().collect();
+        assert!(v.is_empty());
     }
 
     // ================================
