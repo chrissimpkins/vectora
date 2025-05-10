@@ -11,8 +11,7 @@ use crate::{
 
 use crate::errors::VectorError;
 
-use num::Complex;
-use num::Num;
+use num::{Complex, Num};
 
 /// A dynamic, heap-allocated vector type for n-dimensional real and complex scalar data.
 ///
@@ -160,7 +159,7 @@ impl<T> VectorOps<T> for FlexVector<T>
 where
     T: num::Num + Clone + Sync + Send,
 {
-    type Output = Vec<T>;
+    type Output = Self;
 
     #[inline]
     fn translate(&self, other: &Self) -> Self::Output
@@ -187,6 +186,25 @@ where
     {
         self.as_slice().iter().map(|a| -a.clone()).collect()
     }
+
+    /// Cross product (only for 3D vectors).
+    #[inline]
+    fn cross(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Num + Copy,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        if self.len() != 3 || other.len() != 3 {
+            return Err(VectorError::OutOfRangeError(
+                "Cross product is only defined for 3D vectors".to_string(),
+            ));
+        }
+        let a = self.as_slice();
+        let b = other.as_slice();
+        let result =
+            [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+        Ok(result.into_iter().collect())
+    }
 }
 
 // ================================
@@ -199,7 +217,7 @@ impl<T> VectorOpsFloat<T> for FlexVector<T>
 where
     T: num::Float + Clone + PartialOrd + std::iter::Sum<T> + Sync + Send,
 {
-    type Output = Vec<T>;
+    type Output = Self;
 
     #[inline]
     fn normalize(&self) -> Result<Self::Output, VectorError> {
@@ -242,6 +260,24 @@ where
             .map(|(a, b)| one_minus_w * *a + w * *b)
             .collect())
     }
+
+    #[inline]
+    fn angle_with(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        let norm_self = self.norm();
+        let norm_other = other.norm();
+        if norm_self == T::zero() || norm_other == T::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot compute angle with zero vector".to_string(),
+            ));
+        }
+        let dot = self.dot(other);
+        let cos_theta = dot / (norm_self * norm_other);
+        let cos_theta = cos_theta.max(-T::one()).min(T::one());
+        Ok(cos_theta.acos())
+    }
 }
 
 // ================================
@@ -254,7 +290,7 @@ impl<N> VectorOpsComplex<N> for FlexVector<Complex<N>>
 where
     N: num::Float + Clone + PartialOrd + std::iter::Sum<N> + Sync + Send,
 {
-    type Output = Vec<Complex<N>>;
+    type Output = Self;
 
     #[inline]
     fn normalize(&self) -> Result<Self::Output, VectorError>
