@@ -201,13 +201,13 @@ where
         if weight < T::zero() || weight > T::one() {
             return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
         }
-        let w = weight.clone();
-        let one_minus_w = T::one() - w.clone();
+        let w = weight;
+        let one_minus_w = T::one() - w;
         Ok(self
             .components
             .iter()
             .zip(&end.components)
-            .map(|(a, b)| one_minus_w.clone() * a.clone() + w.clone() * b.clone())
+            .map(|(a, b)| one_minus_w * *a + w * *b)
             .collect())
     }
 }
@@ -256,13 +256,13 @@ where
         if weight < N::zero() || weight > N::one() {
             return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
         }
-        let w = Complex::new(weight.clone(), N::zero());
-        let one_minus_w = Complex::new(N::one() - weight.clone(), N::zero());
+        let w = Complex::new(weight, N::zero());
+        let one_minus_w = Complex::new(N::one() - weight, N::zero());
         Ok(self
             .components
             .iter()
             .zip(&end.components)
-            .map(|(a, b)| one_minus_w.clone() * a.clone() + w.clone() * b.clone())
+            .map(|(a, b)| one_minus_w * *a + w * *b)
             .collect())
     }
 }
