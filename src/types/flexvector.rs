@@ -35,16 +35,19 @@ where
     T: Num + Clone + Default + Sync + Send,
 {
     /// Creates a new, empty FlexVector.
+    #[inline]
     pub fn new() -> Self {
         Self { components: Vec::new() }
     }
 
     /// Creates a new FlexVector with a pre-allocated capacity.
+    #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self { components: Vec::with_capacity(capacity) }
     }
 
     /// Returns a new FlexVector of the given length, filled with zeros.
+    #[inline]
     pub fn zero(len: usize) -> Self
     where
         T: num::Zero,
@@ -53,6 +56,7 @@ where
     }
 
     /// Returns a new FlexVector of the given length, filled with ones.
+    #[inline]
     pub fn one(len: usize) -> Self
     where
         T: num::One,
@@ -61,16 +65,19 @@ where
     }
 
     /// Returns a new FlexVector of the given length, filled with the given value.
+    #[inline]
     pub fn filled(len: usize, value: T) -> Self {
         Self { components: vec![value; len] }
     }
 
     /// Creates a new FlexVector from a slice.
+    #[inline]
     pub fn from_slice(slice: &[T]) -> Self {
         Self { components: slice.to_vec() }
     }
 
     /// Creates a FlexVector from a Vec.
+    #[inline]
     pub fn from_vec(vec: Vec<T>) -> Self {
         Self { components: vec }
     }
@@ -85,6 +92,7 @@ impl<T> Default for FlexVector<T>
 where
     T: num::Num + Clone + Default + Sync + Send,
 {
+    #[inline]
     fn default() -> Self {
         Self::new()
     }
@@ -114,11 +122,13 @@ where
     T: num::Num + Clone + Sync + Send,
 {
     /// Returns an immutable slice of the FlexVector's components.
+    #[inline]
     fn as_slice(&self) -> &[T] {
         &self.components
     }
 
     /// Returns a mutable slice of the FlexVector's components.
+    #[inline]
     fn as_mut_slice(&mut self) -> &mut [T] {
         &mut self.components[..]
     }
@@ -136,6 +146,7 @@ where
 {
     type Output = Vec<T>;
 
+    #[inline]
     fn translate(&self, other: &Self) -> Self::Output
     where
         T: num::Num + Clone,
@@ -143,6 +154,7 @@ where
         self.components.iter().zip(&other.components).map(|(a, b)| a.clone() + b.clone()).collect()
     }
 
+    #[inline]
     fn scale(&self, scalar: T) -> Self::Output
     where
         T: num::Num + Copy,
@@ -151,6 +163,7 @@ where
         self.as_slice().iter().map(|a| *a * scalar).collect()
     }
 
+    #[inline]
     fn negate(&self) -> Self::Output
     where
         T: std::ops::Neg<Output = T> + Clone,
@@ -172,6 +185,7 @@ where
 {
     type Output = Vec<T>;
 
+    #[inline]
     fn normalize(&self) -> Result<Self::Output, VectorError> {
         let n = self.norm();
         if n == T::zero() {
@@ -181,6 +195,7 @@ where
     }
 
     /// Returns a new vector with the same direction and the given magnitude.
+    #[inline]
     fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
     where
         T: num::Float + Clone + std::iter::Sum<T>,
@@ -194,6 +209,7 @@ where
         Ok(self.as_slice().iter().map(|a| *a * scale).collect())
     }
 
+    #[inline]
     fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
     where
         T: num::Float + Clone + PartialOrd,
@@ -224,6 +240,7 @@ where
 {
     type Output = Vec<Complex<N>>;
 
+    #[inline]
     fn normalize(&self) -> Result<Self::Output, VectorError>
     where
         N: num::Float + Clone + std::iter::Sum<N>,
@@ -236,6 +253,7 @@ where
         Ok(self.components.iter().map(|a| *a / n).collect())
     }
 
+    #[inline]
     fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
     where
         N: num::Float + Clone + std::iter::Sum<N>,
@@ -249,6 +267,7 @@ where
         Ok(self.as_slice().iter().map(|a| *a * scale).collect())
     }
 
+    #[inline]
     fn lerp(&self, end: &Self, weight: N) -> Result<Self::Output, VectorError>
     where
         N: num::Float + Clone + PartialOrd,
@@ -277,37 +296,44 @@ where
     T: num::Num + Clone + Sync + Send,
 {
     /// Adds an element to the end of the vector.
+    #[inline]
     pub fn push(&mut self, value: T) {
         self.components.push(value);
     }
 
     /// Removes the last element and returns it, or None if empty.
+    #[inline]
     pub fn pop(&mut self) -> Option<T> {
         self.components.pop()
     }
 
     /// Inserts an element at position index, shifting all elements after it.
+    #[inline]
     pub fn insert(&mut self, index: usize, value: T) {
         self.components.insert(index, value);
     }
 
     /// Removes and returns the element at position index.
+    #[inline]
     pub fn remove(&mut self, index: usize) -> T {
         self.components.remove(index)
     }
 
     /// Resizes the vector in-place.
+    #[inline]
     pub fn resize(&mut self, new_len: usize, value: T) {
         self.components.resize(new_len, value);
     }
 
     /// Clears the vector, removing all values.
+    #[inline]
     pub fn clear(&mut self) {
         self.components.clear();
     }
 
     /// Returns a mutable reference to a FlexVector index value or range,
     /// or `None` if the index is out of bounds.
+    #[inline]
     pub fn get_mut<I>(&mut self, index: I) -> Option<&mut I::Output>
     where
         I: std::slice::SliceIndex<[T]>,
@@ -316,11 +342,13 @@ where
     }
 
     /// Returns an iterator over mutable references to the elements.
+    #[inline]
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
         self.components.iter_mut()
     }
 
     /// Returns a new FlexVector with each element mapped to a new value using the provided closure or function.
+    #[inline]
     pub fn map<U, F>(&self, mut f: F) -> FlexVector<U>
     where
         F: FnMut(T) -> U,
@@ -331,6 +359,7 @@ where
     }
 
     /// Applies a closure or function to each element, modifying them in place.
+    #[inline]
     pub fn mut_map<F>(&mut self, mut f: F)
     where
         F: FnMut(T) -> T,
@@ -342,6 +371,7 @@ where
     }
 
     /// Cosine similarity between self and other.
+    #[inline]
     pub fn cosine_similarity(&self, other: &Self) -> T
     where
         T: num::Float + Clone + std::iter::Sum<T>,
