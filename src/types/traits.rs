@@ -276,6 +276,12 @@ pub trait VectorOps<T>: VectorBase<T> {
             .sum()
     }
 
+    ///...
+    fn cross(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Num + Copy,
+        Self::Output: std::iter::FromIterator<T>;
+
     /// ...
     #[inline]
     fn sum(&self) -> T
@@ -497,6 +503,10 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
     {
         self.norm()
     }
+
+    fn angle_with(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>;
 }
 
 pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
