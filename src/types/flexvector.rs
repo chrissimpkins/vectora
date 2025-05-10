@@ -1,6 +1,7 @@
 //! FlexVector type.
 
 use std::iter::FromIterator;
+use std::ops::{Deref, DerefMut};
 
 use crate::{
     impl_vector_binop, impl_vector_binop_assign, impl_vector_scalar_div_op,
@@ -11,17 +12,14 @@ use crate::{
 
 use crate::errors::VectorError;
 
-use num::{Complex, Num};
+use num::{Complex, Zero};
 
 /// A dynamic, heap-allocated vector type for n-dimensional real and complex scalar data.
 ///
 /// The length of the vector is determined at runtime and stored on the heap.
 /// This type is analogous to `Vector<T, N>` but supports dynamic sizing.
 #[derive(Clone, Debug)]
-pub struct FlexVector<T>
-where
-    T: Num + Clone + Sync + Send,
-{
+pub struct FlexVector<T> {
     /// Ordered n-dimensional scalar values.
     pub components: Vec<T>,
 }
@@ -31,10 +29,7 @@ where
 // Constructors
 //
 // ================================
-impl<T> FlexVector<T>
-where
-    T: Num + Clone + Default + Sync + Send,
-{
+impl<T> FlexVector<T> {
     /// Creates a new, empty FlexVector.
     #[inline]
     pub fn new() -> Self {
@@ -51,7 +46,7 @@ where
     #[inline]
     pub fn zero(len: usize) -> Self
     where
-        T: num::Zero,
+        T: num::Zero + Clone,
     {
         Self { components: vec![T::zero(); len] }
     }
@@ -60,20 +55,26 @@ where
     #[inline]
     pub fn one(len: usize) -> Self
     where
-        T: num::One,
+        T: num::One + Clone,
     {
         Self { components: vec![T::one(); len] }
     }
 
     /// Returns a new FlexVector of the given length, filled with the given value.
     #[inline]
-    pub fn filled(len: usize, value: T) -> Self {
+    pub fn filled(len: usize, value: T) -> Self
+    where
+        T: Clone,
+    {
         Self { components: vec![value; len] }
     }
 
     /// Creates a new FlexVector from a slice.
     #[inline]
-    pub fn from_slice(slice: &[T]) -> Self {
+    pub fn from_slice(slice: &[T]) -> Self
+    where
+        T: Clone,
+    {
         Self { components: slice.to_vec() }
     }
 
@@ -89,10 +90,7 @@ where
 // Default trait impl
 //
 // ================================
-impl<T> Default for FlexVector<T>
-where
-    T: num::Num + Clone + Default + Sync + Send,
-{
+impl<T> Default for FlexVector<T> {
     #[inline]
     fn default() -> Self {
         Self::new()
@@ -106,7 +104,7 @@ where
 // ================================
 impl<T> std::fmt::Display for FlexVector<T>
 where
-    T: num::Num + Clone + Sync + Send + std::fmt::Debug,
+    T: std::fmt::Debug,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.components)
@@ -115,15 +113,161 @@ where
 
 // ================================
 //
-// FromIter trait impl
+// FromIterator trait impl
 //
 // ================================
-impl<T> FromIterator<T> for FlexVector<T>
-where
-    T: num::Num + Clone + Sync + Send,
-{
+impl<T> FromIterator<T> for FlexVector<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         FlexVector { components: iter.into_iter().collect() }
+    }
+}
+
+// ================================
+//
+// Deref/DerefMut trait impl
+//
+// ================================
+impl<T> Deref for FlexVector<T> {
+    type Target = [T];
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.components
+    }
+}
+
+impl<T> DerefMut for FlexVector<T> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.components
+    }
+}
+
+// ================================
+//
+// AsRef/AsMut trait impl
+//
+// ================================
+impl<T> AsRef<[T]> for FlexVector<T> {
+    #[inline]
+    fn as_ref(&self) -> &[T] {
+        &self.components
+    }
+}
+impl<T> AsMut<[T]> for FlexVector<T> {
+    #[inline]
+    fn as_mut(&mut self) -> &mut [T] {
+        &mut self.components
+    }
+}
+
+// ================================
+//
+// IntoIterator trait impl
+//
+// ================================
+impl<T> IntoIterator for FlexVector<T> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.components.into_iter()
+    }
+}
+impl<'a, T> IntoIterator for &'a FlexVector<T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.components.iter()
+    }
+}
+impl<'a, T> IntoIterator for &'a mut FlexVector<T> {
+    type Item = &'a mut T;
+    type IntoIter = std::slice::IterMut<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.components.iter_mut()
+    }
+}
+
+// ================================
+//
+// PartialEq/Eq trait impl
+//
+// ================================
+impl<T> PartialEq for FlexVector<T>
+where
+    T: PartialEq,
+{
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.components == other.components
+    }
+}
+impl<T> Eq for FlexVector<T> where T: Eq {}
+
+// ================================
+//
+// PartialOrd/Ord trait impl
+//
+// ================================
+impl<T> PartialOrd for FlexVector<T>
+where
+    T: PartialOrd,
+{
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.components.partial_cmp(&other.components)
+    }
+}
+impl<T> Ord for FlexVector<T>
+where
+    T: Ord,
+{
+    #[inline]
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.components.cmp(&other.components)
+    }
+}
+
+// ================================
+//
+// Hash trait impl
+//
+// ================================
+impl<T> std::hash::Hash for FlexVector<T>
+where
+    T: std::hash::Hash,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.components.hash(state)
+    }
+}
+
+// ================================
+//
+// From trait impl
+//
+// ================================
+impl<T> From<Vec<T>> for FlexVector<T> {
+    #[inline]
+    fn from(vec: Vec<T>) -> Self {
+        FlexVector { components: vec }
+    }
+}
+impl<T: Clone> From<&[T]> for FlexVector<T> {
+    #[inline]
+    fn from(slice: &[T]) -> Self {
+        FlexVector { components: slice.to_vec() }
+    }
+}
+
+// ================================
+//
+// Extend trait impl
+//
+// ================================
+impl<T> Extend<T> for FlexVector<T> {
+    #[inline]
+    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
+        self.components.extend(iter)
     }
 }
 
@@ -132,10 +276,7 @@ where
 // VectorBase trait impl
 //
 // ================================
-impl<T> VectorBase<T> for FlexVector<T>
-where
-    T: num::Num + Clone + Sync + Send,
-{
+impl<T> VectorBase<T> for FlexVector<T> {
     /// Returns an immutable slice of the FlexVector's components.
     #[inline]
     fn as_slice(&self) -> &[T] {
@@ -157,7 +298,7 @@ where
 // TODO: add tests
 impl<T> VectorOps<T> for FlexVector<T>
 where
-    T: num::Num + Clone + Sync + Send,
+    T: num::Num + Clone,
 {
     type Output = Self;
 
@@ -215,7 +356,7 @@ where
 // TODO: add tests
 impl<T> VectorOpsFloat<T> for FlexVector<T>
 where
-    T: num::Float + Clone + PartialOrd + std::iter::Sum<T> + Sync + Send,
+    T: num::Float + Clone + std::iter::Sum<T>,
 {
     type Output = Self;
 
@@ -232,7 +373,6 @@ where
     #[inline]
     fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
     where
-        T: num::Float + Clone + std::iter::Sum<T>,
         Self::Output: std::iter::FromIterator<T>,
     {
         let n = self.norm();
@@ -246,7 +386,7 @@ where
     #[inline]
     fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
     where
-        T: num::Float + Clone + PartialOrd,
+        T: PartialOrd,
     {
         if weight < T::zero() || weight > T::one() {
             return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
@@ -262,10 +402,7 @@ where
     }
 
     #[inline]
-    fn angle_with(&self, other: &Self) -> Result<T, VectorError>
-    where
-        T: num::Float + Clone + std::iter::Sum<T>,
-    {
+    fn angle_with(&self, other: &Self) -> Result<T, VectorError> {
         let norm_self = self.norm();
         let norm_other = other.norm();
         if norm_self == T::zero() || norm_other == T::zero() {
@@ -278,6 +415,21 @@ where
         let cos_theta = cos_theta.max(-T::one()).min(T::one());
         Ok(cos_theta.acos())
     }
+
+    #[inline]
+    fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        let denom = other.dot(other);
+        if denom == T::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot project onto zero vector".to_string(),
+            ));
+        }
+        let scalar = self.dot(other) / denom;
+        Ok(other.as_slice().iter().map(|b| *b * scalar).collect())
+    }
 }
 
 // ================================
@@ -288,14 +440,13 @@ where
 // TODO: add tests
 impl<N> VectorOpsComplex<N> for FlexVector<Complex<N>>
 where
-    N: num::Float + Clone + PartialOrd + std::iter::Sum<N> + Sync + Send,
+    N: num::Float + Clone + std::iter::Sum<N>,
 {
     type Output = Self;
 
     #[inline]
     fn normalize(&self) -> Result<Self::Output, VectorError>
     where
-        N: num::Float + Clone + std::iter::Sum<N>,
         Self::Output: std::iter::FromIterator<Complex<N>>,
     {
         let n = self.norm();
@@ -308,7 +459,6 @@ where
     #[inline]
     fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
     where
-        N: num::Float + Clone + std::iter::Sum<N>,
         Self::Output: std::iter::FromIterator<Complex<N>>,
     {
         let n = self.norm();
@@ -336,6 +486,21 @@ where
             .map(|(a, b)| one_minus_w * *a + w * *b)
             .collect())
     }
+
+    #[inline]
+    fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        Self::Output: std::iter::FromIterator<Complex<N>>,
+    {
+        let denom = VectorOpsComplex::dot(other, other); // Hermitian dot product
+        if denom == Complex::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot project onto zero vector".to_string(),
+            ));
+        }
+        let scalar = VectorOpsComplex::dot(self, other) / denom;
+        Ok(other.as_slice().iter().map(|b| *b * scalar).collect())
+    }
 }
 
 // ================================
@@ -343,10 +508,7 @@ where
 // Methods
 //
 // ================================
-impl<T> FlexVector<T>
-where
-    T: num::Num + Clone + Sync + Send,
-{
+impl<T> FlexVector<T> {
     /// Adds an element to the end of the vector.
     #[inline]
     pub fn push(&mut self, value: T) {
@@ -373,7 +535,10 @@ where
 
     /// Resizes the vector in-place.
     #[inline]
-    pub fn resize(&mut self, new_len: usize, value: T) {
+    pub fn resize(&mut self, new_len: usize, value: T)
+    where
+        T: Clone,
+    {
         self.components.resize(new_len, value);
     }
 
@@ -404,7 +569,7 @@ where
     pub fn map<U, F>(&self, mut f: F) -> FlexVector<U>
     where
         F: FnMut(T) -> U,
-        U: num::Num + Clone + Sync + Send,
+        T: Clone,
     {
         let new_components = self.components.iter().cloned().map(&mut f).collect();
         FlexVector { components: new_components }
@@ -415,6 +580,7 @@ where
     pub fn mut_map<F>(&mut self, mut f: F)
     where
         F: FnMut(T) -> T,
+        T: Clone,
     {
         for x in self.components.iter_mut() {
             // Use clone since T may not be Copy
@@ -465,6 +631,8 @@ mod tests {
     use super::*;
     use num::complex::ComplexFloat;
     use num::Complex;
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
 
     // ================================
     //
@@ -695,6 +863,586 @@ mod tests {
     fn test_from_iter_empty() {
         let v: FlexVector<i32> = Vec::<i32>::new().into_iter().collect();
         assert!(v.is_empty());
+    }
+
+    // ================================
+    //
+    // Deref/DerefMut trait tests
+    //
+    // ================================
+    #[test]
+    fn test_deref_access_slice_methods_i32() {
+        let v = FlexVector::from_vec(vec![3, 1, 2]);
+        // Use sort (not implemented in FlexVector directly)
+        let mut sorted = v.clone();
+        sorted.sort();
+        assert_eq!(sorted.as_slice(), &[1, 2, 3]);
+        // Use binary_search (slice method, requires sorted)
+        assert_eq!(sorted.binary_search(&2), Ok(1));
+    }
+
+    #[test]
+    fn test_deref_access_slice_methods_f64() {
+        let v = FlexVector::from_vec(vec![3.5, 1.5, 2.5]);
+        // Use sort_by
+        let mut sorted = v.clone();
+        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        assert_eq!(sorted.as_slice(), &[1.5, 2.5, 3.5]);
+        // Use rchunks
+        let chunks: Vec<_> = v.rchunks(2).collect();
+        assert_eq!(chunks, vec![&[1.5, 2.5][..], &[3.5][..]]);
+    }
+
+    #[test]
+    fn test_deref_access_slice_methods_complex() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+            Complex::new(5.0, 6.0),
+        ]);
+        // Use rotate_left
+        let mut rotated = v.clone();
+        rotated.rotate_left(1);
+        assert_eq!(
+            rotated.as_slice(),
+            &[Complex::new(3.0, 4.0), Complex::new(5.0, 6.0), Complex::new(1.0, 2.0)]
+        );
+        // Use fill
+        let mut filled = v.clone();
+        filled.fill(Complex::new(9.0, 9.0));
+        assert_eq!(filled.as_slice(), &[Complex::new(9.0, 9.0); 3]);
+    }
+
+    #[test]
+    fn test_deref_mut_i32() {
+        let mut v = FlexVector::from_vec(vec![10, 20, 30]);
+        // Mutate via indexing
+        v[1] = 99;
+        assert_eq!(v.as_slice(), &[10, 99, 30]);
+        // Use reverse (slice method)
+        v.reverse();
+        assert_eq!(v.as_slice(), &[30, 99, 10]);
+    }
+
+    #[test]
+    fn test_deref_mut_f64() {
+        let mut v = FlexVector::from_vec(vec![1.5, 2.5, 3.5]);
+        // Mutate via indexing
+        v[0] = -1.5;
+        assert_eq!(v.as_slice(), &[-1.5, 2.5, 3.5]);
+        // Use fill (slice method)
+        v.fill(0.0);
+        assert_eq!(v.as_slice(), &[0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn test_deref_mut_complex_f64() {
+        use num::Complex;
+        let mut v = FlexVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+            Complex::new(5.0, 6.0),
+        ]);
+        // Mutate via indexing
+        v[2] = Complex::new(9.0, 9.0);
+        assert_eq!(v[2], Complex::new(9.0, 9.0));
+        // Use rotate_right (slice method)
+        v.rotate_right(1);
+        assert_eq!(
+            v.as_slice(),
+            &[Complex::new(9.0, 9.0), Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]
+        );
+    }
+
+    // ================================
+    //
+    // AsRef/AsMut trait tests
+    //
+    // ================================
+    #[test]
+    fn test_asref_i32() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let slice: &[i32] = v.as_ref();
+        assert_eq!(slice, &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_asref_f64() {
+        let v = FlexVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let slice: &[f64] = v.as_ref();
+        assert_eq!(slice, &[1.1, 2.2, 3.3]);
+    }
+
+    #[test]
+    fn test_asref_complex_f64() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let slice: &[Complex<f64>] = v.as_ref();
+        assert_eq!(slice, &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+    }
+
+    #[test]
+    fn test_asmut_i32() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3]);
+        let slice: &mut [i32] = v.as_mut();
+        slice[0] = 10;
+        slice[2] = 30;
+        assert_eq!(v.as_slice(), &[10, 2, 30]);
+    }
+
+    #[test]
+    fn test_asmut_f64() {
+        let mut v = FlexVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let slice: &mut [f64] = v.as_mut();
+        slice[1] = 9.9;
+        assert_eq!(v.as_slice(), &[1.1, 9.9, 3.3]);
+    }
+
+    #[test]
+    fn test_asmut_complex_f64() {
+        use num::Complex;
+        let mut v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let slice: &mut [Complex<f64>] = v.as_mut();
+        slice[0].re = 10.0;
+        slice[1].im = 40.0;
+        assert_eq!(v.as_slice(), &[Complex::new(10.0, 2.0), Complex::new(3.0, 40.0)]);
+    }
+
+    // ================================
+    //
+    // IntoIterator trait method tests
+    //
+    // ================================
+    #[test]
+    fn test_into_iter_i32() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let collected: Vec<_> = v.into_iter().collect();
+        assert_eq!(collected, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn test_into_iter_f64() {
+        let v = FlexVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let collected: Vec<_> = v.into_iter().collect();
+        assert_eq!(collected, vec![1.1, 2.2, 3.3]);
+    }
+
+    #[test]
+    fn test_into_iter_complex_f64() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let collected: Vec<_> = v.into_iter().collect();
+        assert_eq!(collected, vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+    }
+
+    #[test]
+    fn test_iter_ref_i32() {
+        let v = FlexVector::from_vec(vec![10, 20, 30]);
+        let collected: Vec<_> = (&v).into_iter().copied().collect();
+        assert_eq!(collected, vec![10, 20, 30]);
+    }
+
+    #[test]
+    fn test_iter_ref_f64() {
+        let v = FlexVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let collected: Vec<_> = (&v).into_iter().copied().collect();
+        assert_eq!(collected, vec![1.5, 2.5, 3.5]);
+    }
+
+    #[test]
+    fn test_iter_ref_complex_f64() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let collected: Vec<_> = (&v).into_iter().cloned().collect();
+        assert_eq!(collected, vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+    }
+
+    #[test]
+    fn test_iter_mutable_i32() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3]);
+        for x in &mut v {
+            *x *= 10;
+        }
+        assert_eq!(v.as_slice(), &[10, 20, 30]);
+    }
+
+    #[test]
+    fn test_iter_mutable_f64() {
+        let mut v = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        for x in &mut v {
+            *x += 0.5;
+        }
+        assert_eq!(v.as_slice(), &[1.5, 2.5, 3.5]);
+    }
+
+    #[test]
+    fn test_iter_mutable_complex_f64() {
+        use num::Complex;
+        let mut v = FlexVector::from_vec(vec![Complex::new(1.0, 1.0), Complex::new(2.0, 2.0)]);
+        for x in &mut v {
+            x.re *= 2.0;
+            x.im *= 3.0;
+        }
+        assert_eq!(v.as_slice(), &[Complex::new(2.0, 3.0), Complex::new(4.0, 6.0)]);
+    }
+
+    // ================================
+    //
+    // PartialEq/Eq trait method tests
+    //
+    // ================================
+    #[test]
+    fn test_partial_eq_i32() {
+        let v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v3 = FlexVector::from_vec(vec![3, 2, 1]);
+        assert_eq!(v1, v2);
+        assert_ne!(v1, v3);
+    }
+
+    #[test]
+    fn test_partial_eq_f64() {
+        let v1 = FlexVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v2 = FlexVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v3 = FlexVector::from_vec(vec![3.3, 2.2, 1.1]);
+        assert_eq!(v1, v2);
+        assert_ne!(v1, v3);
+    }
+
+    #[test]
+    fn test_partial_eq_complex_f64() {
+        use num::Complex;
+        let v1 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v3 = FlexVector::from_vec(vec![Complex::new(4.0, 3.0), Complex::new(2.0, 1.0)]);
+        assert_eq!(v1, v2);
+        assert_ne!(v1, v3);
+    }
+
+    #[test]
+    fn test_partial_eq_empty() {
+        let v1: FlexVector<i32> = FlexVector::new();
+        let v2: FlexVector<i32> = FlexVector::new();
+        assert_eq!(v1, v2);
+    }
+
+    #[test]
+    fn test_partial_eq_different_lengths() {
+        let v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![1, 2, 3]);
+        assert_ne!(v1, v2);
+    }
+
+    #[test]
+    fn test_partial_eq_f64_nan() {
+        let v1 = FlexVector::from_vec(vec![f64::NAN, 1.0]);
+        let v2 = FlexVector::from_vec(vec![f64::NAN, 1.0]);
+        // NaN != NaN, so these should not be equal
+        assert_ne!(v1, v2);
+
+        let v3 = FlexVector::from_vec(vec![f64::NAN, 1.0]);
+        let v4 = FlexVector::from_vec(vec![f64::NAN, 2.0]);
+        assert_ne!(v3, v4);
+    }
+
+    #[test]
+    fn test_partial_eq_f64_zero_negzero() {
+        let v1 = FlexVector::from_vec(vec![0.0, -0.0]);
+        let v2 = FlexVector::from_vec(vec![0.0, -0.0]);
+        let v3 = FlexVector::from_vec(vec![-0.0, 0.0]);
+        // 0.0 == -0.0 in Rust
+        assert_eq!(v1, v2);
+        assert_eq!(v1, v3);
+    }
+
+    #[test]
+    fn test_partial_eq_f64_infinity() {
+        let v1 = FlexVector::from_vec(vec![f64::INFINITY, f64::NEG_INFINITY]);
+        let v2 = FlexVector::from_vec(vec![f64::INFINITY, f64::NEG_INFINITY]);
+        let v3 = FlexVector::from_vec(vec![f64::NEG_INFINITY, f64::INFINITY]);
+        assert_eq!(v1, v2);
+        assert_ne!(v1, v3);
+    }
+
+    #[test]
+    fn test_partial_eq_complex_nan() {
+        use num::Complex;
+        let nan = f64::NAN;
+        let v1 = FlexVector::from_vec(vec![Complex::new(nan, 1.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(nan, 1.0)]);
+        // Complex::new(NaN, 1.0) != Complex::new(NaN, 1.0)
+        assert_ne!(v1, v2);
+
+        let v3 = FlexVector::from_vec(vec![Complex::new(1.0, nan)]);
+        let v4 = FlexVector::from_vec(vec![Complex::new(1.0, nan)]);
+        assert_ne!(v3, v4);
+    }
+
+    #[test]
+    fn test_partial_eq_complex_zero_negzero() {
+        use num::Complex;
+        let v1 = FlexVector::from_vec(vec![Complex::new(0.0, -0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(-0.0, 0.0)]);
+        // 0.0 == -0.0 for both real and imaginary parts
+        assert_eq!(v1, v2);
+    }
+
+    #[test]
+    fn test_partial_eq_complex_infinity() {
+        use num::Complex;
+        let v1 = FlexVector::from_vec(vec![Complex::new(f64::INFINITY, 1.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(f64::INFINITY, 1.0)]);
+        let v3 = FlexVector::from_vec(vec![Complex::new(1.0, f64::INFINITY)]);
+        let v4 = FlexVector::from_vec(vec![Complex::new(1.0, f64::INFINITY)]);
+        assert_eq!(v1, v2);
+        assert_eq!(v3, v4);
+        assert_ne!(v1, v3);
+    }
+
+    #[test]
+    fn test_eq_trait_i32() {
+        let v1 = FlexVector::from_vec(vec![5, 6, 7]);
+        let v2 = FlexVector::from_vec(vec![5, 6, 7]);
+        assert!(v1.eq(&v2));
+    }
+
+    #[test]
+    fn test_eq_trait_f64() {
+        let v1 = FlexVector::from_vec(vec![0.0, -0.0]);
+        let v2 = FlexVector::from_vec(vec![0.0, -0.0]);
+        assert!(v1.eq(&v2));
+    }
+
+    #[test]
+    fn test_eq_trait_complex_f64() {
+        use num::Complex;
+        let v1 = FlexVector::from_vec(vec![Complex::new(0.0, 1.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(0.0, 1.0)]);
+        assert!(v1.eq(&v2));
+    }
+
+    // ================================
+    //
+    // PartialOrd/Ord trait tests
+    //
+    // ================================
+    #[test]
+    fn test_partial_ord_i32() {
+        let v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![1, 2, 4]);
+        let v3 = FlexVector::from_vec(vec![1, 2, 3]);
+        assert!(v1 < v2);
+        assert!(v2 > v1);
+        assert!(v1 <= v3);
+        assert!(v1 >= v3);
+        assert_eq!(v1.partial_cmp(&v2), Some(std::cmp::Ordering::Less));
+        assert_eq!(v2.partial_cmp(&v1), Some(std::cmp::Ordering::Greater));
+        assert_eq!(v1.partial_cmp(&v3), Some(std::cmp::Ordering::Equal));
+    }
+
+    #[test]
+    fn test_ord_i32() {
+        let v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![1, 2, 4]);
+        let v3 = FlexVector::from_vec(vec![1, 2, 3]);
+        assert_eq!(v1.cmp(&v2), std::cmp::Ordering::Less);
+        assert_eq!(v2.cmp(&v1), std::cmp::Ordering::Greater);
+        assert_eq!(v1.cmp(&v3), std::cmp::Ordering::Equal);
+    }
+
+    #[test]
+    fn test_partial_ord_f64() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![1.0, 2.0, 4.0]);
+        let v3 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        assert_eq!(v1.partial_cmp(&v2), Some(std::cmp::Ordering::Less));
+        assert_eq!(v2.partial_cmp(&v1), Some(std::cmp::Ordering::Greater));
+        assert_eq!(v1.partial_cmp(&v3), Some(std::cmp::Ordering::Equal));
+    }
+
+    #[test]
+    fn test_partial_ord_f64_nan() {
+        let v1 = FlexVector::from_vec(vec![1.0, f64::NAN]);
+        let v2 = FlexVector::from_vec(vec![1.0, 2.0]);
+        // Comparison with NaN yields None
+        assert_eq!(v1.partial_cmp(&v2), None);
+        assert_eq!(v2.partial_cmp(&v1), None);
+    }
+
+    #[test]
+    fn test_partial_ord_f64_infinity() {
+        let v1 = FlexVector::from_vec(vec![1.0, f64::INFINITY]);
+        let v2 = FlexVector::from_vec(vec![1.0, f64::NEG_INFINITY]);
+        let v3 = FlexVector::from_vec(vec![1.0, f64::INFINITY]);
+        let v4 = FlexVector::from_vec(vec![1.0, 1.0]);
+        // INFINITY > NEG_INFINITY
+        assert_eq!(v1.partial_cmp(&v2), Some(std::cmp::Ordering::Greater));
+        assert_eq!(v2.partial_cmp(&v1), Some(std::cmp::Ordering::Less));
+        // INFINITY == INFINITY
+        assert_eq!(v1.partial_cmp(&v3), Some(std::cmp::Ordering::Equal));
+        // INFINITY > 1.0
+        assert_eq!(v1.partial_cmp(&v4), Some(std::cmp::Ordering::Greater));
+        assert_eq!(v4.partial_cmp(&v1), Some(std::cmp::Ordering::Less));
+    }
+
+    // ================================
+    //
+    // Hash trait method tests
+    //
+    // ================================
+    #[test]
+    fn test_hash_i32() {
+        let v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v3 = FlexVector::from_vec(vec![3, 2, 1]);
+
+        let mut hasher1 = DefaultHasher::new();
+        v1.hash(&mut hasher1);
+        let hash1 = hasher1.finish();
+
+        let mut hasher2 = DefaultHasher::new();
+        v2.hash(&mut hasher2);
+        let hash2 = hasher2.finish();
+
+        let mut hasher3 = DefaultHasher::new();
+        v3.hash(&mut hasher3);
+        let hash3 = hasher3.finish();
+
+        assert_eq!(hash1, hash2);
+        assert_ne!(hash1, hash3);
+    }
+
+    #[test]
+    fn test_hash_complex_i32() {
+        use num::Complex;
+        let v1 = FlexVector::from_vec(vec![Complex::new(1, 2), Complex::new(3, 4)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1, 2), Complex::new(3, 4)]);
+        let v3 = FlexVector::from_vec(vec![Complex::new(4, 3), Complex::new(2, 1)]);
+
+        let mut hasher1 = DefaultHasher::new();
+        v1.hash(&mut hasher1);
+        let hash1 = hasher1.finish();
+
+        let mut hasher2 = DefaultHasher::new();
+        v2.hash(&mut hasher2);
+        let hash2 = hasher2.finish();
+
+        let mut hasher3 = DefaultHasher::new();
+        v3.hash(&mut hasher3);
+        let hash3 = hasher3.finish();
+
+        assert_eq!(hash1, hash2);
+        assert_ne!(hash1, hash3);
+    }
+
+    #[test]
+    fn test_hash_empty() {
+        let v1: FlexVector<i32> = FlexVector::new();
+        let v2: FlexVector<i32> = FlexVector::new();
+
+        let mut hasher1 = DefaultHasher::new();
+        v1.hash(&mut hasher1);
+        let hash1 = hasher1.finish();
+
+        let mut hasher2 = DefaultHasher::new();
+        v2.hash(&mut hasher2);
+        let hash2 = hasher2.finish();
+
+        assert_eq!(hash1, hash2);
+    }
+
+    // ================================
+    //
+    // From trait tests
+    //
+    // ================================
+    #[test]
+    fn test_from_vec_i32() {
+        let vec = vec![1, 2, 3];
+        let fv: FlexVector<i32> = FlexVector::from(vec.clone());
+        assert_eq!(fv.as_slice(), &vec[..]);
+    }
+
+    #[test]
+    fn test_from_vec_f64() {
+        let vec = vec![1.1, 2.2, 3.3];
+        let fv: FlexVector<f64> = FlexVector::from(vec.clone());
+        assert_eq!(fv.as_slice(), &vec[..]);
+    }
+
+    #[test]
+    fn test_from_vec_complex_f64() {
+        use num::Complex;
+        let vec = vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let fv: FlexVector<Complex<f64>> = FlexVector::from(vec.clone());
+        assert_eq!(fv.as_slice(), &vec[..]);
+    }
+
+    #[test]
+    fn test_from_slice_i32() {
+        let slice: &[i32] = &[4, 5, 6];
+        let fv = FlexVector::from(slice);
+        assert_eq!(fv.as_slice(), slice);
+    }
+
+    #[test]
+    fn test_from_slice_f64() {
+        let slice: &[f64] = &[4.4, 5.5, 6.6];
+        let fv = FlexVector::from(slice);
+        assert_eq!(fv.as_slice(), slice);
+    }
+
+    #[test]
+    fn test_from_slice_complex_f64() {
+        use num::Complex;
+        let slice: &[Complex<f64>] = &[Complex::new(7.0, 8.0), Complex::new(9.0, 10.0)];
+        let fv = FlexVector::from(slice);
+        assert_eq!(fv.as_slice(), slice);
+    }
+
+    // ================================
+    //
+    // Extend trait tests
+    //
+    // ================================
+    #[test]
+    fn test_extend_i32() {
+        let mut v = FlexVector::from_vec(vec![1, 2]);
+        v.extend(vec![3, 4]);
+        assert_eq!(v.as_slice(), &[1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_extend_f64() {
+        let mut v = FlexVector::from_vec(vec![1.1, 2.2]);
+        v.extend(vec![3.3, 4.4]);
+        assert_eq!(v.as_slice(), &[1.1, 2.2, 3.3, 4.4]);
+    }
+
+    #[test]
+    fn test_extend_complex_f64() {
+        use num::Complex;
+        let mut v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        v.extend(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
+        assert_eq!(
+            v.as_slice(),
+            &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]
+        );
+    }
+
+    #[test]
+    fn test_extend_empty() {
+        let mut v = FlexVector::<i32>::new();
+        v.extend(vec![7, 8]);
+        assert_eq!(v.as_slice(), &[7, 8]);
+    }
+
+    #[test]
+    fn test_extend_with_empty() {
+        let mut v = FlexVector::from_vec(vec![1, 2]);
+        v.extend(Vec::<i32>::new());
+        assert_eq!(v.as_slice(), &[1, 2]);
     }
 
     // ================================

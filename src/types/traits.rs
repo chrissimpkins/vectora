@@ -504,9 +504,17 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
         self.norm()
     }
 
+    /// ...
     fn angle_with(&self, other: &Self) -> Result<T, VectorError>
     where
         T: num::Float + Clone + std::iter::Sum<T>;
+
+    /// Projects self onto other.
+    /// Returns an error if `other` is the zero vector.
+    fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+        Self::Output: std::iter::FromIterator<T>;
 }
 
 pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
@@ -718,4 +726,9 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
     {
         self.norm()
     }
+
+    fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+        Self::Output: std::iter::FromIterator<Complex<N>>;
 }
