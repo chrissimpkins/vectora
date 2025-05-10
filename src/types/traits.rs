@@ -194,7 +194,6 @@ pub trait VectorOps<T>: VectorBase<T> {
     type Output;
 
     /// ...
-    #[inline]
     fn translate(&self, other: &Self) -> Self::Output
     where
         T: num::Num + Copy;
@@ -211,7 +210,6 @@ pub trait VectorOps<T>: VectorBase<T> {
     }
 
     /// Returns a new vector scaled by the given scalar.
-    #[inline]
     fn scale(&self, scalar: T) -> Self::Output
     where
         T: num::Num + Copy,
