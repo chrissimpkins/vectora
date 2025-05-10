@@ -175,6 +175,199 @@ macro_rules! try_vector {
     };
 }
 
+#[macro_export]
+macro_rules! impl_vector_unary_op {
+    ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
+        impl<T> std::ops::$trait for $VectorType<T>
+        where
+            T: num::Num + Clone + Sync + Send + std::ops::Neg<Output = T>,
+        {
+            type Output = Self;
+            fn $method(self) -> Self {
+                let components = self.components.into_iter().map(|a| $op a).collect();
+                Self { components }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_vector_binop {
+    ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
+        impl<T> std::ops::$trait for $VectorType<T>
+        where
+            T: num::Num + Clone + Sync + Send,
+        {
+            type Output = Self;
+            fn $method(self, rhs: Self) -> Self {
+                assert_eq!(self.len(), rhs.len());
+                let components = self.components.into_iter()
+                    .zip(rhs.components)
+                    .map(|(a, b)| a $op b)
+                    .collect();
+                Self { components }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_vector_binop_assign {
+    ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
+        impl<T> std::ops::$trait for $VectorType<T>
+        where
+            T: num::Num + Clone + Sync + Send,
+        {
+            fn $method(&mut self, rhs: Self) {
+                assert_eq!(self.len(), rhs.len());
+                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                    *a = a.clone() $op b;
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_vector_scalar_op {
+    ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
+        impl<T> std::ops::$trait<T> for $VectorType<T>
+        where
+            T: num::Num + Clone + Sync + Send,
+        {
+            type Output = Self;
+            fn $method(self, rhs: T) -> Self {
+                let components = self.components.into_iter().map(|a| a $op rhs.clone()).collect();
+                Self { components }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_vector_scalar_op_assign {
+    ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
+        impl<T> std::ops::$trait<T> for $VectorType<T>
+        where
+            T: num::Num + Clone + Sync + Send,
+        {
+            fn $method(&mut self, rhs: T) {
+                for a in &mut self.components {
+                    *a = a.clone() $op rhs.clone();
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_vector_scalar_div_op {
+    ($VectorType:ident) => {
+        // For f32
+        impl std::ops::Div<f32> for $VectorType<f32> {
+            type Output = Self;
+            fn div(self, rhs: f32) -> Self {
+                let components = self.components.into_iter().map(|a| a / rhs).collect();
+                Self { components }
+            }
+        }
+        // For f64
+        impl std::ops::Div<f64> for $VectorType<f64> {
+            type Output = Self;
+            fn div(self, rhs: f64) -> Self {
+                let components = self.components.into_iter().map(|a| a / rhs).collect();
+                Self { components }
+            }
+        }
+        // For Complex<f32> / f32
+        impl std::ops::Div<f32> for $VectorType<num::Complex<f32>> {
+            type Output = Self;
+            fn div(self, rhs: f32) -> Self {
+                let components = self.components.into_iter().map(|a| a / rhs).collect();
+                Self { components }
+            }
+        }
+        // For Complex<f64> / f64
+        impl std::ops::Div<f64> for $VectorType<num::Complex<f64>> {
+            type Output = Self;
+            fn div(self, rhs: f64) -> Self {
+                let components = self.components.into_iter().map(|a| a / rhs).collect();
+                Self { components }
+            }
+        }
+        // For Complex<f32> / Complex<f32>
+        impl std::ops::Div<num::Complex<f32>> for $VectorType<num::Complex<f32>> {
+            type Output = Self;
+            fn div(self, rhs: num::Complex<f32>) -> Self {
+                let components = self.components.into_iter().map(|a| a / rhs).collect();
+                Self { components }
+            }
+        }
+        // For Complex<f64> / Complex<f64>
+        impl std::ops::Div<num::Complex<f64>> for $VectorType<num::Complex<f64>> {
+            type Output = Self;
+            fn div(self, rhs: num::Complex<f64>) -> Self {
+                let components = self.components.into_iter().map(|a| a / rhs).collect();
+                Self { components }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_vector_scalar_div_op_assign {
+    ($VectorType:ident) => {
+        // For f32
+        impl std::ops::DivAssign<f32> for $VectorType<f32> {
+            fn div_assign(&mut self, rhs: f32) {
+                for a in &mut self.components {
+                    *a = *a / rhs;
+                }
+            }
+        }
+        // For f64
+        impl std::ops::DivAssign<f64> for $VectorType<f64> {
+            fn div_assign(&mut self, rhs: f64) {
+                for a in &mut self.components {
+                    *a = *a / rhs;
+                }
+            }
+        }
+        // For Complex<f32> / f32
+        impl std::ops::DivAssign<f32> for $VectorType<num::Complex<f32>> {
+            fn div_assign(&mut self, rhs: f32) {
+                for a in &mut self.components {
+                    *a = *a / rhs;
+                }
+            }
+        }
+        // For Complex<f64> / f64
+        impl std::ops::DivAssign<f64> for $VectorType<num::Complex<f64>> {
+            fn div_assign(&mut self, rhs: f64) {
+                for a in &mut self.components {
+                    *a = *a / rhs;
+                }
+            }
+        }
+        // For Complex<f32> / Complex<f32>
+        impl std::ops::DivAssign<num::Complex<f32>> for $VectorType<num::Complex<f32>> {
+            fn div_assign(&mut self, rhs: num::Complex<f32>) {
+                for a in &mut self.components {
+                    *a = *a / rhs;
+                }
+            }
+        }
+        // For Complex<f64> / Complex<f64>
+        impl std::ops::DivAssign<num::Complex<f64>> for $VectorType<num::Complex<f64>> {
+            fn div_assign(&mut self, rhs: num::Complex<f64>) {
+                for a in &mut self.components {
+                    *a = *a / rhs;
+                }
+            }
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Vector;
