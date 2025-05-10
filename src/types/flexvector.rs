@@ -4,8 +4,10 @@ use crate::{
     impl_vector_binop, impl_vector_binop_assign, impl_vector_scalar_div_op,
     impl_vector_scalar_div_op_assign, impl_vector_scalar_op, impl_vector_scalar_op_assign,
     impl_vector_unary_op, types::traits::VectorBase, types::traits::VectorOps,
-    types::traits::VectorOpsComplexFloat, types::traits::VectorOpsFloat,
+    types::traits::VectorOpsComplex, types::traits::VectorOpsFloat,
 };
+
+use crate::errors::VectorError;
 
 use num::Complex;
 use num::Num;
@@ -140,6 +142,22 @@ where
     {
         self.components.iter().zip(&other.components).map(|(a, b)| a.clone() + b.clone()).collect()
     }
+
+    fn scale(&self, scalar: T) -> Self::Output
+    where
+        T: num::Num + Copy,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        self.as_slice().iter().map(|a| *a * scalar).collect()
+    }
+
+    fn negate(&self) -> Self::Output
+    where
+        T: std::ops::Neg<Output = T> + Clone,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        self.as_slice().iter().map(|a| -a.clone()).collect()
+    }
 }
 
 // ================================
@@ -154,35 +172,43 @@ where
 {
     type Output = Vec<T>;
 
-    fn normalize(&self) -> Self::Output {
+    fn normalize(&self) -> Result<Self::Output, VectorError> {
         let n = self.norm();
-        assert!(n != T::zero(), "Cannot normalize a zero vector");
-        self.components.iter().map(|a| *a / n).collect()
+        if n == T::zero() {
+            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
+        }
+        Ok(self.components.iter().map(|a| *a / n).collect())
     }
 
-    fn mut_normalize(&mut self)
+    /// Returns a new vector with the same direction and the given magnitude.
+    fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
     where
-        T: num::Float + Copy + std::iter::Sum<T>,
+        T: num::Float + Clone + std::iter::Sum<T>,
+        Self::Output: std::iter::FromIterator<T>,
     {
         let n = self.norm();
-        assert!(n != T::zero(), "Cannot normalize a zero vector");
-        for a in self.as_mut_slice().iter_mut() {
-            *a = *a / n;
+        if n == T::zero() {
+            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
         }
+        let scale = magnitude / n;
+        Ok(self.as_slice().iter().map(|a| *a * scale).collect())
     }
 
-    fn lerp(&self, end: &Self, weight: T) -> Self::Output
+    fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
     where
         T: num::Float + Clone + PartialOrd,
     {
-        assert!(weight >= T::zero() && weight <= T::one(), "weight must be in [0, 1]");
+        if weight < T::zero() || weight > T::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
         let w = weight.clone();
         let one_minus_w = T::one() - w.clone();
-        self.components
+        Ok(self
+            .components
             .iter()
             .zip(&end.components)
             .map(|(a, b)| one_minus_w.clone() * a.clone() + w.clone() * b.clone())
-            .collect()
+            .collect())
     }
 }
 
@@ -192,45 +218,52 @@ where
 //
 // ================================
 // TODO: add tests
-impl<F> VectorOpsComplexFloat<F> for FlexVector<Complex<F>>
+impl<N> VectorOpsComplex<N> for FlexVector<Complex<N>>
 where
-    F: num::Float + Clone + PartialOrd + std::iter::Sum<F> + Sync + Send,
+    N: num::Float + Clone + PartialOrd + std::iter::Sum<N> + Sync + Send,
 {
-    type Output = Vec<Complex<F>>;
+    type Output = Vec<Complex<N>>;
 
-    fn normalize(&self) -> Self::Output
+    fn normalize(&self) -> Result<Self::Output, VectorError>
     where
-        F: num::Float + Clone + std::iter::Sum<F>,
-        Self::Output: std::iter::FromIterator<Complex<F>>,
+        N: num::Float + Clone + std::iter::Sum<N>,
+        Self::Output: std::iter::FromIterator<Complex<N>>,
     {
         let n = self.norm();
-        assert!(n != F::zero(), "Cannot normalize a zero vector");
-        self.components.iter().map(|a| *a / n).collect()
-    }
-
-    fn mut_normalize(&mut self)
-    where
-        F: num::Float + Copy + std::iter::Sum<F>,
-    {
-        let n = self.norm();
-        assert!(n != F::zero(), "Cannot normalize a zero vector");
-        for a in self.as_mut_slice().iter_mut() {
-            *a = *a / n;
+        if n == N::zero() {
+            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
         }
+        Ok(self.components.iter().map(|a| *a / n).collect())
     }
 
-    fn lerp(&self, end: &Self, weight: F) -> Self::Output
+    fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
     where
-        F: num::Float + Clone + PartialOrd,
+        N: num::Float + Clone + std::iter::Sum<N>,
+        Self::Output: std::iter::FromIterator<Complex<N>>,
     {
-        assert!(weight >= F::zero() && weight <= F::one(), "weight must be in [0, 1]");
-        let w = Complex::new(weight.clone(), F::zero());
-        let one_minus_w = Complex::new(F::one() - weight.clone(), F::zero());
-        self.components
+        let n = self.norm();
+        if n == N::zero() {
+            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
+        }
+        let scale = magnitude / n;
+        Ok(self.as_slice().iter().map(|a| *a * scale).collect())
+    }
+
+    fn lerp(&self, end: &Self, weight: N) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float + Clone + PartialOrd,
+    {
+        if weight < N::zero() || weight > N::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        let w = Complex::new(weight.clone(), N::zero());
+        let one_minus_w = Complex::new(N::one() - weight.clone(), N::zero());
+        Ok(self
+            .components
             .iter()
             .zip(&end.components)
             .map(|(a, b)| one_minus_w.clone() * a.clone() + w.clone() * b.clone())
-            .collect()
+            .collect())
     }
 }
 
@@ -307,6 +340,21 @@ where
             *x = f(x.clone());
         }
     }
+
+    /// Cosine similarity between self and other.
+    pub fn cosine_similarity(&self, other: &Self) -> T
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        let dot = self.dot(other);
+        let norm_self = self.norm();
+        let norm_other = other.norm();
+        if norm_self == T::zero() || norm_other == T::zero() {
+            T::zero()
+        } else {
+            dot / (norm_self * norm_other)
+        }
+    }
 }
 
 // ================================
@@ -333,6 +381,7 @@ impl_vector_scalar_div_op_assign!(FlexVector);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use num::complex::ComplexFloat;
     use num::Complex;
 
     // ================================
@@ -1508,6 +1557,39 @@ mod tests {
         let mut v = FlexVector::from_vec(vec![1, 2, 3]);
         v.mut_map(double);
         assert_eq!(v.as_slice(), &[2, 4, 6]);
+    }
+
+    // --- cosine_similarity ---
+    #[test]
+    fn test_cosine_similarity_parallel() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![2.0, 4.0, 6.0]);
+        let cos_sim = v1.cosine_similarity(&v2);
+        assert!((cos_sim - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_cosine_similarity_orthogonal() {
+        let v1 = FlexVector::from_vec(vec![1.0, 0.0]);
+        let v2 = FlexVector::from_vec(vec![0.0, 1.0]);
+        let cos_sim = v1.cosine_similarity(&v2);
+        assert!((cos_sim - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_cosine_similarity_opposite() {
+        let v1 = FlexVector::from_vec(vec![1.0, 0.0]);
+        let v2 = FlexVector::from_vec(vec![-1.0, 0.0]);
+        let cos_sim = v1.cosine_similarity(&v2);
+        assert!((cos_sim + 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_cosine_similarity_zero_vector() {
+        let v1 = FlexVector::from_vec(vec![0.0, 0.0]);
+        let v2 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let cos_sim = v1.cosine_similarity(&v2);
+        assert_eq!(cos_sim, 0.0);
     }
 
     // ================================
