@@ -302,7 +302,7 @@ pub trait VectorOps<T>: VectorBase<T> {
 
     /// ...
     #[inline]
-    fn min(&self) -> Option<T>
+    fn minimum(&self) -> Option<T>
     where
         T: Ord + Copy,
     {
@@ -311,7 +311,7 @@ pub trait VectorOps<T>: VectorBase<T> {
 
     /// ...
     #[inline]
-    fn max(&self) -> Option<T>
+    fn maximum(&self) -> Option<T>
     where
         T: Ord + Copy,
     {
@@ -399,6 +399,11 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
     where
         T: num::Float + Copy + PartialOrd,
     {
+        if self.len() != end.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
         if weight < T::zero() || weight > T::one() {
             return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
         }
@@ -412,12 +417,11 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
 
     /// Midpoint
     #[inline]
-    fn midpoint(&self, end: &Self) -> Self::Output
+    fn midpoint(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
         T: num::Float + Clone,
     {
-        // OK to unwrap because by definition it uses an in-range weight
-        self.lerp(end, num::cast(0.5).unwrap()).unwrap()
+        self.lerp(other, T::from(0.5).unwrap())
     }
 
     /// Euclidean distance between self and other.
@@ -515,6 +519,59 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
     where
         T: num::Float + Clone + std::iter::Sum<T>,
         Self::Output: std::iter::FromIterator<T>;
+
+    /// Returns the minimum element, or `None` if the vector is empty.
+    ///
+    /// # NaN Handling
+    ///
+    /// If any element in the vector is `NaN`, the result of this method is not guaranteed to be meaningful.
+    /// The comparison `a < b` will return `false` if either `a` or `b` is `NaN`, so if a `NaN` is present,
+    /// it may be returned as the minimum, or it may cause a different value to be returned depending on the order of elements.
+    /// This matches the behavior of Rust's standard library for floating point minimum operations.
+    ///
+    /// If you want to ignore `NaN` values, filter them out before calling this method.
+    /// # Examples
+    /// ```rust
+    /// # use vectora::FlexVector;
+    /// use vectora::types::traits::VectorOpsFloat;
+    ///
+    /// let v = FlexVector::from(vec![1.5, -2.0, 3.0]);
+    /// assert_eq!(v.minimum(), Some(-2.0));
+    /// ```
+    #[inline]
+    fn minimum(&self) -> Option<T>
+    where
+        T: PartialOrd + Copy,
+    {
+        self.as_slice().iter().copied().reduce(|a, b| if a < b { a } else { b })
+    }
+
+    /// Returns the maximum element, or `None` if the vector is empty.
+    ///
+    /// # NaN Handling
+    ///
+    /// If any element in the vector is `NaN`, the result of this method is not guaranteed to be meaningful.
+    /// The comparison `a > b` will return `false` if either `a` or `b` is `NaN`, so if a `NaN` is present,
+    /// it may be returned as the maximum, or it may cause a different value to be returned depending on the order of elements.
+    /// This matches the behavior of Rust's standard library for floating point maximum operations.
+    ///
+    /// If you want to ignore `NaN` values, filter them out before calling this method.
+    ///
+    /// # Examples
+    /// ```
+    /// # use vectora::FlexVector;
+    /// use vectora::types::traits::VectorOpsFloat;
+    ///
+    /// let v = FlexVector::from(vec![1.5, -2.0, 3.0]);
+    /// assert_eq!(v.maximum(), Some(3.0));
+    /// ```
+    #[inline]
+    fn maximum(&self) -> Option<T>
+    where
+        T: PartialOrd + Copy,
+    {
+        self.as_slice().iter().copied().reduce(|a, b| if a > b { a } else { b })
+    }
 }
 
 pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
@@ -601,6 +658,11 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
     where
         N: num::Float + Copy + PartialOrd,
     {
+        if self.len() != end.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
         if weight < N::zero() || weight > N::one() {
             return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
         }
