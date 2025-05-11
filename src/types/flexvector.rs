@@ -388,6 +388,11 @@ where
     where
         T: PartialOrd,
     {
+        if self.len() != end.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
         if weight < T::zero() || weight > T::one() {
             return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
         }
@@ -474,6 +479,11 @@ where
     where
         N: num::Float + Clone + PartialOrd,
     {
+        if self.len() != end.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
         if weight < N::zero() || weight > N::one() {
             return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
         }
@@ -2394,7 +2404,6 @@ mod tests {
 
     #[test]
     fn test_mut_map_complex() {
-        use num::Complex;
         let mut v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         v.mut_map(|x| Complex::new(x.re + 1.0, x.im * 2.0));
         assert_eq!(v.as_slice(), &[Complex::new(2.0, 4.0), Complex::new(-2.0, 8.0)]);
@@ -2451,6 +2460,598 @@ mod tests {
         let cos_sim = v1.cosine_similarity(&v2);
         assert_eq!(cos_sim, 0.0);
     }
+
+    // ================================
+    //
+    // VectorOps trait tests
+    //
+    // ================================
+
+    // -- translate --
+    #[test]
+    fn test_translate_i32() {
+        let v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let result = v1.translate(&v2);
+        assert_eq!(result.as_slice(), &[5, 7, 9]);
+    }
+
+    #[test]
+    fn test_translate_f64() {
+        let v1 = FlexVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let v2 = FlexVector::from_vec(vec![0.5, 1.5, 2.5]);
+        let result = v1.translate(&v2);
+        assert_eq!(result.as_slice(), &[2.0, 4.0, 6.0]);
+    }
+
+    #[test]
+    fn test_translate_complex_f64() {
+        let v1 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let result = v1.translate(&v2);
+        assert_eq!(result.as_slice(), &[Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
+    }
+
+    // -- mut_translate --
+    #[test]
+    fn test_mut_translate_i32() {
+        let mut v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        v1.mut_translate(&v2);
+        assert_eq!(v1.as_slice(), &[5, 7, 9]);
+    }
+
+    #[test]
+    fn test_mut_translate_f64() {
+        let mut v1 = FlexVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let v2 = FlexVector::from_vec(vec![0.5, 1.5, 2.5]);
+        v1.mut_translate(&v2);
+        assert_eq!(v1.as_slice(), &[2.0, 4.0, 6.0]);
+    }
+
+    #[test]
+    fn test_mut_translate_complex_f64() {
+        let mut v1 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        v1.mut_translate(&v2);
+        assert_eq!(v1.as_slice(), &[Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
+    }
+
+    // -- scale --
+    #[test]
+    fn test_scale_i32() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let scaled = v.scale(10);
+        assert_eq!(scaled.as_slice(), &[10, 20, 30]);
+    }
+
+    #[test]
+    fn test_scale_f64() {
+        let v = FlexVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let scaled = v.scale(2.0);
+        assert_eq!(scaled.as_slice(), &[3.0, -4.0, 0.0]);
+    }
+
+    #[test]
+    fn test_scale_complex_f64() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let scalar = Complex::new(2.0, 0.0);
+        let scaled = v.scale(scalar);
+        assert_eq!(scaled.as_slice(), &[Complex::new(2.0, 4.0), Complex::new(-6.0, 8.0)]);
+    }
+
+    // -- mut_scale --
+    #[test]
+    fn test_mut_scale_i32() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3]);
+        v.mut_scale(10);
+        assert_eq!(v.as_slice(), &[10, 20, 30]);
+    }
+
+    #[test]
+    fn test_mut_scale_f64() {
+        let mut v = FlexVector::from_vec(vec![1.5, -2.0, 0.0]);
+        v.mut_scale(2.0);
+        assert_eq!(v.as_slice(), &[3.0, -4.0, 0.0]);
+    }
+
+    #[test]
+    fn test_mut_scale_complex_f64() {
+        let mut v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let scalar = Complex::new(2.0, 0.0);
+        v.mut_scale(scalar);
+        assert_eq!(v.as_slice(), &[Complex::new(2.0, 4.0), Complex::new(-6.0, 8.0)]);
+    }
+
+    // -- negate --
+    #[test]
+    fn test_negate_i32() {
+        let v = FlexVector::from_vec(vec![1, -2, 3]);
+        let neg = v.negate();
+        assert_eq!(neg.as_slice(), &[-1, 2, -3]);
+        // original unchanged
+        assert_eq!(v.as_slice(), &[1, -2, 3]);
+    }
+
+    #[test]
+    fn test_negate_f64() {
+        let v = FlexVector::from_vec(vec![1.5, -2.5, 0.0]);
+        let neg = v.negate();
+        assert_eq!(neg.as_slice(), &[-1.5, 2.5, -0.0]);
+        assert_eq!(v.as_slice(), &[1.5, -2.5, 0.0]);
+    }
+
+    #[test]
+    fn test_negate_complex_f64() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let neg = v.negate();
+        assert_eq!(neg.as_slice(), &[Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]);
+        assert_eq!(v.as_slice(), &[Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+    }
+
+    // -- mut_negate --
+    #[test]
+    fn test_mut_negate_i32() {
+        let mut v = FlexVector::from_vec(vec![1, -2, 3]);
+        v.mut_negate();
+        assert_eq!(v.as_slice(), &[-1, 2, -3]);
+    }
+
+    #[test]
+    fn test_mut_negate_f64() {
+        let mut v = FlexVector::from_vec(vec![1.5, -2.5, 0.0]);
+        v.mut_negate();
+        assert_eq!(v.as_slice(), &[-1.5, 2.5, -0.0]);
+    }
+
+    #[test]
+    fn test_mut_negate_complex_f64() {
+        use num::Complex;
+        let mut v = FlexVector::from_vec(vec![Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        v.mut_negate();
+        assert_eq!(v.as_slice(), &[Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]);
+    }
+
+    // -- mut_zero --
+    #[test]
+    fn test_mut_zero_i32() {
+        let mut v = FlexVector::from_vec(vec![1, -2, 3]);
+        v.mut_zero();
+        assert_eq!(v.as_slice(), &[0, 0, 0]);
+    }
+
+    #[test]
+    fn test_mut_zero_f64() {
+        let mut v = FlexVector::from_vec(vec![1.5, -2.5, 0.0]);
+        v.mut_zero();
+        assert_eq!(v.as_slice(), &[0.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn test_mut_zero_complex_f64() {
+        use num::Complex;
+        let mut v = FlexVector::from_vec(vec![Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        v.mut_zero();
+        assert_eq!(v.as_slice(), &[Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)]);
+    }
+
+    // -- dot --
+    #[test]
+    fn test_dot_i32() {
+        let v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let dot = v1.dot(&v2);
+        assert_eq!(dot, 1 * 4 + 2 * 5 + 3 * 6); // 32
+    }
+
+    #[test]
+    fn test_dot_f64() {
+        let v1 = FlexVector::from_vec(vec![1.5, 2.0, -3.0]);
+        let v2 = FlexVector::from_vec(vec![2.0, 0.5, 4.0]);
+        let dot = v1.dot(&v2);
+        assert!((dot - (1.5 * 2.0 + 2.0 * 0.5 + -3.0 * 4.0)).abs() < 1e-12);
+    }
+
+    // complex number dot product tested in VectorOpsComplex trait impl testing section below
+
+    // -- dot_to_f64 --
+    #[test]
+    fn test_dot_to_f64_i32() {
+        let v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let dot = v1.dot_to_f64(&v2);
+        assert!((dot - 32.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_dot_to_f64_f64() {
+        let v1 = FlexVector::from_vec(vec![1.5, 2.0, -3.0]);
+        let v2 = FlexVector::from_vec(vec![2.0, 0.5, 4.0]);
+        let dot = v1.dot_to_f64(&v2);
+        assert!((dot - (1.5 * 2.0 + 2.0 * 0.5 + -3.0 * 4.0)).abs() < 1e-12);
+    }
+
+    // complex number dot_to_f64 tested in VectorOpsComplex trait impl testing section below
+
+    // -- cross --
+    #[test]
+    fn test_cross_i32() {
+        let v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let cross = v1.cross(&v2).unwrap();
+        // [2*6 - 3*5, 3*4 - 1*6, 1*5 - 2*4] = [12-15, 12-6, 5-8] = [-3, 6, -3]
+        assert_eq!(cross.as_slice(), &[-3, 6, -3]);
+    }
+
+    #[test]
+    fn test_cross_f64() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
+        let cross = v1.cross(&v2).unwrap();
+        assert_eq!(cross.as_slice(), &[-3.0, 6.0, -3.0]);
+    }
+
+    // intentionally skipping complex number cross product testing
+    // due to lack of universally agreed upon definition in the
+    // complex vector space.
+
+    #[test]
+    fn test_cross_wrong_length() {
+        let v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![3, 4]);
+        let result = v1.cross(&v2);
+        assert!(result.is_err());
+    }
+
+    // -- sum --
+    #[test]
+    fn test_sum_i32() {
+        let v = FlexVector::from_vec(vec![1, 2, 3, 4]);
+        let s = v.sum();
+        assert_eq!(s, 10);
+    }
+
+    #[test]
+    fn test_sum_f64() {
+        let v = FlexVector::from_vec(vec![1.5, -2.5, 3.0]);
+        let s = v.sum();
+        assert!((s - 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_sum_complex_f64() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(-3.0, 4.0),
+            Complex::new(5.0, -6.0),
+        ]);
+        let s = v.sum();
+        assert_eq!(s, Complex::new(3.0, 0.0));
+    }
+
+    // -- product --
+    #[test]
+    fn test_product_i32() {
+        let v = FlexVector::from_vec(vec![2, 3, 4]);
+        let p = v.product();
+        assert_eq!(p, 24);
+    }
+
+    #[test]
+    fn test_product_f64() {
+        let v = FlexVector::from_vec(vec![1.5, -2.0, 3.0]);
+        let p = v.product();
+        assert!((p - (1.5 * -2.0 * 3.0)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_product_complex_f64() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, -1.0),
+            Complex::new(2.0, 0.5),
+        ]);
+        let p = v.product();
+        let expected = Complex::new(1.0, 2.0) * Complex::new(3.0, -1.0) * Complex::new(2.0, 0.5);
+        assert!((p - expected).norm() < 1e-12);
+    }
+
+    // -- minimum --
+    #[test]
+    fn test_minimum_i32() {
+        let v = FlexVector::from_vec(vec![3, 1, 4, 2]);
+        assert_eq!(v.minimum(), Some(1));
+    }
+
+    // minimum floating point type tests in VectorOpsFloat trait impl testing section
+
+    #[test]
+    fn test_minimum_empty() {
+        let v: FlexVector<i32> = FlexVector::new();
+        assert_eq!(v.minimum(), None);
+    }
+
+    // -- maximum --
+    #[test]
+    fn test_maximum_i32() {
+        let v = FlexVector::from_vec(vec![3, 1, 4, 2]);
+        assert_eq!(v.maximum(), Some(4));
+    }
+
+    // maximum floating point type tests in VectorOpsFloat trait impl testing section
+
+    #[test]
+    fn test_maximum_empty() {
+        let v: FlexVector<i32> = FlexVector::new();
+        assert_eq!(v.maximum(), None);
+    }
+
+    // -- l1_norm --
+    #[test]
+    fn test_l1_norm_i32() {
+        let v = FlexVector::from_vec(vec![1, -2, 3]);
+        let norm = v.l1_norm();
+        assert_eq!(norm, 6);
+    }
+
+    #[test]
+    fn test_l1_norm_f64() {
+        let v = FlexVector::from_vec(vec![1.5, -2.5, 3.0]);
+        let norm = v.l1_norm();
+        assert!((norm - 7.0).abs() < 1e-12);
+    }
+
+    // l1_norm testing of complex number types is in the VectorOpsComplex trait impl tests below
+
+    // -- linf_norm --
+    #[test]
+    fn test_linf_norm_i32() {
+        let v = FlexVector::from_vec(vec![1, -5, 3, 2]);
+        let norm = v.linf_norm();
+        assert_eq!(norm, 5);
+    }
+
+    #[test]
+    fn test_linf_norm_f64() {
+        let v = FlexVector::from_vec(vec![1.5, -2.5, 3.0, -7.2]);
+        let norm = v.linf_norm();
+        assert!((norm - 7.2).abs() < 1e-12);
+    }
+
+    // ================================
+    //
+    // VectorOpsFloat trait tests
+    //
+    // ================================
+
+    // -- normalize --
+    #[test]
+    fn test_normalize_f64() {
+        let v = FlexVector::from_vec(vec![3.0, 4.0]);
+        let normalized = v.normalize().unwrap();
+        // The norm is 5.0, so the normalized vector should be [0.6, 0.8]
+        assert!((normalized.as_slice()[0] - 0.6).abs() < 1e-12);
+        assert!((normalized.as_slice()[1] - 0.8).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_f64_zero_vector() {
+        let v = FlexVector::from_vec(vec![0.0, 0.0]);
+        let result = v.normalize();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_normalize_f64_negative_values() {
+        let v = FlexVector::from_vec(vec![-3.0, -4.0]);
+        let normalized = v.normalize().unwrap();
+        // The norm is 5.0, so the normalized vector should be [-0.6, -0.8]
+        assert!((normalized.as_slice()[0] + 0.6).abs() < 1e-12);
+        assert!((normalized.as_slice()[1] + 0.8).abs() < 1e-12);
+    }
+
+    // -- mut_normalize --
+    #[test]
+    fn test_mut_normalize_f64() {
+        let mut v = FlexVector::from_vec(vec![3.0, 4.0]);
+        v.mut_normalize().unwrap();
+        // The norm is 5.0, so the normalized vector should be [0.6, 0.8]
+        assert!((v.as_slice()[0] - 0.6).abs() < 1e-12);
+        assert!((v.as_slice()[1] - 0.8).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_mut_normalize_f64_zero_vector() {
+        let mut v = FlexVector::from_vec(vec![0.0, 0.0]);
+        let result = v.mut_normalize();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mut_normalize_f64_negative_values() {
+        let mut v = FlexVector::from_vec(vec![-3.0, -4.0]);
+        v.mut_normalize().unwrap();
+        // The norm is 5.0, so the normalized vector should be [-0.6, -0.8]
+        assert!((v.as_slice()[0] + 0.6).abs() < 1e-12);
+        assert!((v.as_slice()[1] + 0.8).abs() < 1e-12);
+    }
+
+    // -- normalize_to --
+    #[test]
+    fn test_normalize_to_f64() {
+        let v = FlexVector::from_vec(vec![3.0, 4.0]);
+        let normalized = v.normalize_to(10.0).unwrap();
+        // The original norm is 5.0, so the normalized vector should be [6.0, 8.0]
+        assert!((normalized.as_slice()[0] - 6.0).abs() < 1e-12);
+        assert!((normalized.as_slice()[1] - 8.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_to_f64_zero_vector() {
+        let v = FlexVector::from_vec(vec![0.0, 0.0]);
+        let result = v.normalize_to(1.0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_normalize_to_f64_negative_values() {
+        let v = FlexVector::from_vec(vec![-3.0, -4.0]);
+        let normalized = v.normalize_to(5.0).unwrap();
+        // The original norm is 5.0, so the normalized vector should be [-3.0, -4.0]
+        assert!((normalized.as_slice()[0] + 3.0).abs() < 1e-12);
+        assert!((normalized.as_slice()[1] + 4.0).abs() < 1e-12);
+    }
+
+    // -- mut_normalize_to --
+    #[test]
+    fn test_mut_normalize_to_f64() {
+        let mut v = FlexVector::from_vec(vec![3.0, 4.0]);
+        v.mut_normalize_to(10.0).unwrap();
+        // The original norm is 5.0, so the normalized vector should be [6.0, 8.0]
+        assert!((v.as_slice()[0] - 6.0).abs() < 1e-12);
+        assert!((v.as_slice()[1] - 8.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_mut_normalize_to_f64_zero_vector() {
+        let mut v = FlexVector::from_vec(vec![0.0, 0.0]);
+        let result = v.mut_normalize_to(1.0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mut_normalize_to_f64_negative_values() {
+        let mut v = FlexVector::from_vec(vec![-3.0, -4.0]);
+        v.mut_normalize_to(5.0).unwrap();
+        // The original norm is 5.0, so the normalized vector should be [-3.0, -4.0]
+        assert!((v.as_slice()[0] + 3.0).abs() < 1e-12);
+        assert!((v.as_slice()[1] + 4.0).abs() < 1e-12);
+    }
+
+    // -- lerp --
+    #[test]
+    fn test_lerp_f64_weight_zero() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
+        let result = v1.lerp(&v2, 0.0).unwrap();
+        // Should be equal to v1
+        assert!((result.as_slice()[0] - 1.0).abs() < 1e-12);
+        assert!((result.as_slice()[1] - 2.0).abs() < 1e-12);
+        assert!((result.as_slice()[2] - 3.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_lerp_f64_weight_one() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
+        let result = v1.lerp(&v2, 1.0).unwrap();
+        // Should be equal to v2
+        assert!((result.as_slice()[0] - 4.0).abs() < 1e-12);
+        assert!((result.as_slice()[1] - 5.0).abs() < 1e-12);
+        assert!((result.as_slice()[2] - 6.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_lerp_f64_weight_half() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
+        let result = v1.lerp(&v2, 0.5).unwrap();
+        // Should be the midpoint
+        assert!((result.as_slice()[0] - 2.5).abs() < 1e-12);
+        assert!((result.as_slice()[1] - 3.5).abs() < 1e-12);
+        assert!((result.as_slice()[2] - 4.5).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_lerp_f64_weight_out_of_bounds() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
+        let result_low = v1.lerp(&v2, -0.1);
+        let result_high = v1.lerp(&v2, 1.1);
+        assert!(result_low.is_err());
+        assert!(result_high.is_err());
+    }
+
+    // -- mut_lerp --
+    #[test]
+    fn test_mut_lerp_f64_weight_zero() {
+        let mut v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
+        v1.mut_lerp(&v2, 0.0).unwrap();
+        // Should be equal to original v1
+        assert!((v1.as_slice()[0] - 1.0).abs() < 1e-12);
+        assert!((v1.as_slice()[1] - 2.0).abs() < 1e-12);
+        assert!((v1.as_slice()[2] - 3.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_mut_lerp_f64_weight_one() {
+        let mut v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
+        v1.mut_lerp(&v2, 1.0).unwrap();
+        // Should be equal to v2
+        assert!((v1.as_slice()[0] - 4.0).abs() < 1e-12);
+        assert!((v1.as_slice()[1] - 5.0).abs() < 1e-12);
+        assert!((v1.as_slice()[2] - 6.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_mut_lerp_f64_weight_half() {
+        let mut v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
+        v1.mut_lerp(&v2, 0.5).unwrap();
+        // Should be the midpoint
+        assert!((v1.as_slice()[0] - 2.5).abs() < 1e-12);
+        assert!((v1.as_slice()[1] - 3.5).abs() < 1e-12);
+        assert!((v1.as_slice()[2] - 4.5).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_mut_lerp_f64_weight_out_of_bounds() {
+        let mut v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
+        let result_low = v1.mut_lerp(&v2, -0.1);
+        let result_high = v1.mut_lerp(&v2, 1.1);
+        assert!(result_low.is_err());
+        assert!(result_high.is_err());
+    }
+
+    // -- midpoint --
+    #[test]
+    fn test_midpoint_f64() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
+        let midpoint = v1.midpoint(&v2).unwrap();
+        // Should be the average of each component
+        assert!((midpoint.as_slice()[0] - 2.5).abs() < 1e-12);
+        assert!((midpoint.as_slice()[1] - 3.5).abs() < 1e-12);
+        assert!((midpoint.as_slice()[2] - 4.5).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_midpoint_f64_negative_values() {
+        let v1 = FlexVector::from_vec(vec![-1.0, -2.0, -3.0]);
+        let v2 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let midpoint = v1.midpoint(&v2).unwrap();
+        // Should be [0.0, 0.0, 0.0]
+        assert!((midpoint.as_slice()[0]).abs() < 1e-12);
+        assert!((midpoint.as_slice()[1]).abs() < 1e-12);
+        assert!((midpoint.as_slice()[2]).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_midpoint_f64_mismatched_length() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
+        let result = v1.midpoint(&v2);
+        assert!(result.is_err());
+    }
+
+    //TODO: continue tests for all methods in VectorOpsFloat trait
 
     // ================================
     //
