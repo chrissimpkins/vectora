@@ -2,6 +2,7 @@
 
 pub mod flexvector;
 pub mod traits;
+mod utils;
 pub mod vector;
 
 pub use flexvector::FlexVector;

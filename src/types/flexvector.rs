@@ -10,6 +10,8 @@ use crate::{
     types::traits::VectorOpsComplex, types::traits::VectorOpsFloat,
 };
 
+use crate::types::utils::{dot_impl, mut_translate_impl, translate_impl};
+
 use crate::errors::VectorError;
 
 use num::{Complex, Zero};
@@ -298,16 +300,31 @@ impl<T> VectorBase<T> for FlexVector<T> {
 // TODO: add tests
 impl<T> VectorOps<T> for FlexVector<T>
 where
-    T: num::Num + Clone,
+    T: num::Num + Clone + Copy,
 {
     type Output = Self;
 
     #[inline]
-    fn translate(&self, other: &Self) -> Self::Output
-    where
-        T: num::Num + Clone,
-    {
-        self.components.iter().zip(&other.components).map(|(a, b)| a.clone() + b.clone()).collect()
+    fn translate(&self, other: &Self) -> Result<Self::Output, VectorError> {
+        if self.len() != other.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        let mut out = FlexVector::zero(self.len());
+        translate_impl(self.as_slice(), other.as_slice(), out.as_mut_slice());
+        Ok(out)
+    }
+
+    #[inline]
+    fn mut_translate(&mut self, other: &Self) -> Result<(), VectorError> {
+        if self.len() != other.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        mut_translate_impl(self.as_mut_slice(), other.as_slice());
+        Ok(())
     }
 
     #[inline]
@@ -326,6 +343,19 @@ where
         Self::Output: std::iter::FromIterator<T>,
     {
         self.as_slice().iter().map(|a| -a.clone()).collect()
+    }
+
+    #[inline]
+    fn dot(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Num + Copy + std::iter::Sum<T>,
+    {
+        if self.len() != other.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        Ok(dot_impl(self.as_slice(), other.as_slice()))
     }
 
     /// Cross product (only for 3D vectors).
@@ -415,7 +445,7 @@ where
                 "Cannot compute angle with zero vector".to_string(),
             ));
         }
-        let dot = self.dot(other);
+        let dot = self.dot(other)?;
         let cos_theta = dot / (norm_self * norm_other);
         let cos_theta = cos_theta.max(-T::one()).min(T::one());
         Ok(cos_theta.acos())
@@ -426,13 +456,13 @@ where
     where
         Self::Output: std::iter::FromIterator<T>,
     {
-        let denom = other.dot(other);
+        let denom = other.dot(other)?;
         if denom == T::zero() {
             return Err(VectorError::ZeroVectorError(
                 "Cannot project onto zero vector".to_string(),
             ));
         }
-        let scalar = self.dot(other) / denom;
+        let scalar = self.dot(other)? / denom;
         Ok(other.as_slice().iter().map(|b| *b * scalar).collect())
     }
 }
@@ -600,17 +630,17 @@ impl<T> FlexVector<T> {
 
     /// Cosine similarity between self and other.
     #[inline]
-    pub fn cosine_similarity(&self, other: &Self) -> T
+    pub fn cosine_similarity(&self, other: &Self) -> Result<T, VectorError>
     where
         T: num::Float + Clone + std::iter::Sum<T>,
     {
-        let dot = self.dot(other);
+        let dot = self.dot(other)?;
         let norm_self = self.norm();
         let norm_other = other.norm();
         if norm_self == T::zero() || norm_other == T::zero() {
-            T::zero()
+            Ok(T::zero())
         } else {
-            dot / (norm_self * norm_other)
+            Ok(dot / (norm_self * norm_other))
         }
     }
 }
@@ -2433,7 +2463,7 @@ mod tests {
     fn test_cosine_similarity_parallel() {
         let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![2.0, 4.0, 6.0]);
-        let cos_sim = v1.cosine_similarity(&v2);
+        let cos_sim = v1.cosine_similarity(&v2).unwrap();
         assert!((cos_sim - 1.0).abs() < 1e-10);
     }
 
@@ -2441,7 +2471,7 @@ mod tests {
     fn test_cosine_similarity_orthogonal() {
         let v1 = FlexVector::from_vec(vec![1.0, 0.0]);
         let v2 = FlexVector::from_vec(vec![0.0, 1.0]);
-        let cos_sim = v1.cosine_similarity(&v2);
+        let cos_sim = v1.cosine_similarity(&v2).unwrap();
         assert!((cos_sim - 0.0).abs() < 1e-10);
     }
 
@@ -2449,7 +2479,7 @@ mod tests {
     fn test_cosine_similarity_opposite() {
         let v1 = FlexVector::from_vec(vec![1.0, 0.0]);
         let v2 = FlexVector::from_vec(vec![-1.0, 0.0]);
-        let cos_sim = v1.cosine_similarity(&v2);
+        let cos_sim = v1.cosine_similarity(&v2).unwrap();
         assert!((cos_sim + 1.0).abs() < 1e-10);
     }
 
@@ -2457,7 +2487,7 @@ mod tests {
     fn test_cosine_similarity_zero_vector() {
         let v1 = FlexVector::from_vec(vec![0.0, 0.0]);
         let v2 = FlexVector::from_vec(vec![1.0, 2.0]);
-        let cos_sim = v1.cosine_similarity(&v2);
+        let cos_sim = v1.cosine_similarity(&v2).unwrap();
         assert_eq!(cos_sim, 0.0);
     }
 
@@ -2472,7 +2502,7 @@ mod tests {
     fn test_translate_i32() {
         let v1 = FlexVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
-        let result = v1.translate(&v2);
+        let result = v1.translate(&v2).unwrap();
         assert_eq!(result.as_slice(), &[5, 7, 9]);
     }
 
@@ -2480,7 +2510,7 @@ mod tests {
     fn test_translate_f64() {
         let v1 = FlexVector::from_vec(vec![1.5, 2.5, 3.5]);
         let v2 = FlexVector::from_vec(vec![0.5, 1.5, 2.5]);
-        let result = v1.translate(&v2);
+        let result = v1.translate(&v2).unwrap();
         assert_eq!(result.as_slice(), &[2.0, 4.0, 6.0]);
     }
 
@@ -2488,7 +2518,7 @@ mod tests {
     fn test_translate_complex_f64() {
         let v1 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
-        let result = v1.translate(&v2);
+        let result = v1.translate(&v2).unwrap();
         assert_eq!(result.as_slice(), &[Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
     }
 
@@ -2642,7 +2672,7 @@ mod tests {
     fn test_dot_i32() {
         let v1 = FlexVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
-        let dot = v1.dot(&v2);
+        let dot = v1.dot(&v2).unwrap();
         assert_eq!(dot, 1 * 4 + 2 * 5 + 3 * 6); // 32
     }
 
@@ -2650,7 +2680,7 @@ mod tests {
     fn test_dot_f64() {
         let v1 = FlexVector::from_vec(vec![1.5, 2.0, -3.0]);
         let v2 = FlexVector::from_vec(vec![2.0, 0.5, 4.0]);
-        let dot = v1.dot(&v2);
+        let dot = v1.dot(&v2).unwrap();
         assert!((dot - (1.5 * 2.0 + 2.0 * 0.5 + -3.0 * 4.0)).abs() < 1e-12);
     }
 

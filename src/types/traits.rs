@@ -194,20 +194,14 @@ pub trait VectorOps<T>: VectorBase<T> {
     type Output;
 
     /// ...
-    fn translate(&self, other: &Self) -> Self::Output
+    fn translate(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
         T: num::Num + Copy;
 
     /// ...
-    #[inline]
-    fn mut_translate(&mut self, other: &Self)
+    fn mut_translate(&mut self, other: &Self) -> Result<(), VectorError>
     where
-        T: num::Num + Copy,
-    {
-        for (a, b) in self.as_mut_slice().iter_mut().zip(other.as_slice()) {
-            *a = *a + *b;
-        }
-    }
+        T: num::Num + Copy;
 
     /// Returns a new vector scaled by the given scalar.
     fn scale(&self, scalar: T) -> Self::Output
@@ -255,13 +249,9 @@ pub trait VectorOps<T>: VectorBase<T> {
     }
 
     /// ...
-    #[inline]
-    fn dot(&self, other: &Self) -> T
+    fn dot(&self, other: &Self) -> Result<T, VectorError>
     where
-        T: num::Num + Copy + std::iter::Sum<T>,
-    {
-        self.as_slice().iter().zip(other.as_slice()).map(|(a, b)| *a * *b).sum()
-    }
+        T: num::Num + Copy + std::iter::Sum<T>;
 
     /// Dot product as f64 (for integer and float types).
     #[inline]
@@ -789,6 +779,7 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
         self.norm()
     }
 
+    /// ...
     fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
         N: num::Float + Clone + std::iter::Sum<N>,
