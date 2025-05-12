@@ -254,17 +254,9 @@ pub trait VectorOps<T>: VectorBase<T> {
         T: num::Num + Copy + std::iter::Sum<T>;
 
     /// Dot product as f64 (for integer and float types).
-    #[inline]
-    fn dot_to_f64(&self, other: &Self) -> f64
+    fn dot_to_f64(&self, other: &Self) -> Result<f64, VectorError>
     where
-        T: num::ToPrimitive,
-    {
-        self.as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| a.to_f64().unwrap() * b.to_f64().unwrap())
-            .sum()
-    }
+        T: num::ToPrimitive;
 
     ///...
     fn cross(&self, other: &Self) -> Result<Self::Output, VectorError>
@@ -384,89 +376,34 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
         T: num::Float + Clone + PartialOrd;
 
     /// In-place linear interpolation between self and end by weight in [0, 1].
-    #[inline]
     fn mut_lerp(&mut self, end: &Self, weight: T) -> Result<(), VectorError>
     where
-        T: num::Float + Copy + PartialOrd,
-    {
-        if self.len() != end.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
-        if weight < T::zero() || weight > T::one() {
-            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
-        }
-        let w = weight;
-        let one_minus_w = T::one() - w;
-        for (a, b) in self.as_mut_slice().iter_mut().zip(end.as_slice()) {
-            *a = one_minus_w * *a + w * *b;
-        }
-        Ok(())
-    }
+        T: num::Float + Copy + PartialOrd;
 
     /// Midpoint
-    #[inline]
     fn midpoint(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
-        T: num::Float + Clone,
-    {
-        self.lerp(other, T::from(0.5).unwrap())
-    }
+        T: num::Float + Clone;
 
     /// Euclidean distance between self and other.
-    #[inline]
-    fn distance(&self, other: &Self) -> T
+    fn distance(&self, other: &Self) -> Result<T, VectorError>
     where
-        T: num::Float + Clone + std::iter::Sum<T>,
-    {
-        self.as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| (*a - *b).powi(2))
-            .sum::<T>()
-            .sqrt()
-    }
+        T: num::Float + Clone + std::iter::Sum<T>;
 
     /// Manhattan (L1) distance between self and other.
-    #[inline]
-    fn manhattan_distance(&self, other: &Self) -> T
+    fn manhattan_distance(&self, other: &Self) -> Result<T, VectorError>
     where
-        T: num::Float + Clone + std::iter::Sum<T>,
-    {
-        self.as_slice().iter().zip(other.as_slice()).map(|(a, b)| (*a - *b).abs()).sum()
-    }
+        T: num::Float + Clone + std::iter::Sum<T>;
 
     /// Chebyshev (L∞) distance between self and other.
-    #[inline]
-    fn chebyshev_distance(&self, other: &Self) -> T
+    fn chebyshev_distance(&self, other: &Self) -> Result<T, VectorError>
     where
-        T: num::Float + Clone + PartialOrd,
-    {
-        self.as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| (*a - *b).abs())
-            .fold(T::zero(), |acc, x| acc.max(x))
-    }
+        T: num::Float + Clone + PartialOrd;
 
     /// Minkowski (Lp) distance between self and other.
-    #[inline]
     fn minkowski_distance(&self, other: &Self, p: T) -> Result<T, VectorError>
     where
-        T: num::Float + Clone + std::iter::Sum<T>,
-    {
-        if p < T::one() {
-            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
-        }
-        Ok(self
-            .as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| (*a - *b).abs().powf(p))
-            .sum::<T>()
-            .powf(T::one() / p))
-    }
+        T: num::Float + Clone + std::iter::Sum<T>;
 
     /// Euclidean norm (magnitude) of the vector.
     #[inline]
@@ -475,6 +412,15 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
         T: num::Float + Clone + std::iter::Sum<T>,
     {
         self.as_slice().iter().map(|a| (*a).powi(2)).sum::<T>().sqrt()
+    }
+
+    /// Alias for norm (magnitude).
+    #[inline]
+    fn magnitude(&self) -> T
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        self.norm()
     }
 
     /// Lp norm (generalized Minkowski norm).
@@ -487,15 +433,6 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
             return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
         }
         Ok(self.as_slice().iter().map(|a| a.abs().powf(p)).sum::<T>().powf(T::one() / p))
-    }
-
-    /// Alias for norm (magnitude).
-    #[inline]
-    fn magnitude(&self) -> T
-    where
-        T: num::Float + Clone + std::iter::Sum<T>,
-    {
-        self.norm()
     }
 
     /// ...

@@ -10,7 +10,11 @@ use crate::{
     types::traits::VectorOpsComplex, types::traits::VectorOpsFloat,
 };
 
-use crate::types::utils::{dot_impl, mut_translate_impl, translate_impl};
+use crate::types::utils::{
+    angle_with_impl, chebyshev_distance_impl, cross_impl, distance_impl, dot_impl, dot_to_f64_impl,
+    lerp_impl, manhattan_distance_impl, minkowski_distance_impl, mut_lerp_impl, mut_translate_impl,
+    project_onto_impl, translate_impl,
+};
 
 use crate::errors::VectorError;
 
@@ -358,6 +362,19 @@ where
         Ok(dot_impl(self.as_slice(), other.as_slice()))
     }
 
+    #[inline]
+    fn dot_to_f64(&self, other: &Self) -> Result<f64, VectorError>
+    where
+        T: num::ToPrimitive,
+    {
+        if self.len() != other.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        Ok(dot_to_f64_impl(self.as_slice(), other.as_slice()))
+    }
+
     /// Cross product (only for 3D vectors).
     #[inline]
     fn cross(&self, other: &Self) -> Result<Self::Output, VectorError>
@@ -372,8 +389,7 @@ where
         }
         let a = self.as_slice();
         let b = other.as_slice();
-        let result =
-            [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+        let result = cross_impl(a, b);
         Ok(result.into_iter().collect())
     }
 }
@@ -383,7 +399,6 @@ where
 // VectorOpsFloat trait impl
 //
 // ================================
-// TODO: add tests
 impl<T> VectorOpsFloat<T> for FlexVector<T>
 where
     T: num::Float + Clone + std::iter::Sum<T>,
@@ -416,7 +431,7 @@ where
     #[inline]
     fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
     where
-        T: PartialOrd,
+        T: num::Float + Copy,
     {
         if self.len() != end.len() {
             return Err(VectorError::MismatchedLengthError(
@@ -426,18 +441,108 @@ where
         if weight < T::zero() || weight > T::one() {
             return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
         }
-        let w = weight;
-        let one_minus_w = T::one() - w;
-        Ok(self
-            .components
-            .iter()
-            .zip(&end.components)
-            .map(|(a, b)| one_minus_w * *a + w * *b)
-            .collect())
+        let mut out = FlexVector::zero(self.len());
+        lerp_impl(self.as_slice(), end.as_slice(), weight, out.as_mut_slice());
+        Ok(out)
     }
 
     #[inline]
-    fn angle_with(&self, other: &Self) -> Result<T, VectorError> {
+    fn mut_lerp(&mut self, end: &Self, weight: T) -> Result<(), VectorError>
+    where
+        T: num::Float + Copy + PartialOrd,
+    {
+        if self.len() != end.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        if weight < T::zero() || weight > T::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        mut_lerp_impl(self.as_mut_slice(), end.as_slice(), weight);
+        Ok(())
+    }
+
+    #[inline]
+    fn midpoint(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + Clone,
+    {
+        if self.len() != other.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        let mut out = FlexVector::zero(self.len());
+        lerp_impl(self.as_slice(), other.as_slice(), T::from(0.5).unwrap(), out.as_mut_slice());
+        Ok(out)
+    }
+
+    #[inline]
+    fn distance(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        if self.len() != other.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        Ok(distance_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn manhattan_distance(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        if self.len() != other.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        Ok(manhattan_distance_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn chebyshev_distance(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + PartialOrd,
+    {
+        if self.len() != other.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        Ok(chebyshev_distance_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn minkowski_distance(&self, other: &Self, p: T) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        if self.len() != other.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        if p < T::one() {
+            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
+        }
+        Ok(minkowski_distance_impl(self.as_slice(), other.as_slice(), p))
+    }
+
+    #[inline]
+    fn angle_with(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        if self.len() != other.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
         let norm_self = self.norm();
         let norm_other = other.norm();
         if norm_self == T::zero() || norm_other == T::zero() {
@@ -445,25 +550,27 @@ where
                 "Cannot compute angle with zero vector".to_string(),
             ));
         }
-        let dot = self.dot(other)?;
-        let cos_theta = dot / (norm_self * norm_other);
-        let cos_theta = cos_theta.max(-T::one()).min(T::one());
-        Ok(cos_theta.acos())
+        Ok(angle_with_impl(self.as_slice(), other.as_slice(), norm_self, norm_other))
     }
 
     #[inline]
     fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
+        T: num::Float + Clone + std::iter::Sum<T>,
         Self::Output: std::iter::FromIterator<T>,
     {
-        let denom = other.dot(other)?;
+        if self.len() != other.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        let denom = dot_impl(other.as_slice(), other.as_slice());
         if denom == T::zero() {
             return Err(VectorError::ZeroVectorError(
                 "Cannot project onto zero vector".to_string(),
             ));
         }
-        let scalar = self.dot(other)? / denom;
-        Ok(other.as_slice().iter().map(|b| *b * scalar).collect())
+        Ok(project_onto_impl(self.as_slice(), other.as_slice(), denom))
     }
 }
 
@@ -2522,12 +2629,20 @@ mod tests {
         assert_eq!(result.as_slice(), &[Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
     }
 
+    #[test]
+    fn test_translate_mismatched_lengths() {
+        let v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let result = v1.translate(&v2);
+        assert!(result.is_err());
+    }
+
     // -- mut_translate --
     #[test]
     fn test_mut_translate_i32() {
         let mut v1 = FlexVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
-        v1.mut_translate(&v2);
+        v1.mut_translate(&v2).unwrap();
         assert_eq!(v1.as_slice(), &[5, 7, 9]);
     }
 
@@ -2535,7 +2650,7 @@ mod tests {
     fn test_mut_translate_f64() {
         let mut v1 = FlexVector::from_vec(vec![1.5, 2.5, 3.5]);
         let v2 = FlexVector::from_vec(vec![0.5, 1.5, 2.5]);
-        v1.mut_translate(&v2);
+        v1.mut_translate(&v2).unwrap();
         assert_eq!(v1.as_slice(), &[2.0, 4.0, 6.0]);
     }
 
@@ -2543,8 +2658,16 @@ mod tests {
     fn test_mut_translate_complex_f64() {
         let mut v1 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
-        v1.mut_translate(&v2);
+        v1.mut_translate(&v2).unwrap();
         assert_eq!(v1.as_slice(), &[Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
+    }
+
+    #[test]
+    fn test_mut_translate_mismatched_lengths() {
+        let mut v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let result = v1.mut_translate(&v2);
+        assert!(result.is_err());
     }
 
     // -- scale --
@@ -2684,6 +2807,22 @@ mod tests {
         assert!((dot - (1.5 * 2.0 + 2.0 * 0.5 + -3.0 * 4.0)).abs() < 1e-12);
     }
 
+    #[test]
+    fn test_dot_mismatched_lengths() {
+        let v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let dot = v1.dot(&v2);
+        assert!(dot.is_err());
+    }
+
+    #[test]
+    fn test_dot_empty() {
+        let v1: FlexVector<i32> = FlexVector::from_vec(vec![]);
+        let v2 = FlexVector::from_vec(vec![]);
+        let dot = v1.dot(&v2).unwrap();
+        assert_eq!(dot, 0);
+    }
+
     // complex number dot product tested in VectorOpsComplex trait impl testing section below
 
     // -- dot_to_f64 --
@@ -2691,7 +2830,7 @@ mod tests {
     fn test_dot_to_f64_i32() {
         let v1 = FlexVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
-        let dot = v1.dot_to_f64(&v2);
+        let dot = v1.dot_to_f64(&v2).unwrap();
         assert!((dot - 32.0).abs() < 1e-12);
     }
 
@@ -2699,8 +2838,16 @@ mod tests {
     fn test_dot_to_f64_f64() {
         let v1 = FlexVector::from_vec(vec![1.5, 2.0, -3.0]);
         let v2 = FlexVector::from_vec(vec![2.0, 0.5, 4.0]);
-        let dot = v1.dot_to_f64(&v2);
+        let dot = v1.dot_to_f64(&v2).unwrap();
         assert!((dot - (1.5 * 2.0 + 2.0 * 0.5 + -3.0 * 4.0)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_dot_to_f64_mismatched_lengths() {
+        let v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let dot = v1.dot(&v2);
+        assert!(dot.is_err());
     }
 
     // complex number dot_to_f64 tested in VectorOpsComplex trait impl testing section below
@@ -2728,7 +2875,23 @@ mod tests {
     // complex vector space.
 
     #[test]
-    fn test_cross_wrong_length() {
+    fn test_cross_wrong_length_1() {
+        let v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![3, 4, 5]);
+        let result = v1.cross(&v2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cross_wrong_length_2() {
+        let v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![3, 4]);
+        let result = v1.cross(&v2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cross_wrong_length_3() {
         let v1 = FlexVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![3, 4]);
         let result = v1.cross(&v2);
@@ -3081,7 +3244,392 @@ mod tests {
         assert!(result.is_err());
     }
 
-    //TODO: continue tests for all methods in VectorOpsFloat trait
+    // -- distance --
+    #[test]
+    fn test_distance_f64_basic() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
+        let dist = v1.distance(&v2).unwrap();
+        // sqrt((1-4)^2 + (2-6)^2 + (3-8)^2) = sqrt(9 + 16 + 25) = sqrt(50)
+        assert!((dist - 50f64.sqrt()).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_distance_f64_zero() {
+        let v1 = FlexVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let v2 = FlexVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let dist = v1.distance(&v2).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_distance_f64_negative_values() {
+        let v1 = FlexVector::from_vec(vec![-1.0, -2.0, -3.0]);
+        let v2 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let dist = v1.distance(&v2).unwrap();
+        // sqrt(((-1)-1)^2 + ((-2)-2)^2 + ((-3)-3)^2) = sqrt(4 + 16 + 36) = sqrt(56)
+        assert!((dist - 56f64.sqrt()).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_distance_f64_mismatched_length() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
+        let result = v1.distance(&v2);
+        assert!(result.is_err());
+    }
+
+    // -- manhattan_distance --
+    #[test]
+    fn test_manhattan_distance_f64_basic() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
+        let dist = v1.manhattan_distance(&v2).unwrap();
+        // |1-4| + |2-6| + |3-8| = 3 + 4 + 5 = 12
+        assert!((dist - 12.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_manhattan_distance_f64_zero() {
+        let v1 = FlexVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let v2 = FlexVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let dist = v1.manhattan_distance(&v2).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_manhattan_distance_f64_negative_values() {
+        let v1 = FlexVector::from_vec(vec![-1.0, -2.0, -3.0]);
+        let v2 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let dist = v1.manhattan_distance(&v2).unwrap();
+        // |(-1)-1| + |(-2)-2| + |(-3)-3| = 2 + 4 + 6 = 12
+        assert!((dist - 12.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_manhattan_distance_f64_mismatched_length() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
+        let result = v1.manhattan_distance(&v2);
+        assert!(result.is_err());
+    }
+
+    // -- chebyshev_distance --
+    #[test]
+    fn test_chebyshev_distance_f64_basic() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
+        let dist = v1.chebyshev_distance(&v2).unwrap();
+        // max(|1-4|, |2-6|, |3-8|) = max(3, 4, 5) = 5
+        assert!((dist - 5.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_chebyshev_distance_f64_zero() {
+        let v1 = FlexVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let v2 = FlexVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let dist = v1.chebyshev_distance(&v2).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_chebyshev_distance_f64_negative_values() {
+        let v1 = FlexVector::from_vec(vec![-1.0, -2.0, -3.0]);
+        let v2 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let dist = v1.chebyshev_distance(&v2).unwrap();
+        // max(|-1-1|, |-2-2|, |-3-3|) = max(2, 4, 6) = 6
+        assert!((dist - 6.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_chebyshev_distance_f64_mismatched_length() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
+        let result = v1.chebyshev_distance(&v2);
+        assert!(result.is_err());
+    }
+
+    // -- minkowski_distance --
+    #[test]
+    fn test_minkowski_distance_f64_basic() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
+        let dist = v1.minkowski_distance(&v2, 3.0).unwrap();
+        // ((|1-4|^3 + |2-6|^3 + |3-8|^3))^(1/3) = (27 + 64 + 125)^(1/3) = (216)^(1/3) = 6
+        assert!((dist - 6.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_minkowski_distance_f64_p1() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
+        let dist = v1.minkowski_distance(&v2, 1.0).unwrap();
+        // Should match manhattan distance: 3 + 4 + 5 = 12
+        assert!((dist - 12.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_minkowski_distance_f64_p2() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
+        let dist = v1.minkowski_distance(&v2, 2.0).unwrap();
+        // Should match euclidean distance: sqrt(9 + 16 + 25) = sqrt(50)
+        assert!((dist - 50f64.sqrt()).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_minkowski_distance_f64_empty() {
+        let v1: FlexVector<f64> = FlexVector::new();
+        let v2: FlexVector<f64> = FlexVector::new();
+        let dist = v1.minkowski_distance(&v2, 2.0).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_minkowski_distance_f64_identical() {
+        let v1 = FlexVector::from_vec(vec![1.23, 4.56, 7.89]);
+        let v2 = FlexVector::from_vec(vec![1.23, 4.56, 7.89]);
+        let dist = v1.minkowski_distance(&v2, 2.0).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_minkowski_distance_f64_partial() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 6.0]);
+        let result = v1.minkowski_distance(&v2, 2.0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_minkowski_distance_f64_invalid_p() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
+        let result = v1.minkowski_distance(&v2, 0.5);
+        assert!(result.is_err());
+    }
+
+    // -- norm --
+    #[test]
+    fn test_norm_f64_basic() {
+        let v = FlexVector::from_vec(vec![3.0, 4.0]);
+        let norm = v.norm();
+        // sqrt(3^2 + 4^2) = 5
+        assert!((norm - 5.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_norm_f64_zero() {
+        let v = FlexVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let norm = v.norm();
+        assert_eq!(norm, 0.0);
+    }
+
+    #[test]
+    fn test_norm_f64_single_element() {
+        let v = FlexVector::from_vec(vec![7.0]);
+        let norm = v.norm();
+        assert_eq!(norm, 7.0);
+    }
+
+    #[test]
+    fn test_norm_f64_negative_values() {
+        let v = FlexVector::from_vec(vec![-3.0, -4.0]);
+        let norm = v.norm();
+        // sqrt((-3)^2 + (-4)^2) = 5
+        assert!((norm - 5.0).abs() < 1e-12);
+    }
+
+    // -- magnitude --
+    #[test]
+    fn test_magnitude_f64_basic() {
+        let v = FlexVector::from_vec(vec![3.0, 4.0]);
+        let mag = v.magnitude();
+        // sqrt(3^2 + 4^2) = 5
+        assert!((mag - 5.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_magnitude_f64_zero() {
+        let v = FlexVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let mag = v.magnitude();
+        assert_eq!(mag, 0.0);
+    }
+
+    #[test]
+    fn test_magnitude_f64_single_element() {
+        let v = FlexVector::from_vec(vec![7.0]);
+        let mag = v.magnitude();
+        assert_eq!(mag, 7.0);
+    }
+
+    #[test]
+    fn test_magnitude_f64_negative_values() {
+        let v = FlexVector::from_vec(vec![-3.0, -4.0]);
+        let mag = v.magnitude();
+        // sqrt((-3)^2 + (-4)^2) = 5
+        assert!((mag - 5.0).abs() < 1e-12);
+    }
+
+    // -- lp_norm --
+    #[test]
+    fn test_lp_norm_f64_p1() {
+        let v = FlexVector::from_vec(vec![1.0, -2.0, 3.0]);
+        let norm = v.lp_norm(1.0).unwrap();
+        // L1 norm: |1| + |−2| + |3| = 1 + 2 + 3 = 6
+        assert!((norm - 6.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_lp_norm_f64_p2() {
+        let v = FlexVector::from_vec(vec![3.0, 4.0]);
+        let norm = v.lp_norm(2.0).unwrap();
+        // L2 norm: sqrt(3^2 + 4^2) = 5
+        assert!((norm - 5.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_lp_norm_f64_p3() {
+        let v = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let norm = v.lp_norm(3.0).unwrap();
+        // (|1|^3 + |2|^3 + |3|^3)^(1/3) = (1 + 8 + 27)^(1/3) = 36^(1/3)
+        assert!((norm - 36f64.powf(1.0 / 3.0)).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_lp_norm_f64_zero() {
+        let v = FlexVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let norm = v.lp_norm(2.0).unwrap();
+        assert_eq!(norm, 0.0);
+    }
+
+    #[test]
+    fn test_lp_norm_f64_invalid_p() {
+        let v = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let result = v.lp_norm(0.5);
+        assert!(result.is_err());
+    }
+
+    // -- angle_with --
+    #[test]
+    fn test_angle_with_f64_orthogonal() {
+        let v1 = FlexVector::from_vec(vec![1.0, 0.0]);
+        let v2 = FlexVector::from_vec(vec![0.0, 1.0]);
+        let angle = v1.angle_with(&v2).unwrap();
+        // Orthogonal vectors: angle should be pi/2
+        assert!((angle - std::f64::consts::FRAC_PI_2).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_angle_with_f64_parallel() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::from_vec(vec![2.0, 4.0]);
+        let angle = v1.angle_with(&v2).unwrap();
+        // Parallel vectors: angle should be 0 (allow for floating-point error)
+        assert!(angle.abs() < 1e-7, "angle was {}", angle);
+    }
+
+    #[test]
+    fn test_angle_with_f64_opposite() {
+        let v1 = FlexVector::from_vec(vec![1.0, 0.0]);
+        let v2 = FlexVector::from_vec(vec![-1.0, 0.0]);
+        let angle = v1.angle_with(&v2).unwrap();
+        // Opposite vectors: angle should be pi
+        assert!((angle - std::f64::consts::PI).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_angle_with_f64_identical() {
+        let v1 = FlexVector::from_vec(vec![3.0, 4.0]);
+        let v2 = FlexVector::from_vec(vec![3.0, 4.0]);
+        let angle = v1.angle_with(&v2).unwrap();
+        // Identical vectors: angle should be 0
+        assert!(angle.abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_angle_with_f64_arbitrary() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::from_vec(vec![2.0, 1.0]);
+        let angle = v1.angle_with(&v2).unwrap();
+        // Check that the angle is between 0 and pi
+        assert!(angle > 0.0 && angle < std::f64::consts::PI);
+    }
+
+    #[test]
+    fn test_angle_with_f64_zero_vector() {
+        let v1 = FlexVector::from_vec(vec![0.0, 0.0]);
+        let v2 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let result = v1.angle_with(&v2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_angle_with_f64_mismatched_length() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
+        let result = v1.angle_with(&v2);
+        assert!(result.is_err());
+    }
+
+    // -- project_onto --
+    #[test]
+    fn test_project_onto_f64_basic() {
+        let v1 = FlexVector::from_vec(vec![3.0, 4.0]);
+        let v2 = FlexVector::from_vec(vec![1.0, 0.0]);
+        let proj = v1.project_onto(&v2).unwrap();
+        // Projection of [3,4] onto [1,0] is [3,0]
+        assert!((proj.as_slice()[0] - 3.0).abs() < 1e-12);
+        assert!((proj.as_slice()[1] - 0.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_f64_parallel() {
+        let v1 = FlexVector::from_vec(vec![2.0, 4.0]);
+        let v2 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let proj = v1.project_onto(&v2).unwrap();
+        // v1 is parallel to v2, so projection should be v1 itself
+        assert!((proj.as_slice()[0] - 2.0).abs() < 1e-12);
+        assert!((proj.as_slice()[1] - 4.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_f64_orthogonal() {
+        let v1 = FlexVector::from_vec(vec![0.0, 1.0]);
+        let v2 = FlexVector::from_vec(vec![1.0, 0.0]);
+        let proj = v1.project_onto(&v2).unwrap();
+        // Orthogonal vectors: projection should be [0,0]
+        assert!((proj.as_slice()[0] - 0.0).abs() < 1e-12);
+        assert!((proj.as_slice()[1] - 0.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_f64_identical() {
+        let v1 = FlexVector::from_vec(vec![5.0, 5.0]);
+        let v2 = FlexVector::from_vec(vec![5.0, 5.0]);
+        let proj = v1.project_onto(&v2).unwrap();
+        // Should be v1 itself
+        assert!((proj.as_slice()[0] - 5.0).abs() < 1e-12);
+        assert!((proj.as_slice()[1] - 5.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_f64_zero_vector() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::from_vec(vec![0.0, 0.0]);
+        let result = v1.project_onto(&v2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_project_onto_f64_mismatched_length() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
+        let result = v1.project_onto(&v2);
+        assert!(result.is_err());
+    }
+
+    //TODO: continue tests for all methods in VectorOpsComplex trait
 
     // ================================
     //
