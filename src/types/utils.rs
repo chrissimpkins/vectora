@@ -1,5 +1,7 @@
 //! Core logic implementations
 
+use crate::errors::VectorError;
+
 #[inline]
 pub(crate) fn mut_translate_impl<T: num::Num + Copy>(out: &mut [T], b: &[T]) {
     for (out_elem, &b_elem) in out.iter_mut().zip(b) {
@@ -111,8 +113,41 @@ where
     b.iter().map(|x| *x * scalar).collect()
 }
 
+#[inline]
+pub(crate) fn normalize_impl<T, Out>(slice: &[T], norm: T) -> Result<Out, VectorError>
+where
+    T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+    Out: std::iter::FromIterator<T>,
+{
+    if norm == T::zero() {
+        return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
+    }
+    Ok(slice.iter().map(|&a| a / norm).collect())
+}
+
+#[inline]
+pub(crate) fn normalize_to_impl<T, Out>(
+    slice: &[T],
+    norm: T,
+    magnitude: T,
+) -> Result<Out, VectorError>
+where
+    T: Copy + PartialEq + std::ops::Div<T, Output = T> + std::ops::Mul<T, Output = T> + num::Zero,
+    Out: std::iter::FromIterator<T>,
+{
+    if norm == T::zero() {
+        return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
+    }
+    let scale = magnitude / norm;
+    Ok(slice.iter().map(|&a| a * scale).collect())
+}
+
 #[cfg(test)]
 mod tests {
+    use num::Complex;
+
+    use crate::FlexVector;
+
     use super::*;
 
     // -- mut_translate_impl ==
@@ -532,7 +567,7 @@ mod tests {
         let a = [3.0f64, 4.0];
         let b = [1.0f64, 0.0];
         let denom = dot_impl(&b, &b);
-        let proj: Vec<f64> = project_onto_impl(&a, &b, denom);
+        let proj: FlexVector<f64> = project_onto_impl(&a, &b, denom);
         // Projection of [3,4] onto [1,0] is [3,0]
         assert!((proj[0] - 3.0).abs() < 1e-12);
         assert!((proj[1] - 0.0).abs() < 1e-12);
@@ -543,7 +578,7 @@ mod tests {
         let a = [2.0f64, 4.0];
         let b = [1.0f64, 2.0];
         let denom = dot_impl(&b, &b);
-        let proj: Vec<f64> = project_onto_impl(&a, &b, denom);
+        let proj: FlexVector<f64> = project_onto_impl(&a, &b, denom);
         // a is parallel to b, so projection should be a itself
         assert!((proj[0] - 2.0).abs() < 1e-12);
         assert!((proj[1] - 4.0).abs() < 1e-12);
@@ -554,7 +589,7 @@ mod tests {
         let a = [0.0f64, 1.0];
         let b = [1.0f64, 0.0];
         let denom = dot_impl(&b, &b);
-        let proj: Vec<f64> = project_onto_impl(&a, &b, denom);
+        let proj: FlexVector<f64> = project_onto_impl(&a, &b, denom);
         // Orthogonal vectors: projection should be [0,0]
         assert!((proj[0] - 0.0).abs() < 1e-12);
         assert!((proj[1] - 0.0).abs() < 1e-12);
@@ -565,7 +600,7 @@ mod tests {
         let a = [5.0f64, 5.0];
         let b = [5.0f64, 5.0];
         let denom = dot_impl(&b, &b);
-        let proj: Vec<f64> = project_onto_impl(&a, &b, denom);
+        let proj: FlexVector<f64> = project_onto_impl(&a, &b, denom);
         // Should be a itself
         assert!((proj[0] - 5.0).abs() < 1e-12);
         assert!((proj[1] - 5.0).abs() < 1e-12);
@@ -577,7 +612,101 @@ mod tests {
         let b = [0.0f64, 0.0];
         let denom = dot_impl(&b, &b);
         // denom is zero, so projection would be NaN or inf; check for NaN
-        let proj: Vec<f64> = project_onto_impl(&a, &b, denom);
+        let proj: FlexVector<f64> = project_onto_impl(&a, &b, denom);
         assert!(proj.iter().all(|x| x.is_nan()));
+    }
+
+    // -- normalize_impl --
+    #[test]
+    fn test_normalize_impl_f64_basic() {
+        let v = [3.0f64, 4.0];
+        let norm = (3.0f64 * 3.0 + 4.0 * 4.0).sqrt();
+        let result: FlexVector<f64> = normalize_impl(&v, norm).unwrap();
+        assert!((result[0] - 0.6).abs() < 1e-12);
+        assert!((result[1] - 0.8).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_impl_f64_zero_vector() {
+        let v = [0.0f64, 0.0];
+        let norm = 0.0f64;
+        let result: Result<FlexVector<f64>, _> = normalize_impl(&v, norm);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_normalize_impl_f64_single_element() {
+        let v = [5.0f64];
+        let norm = 5.0f64;
+        let result: FlexVector<f64> = normalize_impl(&v, norm).unwrap();
+        assert!((result[0] - 1.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_impl_f64_empty() {
+        let v: [f64; 0] = [];
+        let norm = 1.0f64;
+        let result: FlexVector<f64> = normalize_impl(&v, norm).unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_normalize_impl_complex_basic() {
+        let v = [Complex::new(3.0, 4.0)];
+        let norm = Complex::new((3.0f64 * 3.0 + 4.0 * 4.0).sqrt(), 0.0);
+        let result: FlexVector<Complex<f64>> = normalize_impl(&v, norm).unwrap();
+        assert!((result[0].re - 0.6).abs() < 1e-12);
+        assert!((result[0].im - 0.8).abs() < 1e-12);
+    }
+
+    // -- normalize_to_impl --
+    #[test]
+    fn test_normalize_to_impl_f64_basic() {
+        let v = [3.0f64, 4.0];
+        let norm = (3.0f64 * 3.0 + 4.0 * 4.0).sqrt();
+        let magnitude = 10.0f64;
+        let result: FlexVector<f64> = normalize_to_impl(&v, norm, magnitude).unwrap();
+        // The normalized vector should have the same direction as v and norm 10
+        let expected = [3.0 / 5.0 * 10.0, 4.0 / 5.0 * 10.0];
+        assert!((result[0] - expected[0]).abs() < 1e-12);
+        assert!((result[1] - expected[1]).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_to_impl_f64_zero_vector() {
+        let v = [0.0f64, 0.0];
+        let norm = 0.0f64;
+        let magnitude = 10.0f64;
+        let result: Result<FlexVector<f64>, _> = normalize_to_impl(&v, norm, magnitude);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_normalize_to_impl_f64_single_element() {
+        let v = [5.0f64];
+        let norm = 5.0f64;
+        let magnitude = 2.0f64;
+        let result: FlexVector<f64> = normalize_to_impl(&v, norm, magnitude).unwrap();
+        assert!((result[0] - 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_to_impl_f64_empty() {
+        let v: [f64; 0] = [];
+        let norm = 1.0f64;
+        let magnitude = 2.0f64;
+        let result: FlexVector<f64> = normalize_to_impl(&v, norm, magnitude).unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_normalize_to_impl_complex_basic() {
+        let v = [Complex::new(3.0, 4.0)];
+        let norm = Complex::new((3.0f64 * 3.0 + 4.0 * 4.0).sqrt(), 0.0);
+        let magnitude = Complex::new(10.0, 0.0);
+        let result: FlexVector<Complex<f64>> = normalize_to_impl(&v, norm, magnitude).unwrap();
+        let expected = Complex::new(3.0 / 5.0 * 10.0, 4.0 / 5.0 * 10.0);
+        assert!((result[0].re - expected.re).abs() < 1e-12);
+        assert!((result[0].im - expected.im).abs() < 1e-12);
     }
 }

@@ -13,7 +13,7 @@ use crate::{
 use crate::types::utils::{
     angle_with_impl, chebyshev_distance_impl, cross_impl, distance_impl, dot_impl, dot_to_f64_impl,
     lerp_impl, manhattan_distance_impl, minkowski_distance_impl, mut_lerp_impl, mut_translate_impl,
-    project_onto_impl, translate_impl,
+    normalize_impl, normalize_to_impl, project_onto_impl, translate_impl,
 };
 
 use crate::errors::VectorError;
@@ -406,25 +406,21 @@ where
 
     #[inline]
     fn normalize(&self) -> Result<Self::Output, VectorError> {
-        let n = self.norm();
-        if n == T::zero() {
-            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
-        }
-        Ok(self.components.iter().map(|a| *a / n).collect())
+        normalize_impl(self.as_slice(), self.norm())
     }
 
     /// Returns a new vector with the same direction and the given magnitude.
     #[inline]
     fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
     where
+        T: Copy
+            + PartialEq
+            + std::ops::Div<T, Output = T>
+            + std::ops::Mul<T, Output = T>
+            + num::Zero,
         Self::Output: std::iter::FromIterator<T>,
     {
-        let n = self.norm();
-        if n == T::zero() {
-            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
-        }
-        let scale = magnitude / n;
-        Ok(self.as_slice().iter().map(|a| *a * scale).collect())
+        normalize_to_impl(self.as_slice(), self.norm(), magnitude)
     }
 
     #[inline]
@@ -575,7 +571,7 @@ where
 
 // ================================
 //
-// VectorOpsComplexFloat trait impl
+// VectorOpsComplex trait impl
 //
 // ================================
 // TODO: add tests
@@ -588,26 +584,27 @@ where
     #[inline]
     fn normalize(&self) -> Result<Self::Output, VectorError>
     where
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>> + num::Zero,
         Self::Output: std::iter::FromIterator<Complex<N>>,
     {
-        let n = self.norm();
-        if n == N::zero() {
-            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
-        }
-        Ok(self.components.iter().map(|a| *a / n).collect())
+        normalize_impl(self.as_slice(), Complex::new(self.norm(), N::zero()))
     }
 
     #[inline]
     fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
     where
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>
+            + num::Zero,
         Self::Output: std::iter::FromIterator<Complex<N>>,
     {
-        let n = self.norm();
-        if n == N::zero() {
-            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
-        }
-        let scale = magnitude / n;
-        Ok(self.as_slice().iter().map(|a| *a * scale).collect())
+        normalize_to_impl(
+            self.as_slice(),
+            Complex::new(self.norm(), N::zero()),
+            Complex::new(magnitude, N::zero()),
+        )
     }
 
     #[inline]
@@ -3694,6 +3691,47 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // ================================
+    //
+    // VectorOpsComplex trait tests
+    //
+    // ================================
+
+    // -- normalize --
+    #[test]
+    fn test_normalize_complex_f64_basic() {
+        let v = FlexVector::from_vec(vec![Complex::new(3.0, 4.0)]);
+        let normalized = v.normalize().unwrap();
+        // The norm is 5.0, so the normalized vector should be [0.6 + 0.8i]
+        assert!((normalized.as_slice()[0].re - 0.6).abs() < 1e-12);
+        assert!((normalized.as_slice()[0].im - 0.8).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_complex_f64_multiple_elements() {
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let norm = ((1.0 * 1.0 + 2.0 * 2.0) + (3.0 * 3.0 + 4.0 * 4.0)).sqrt();
+        let normalized = v.normalize().unwrap();
+        assert!((normalized.as_slice()[0].re - 1.0 / norm).abs() < 1e-12);
+        assert!((normalized.as_slice()[0].im - 2.0 / norm).abs() < 1e-12);
+        assert!((normalized.as_slice()[1].re - 3.0 / norm).abs() < 1e-12);
+        assert!((normalized.as_slice()[1].im - 4.0 / norm).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_complex_f64_zero_vector() {
+        let v = FlexVector::from_vec(vec![Complex::new(0.0, 0.0)]);
+        let result = v.normalize();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_normalize_complex_f64_empty() {
+        let v: FlexVector<Complex<f64>> = FlexVector::new();
+        let normalized = v.normalize();
+        assert!(normalized.is_err());
+    }
+
     //TODO: continue tests for all methods in VectorOpsComplex trait
 
     // ================================
@@ -3701,6 +3739,7 @@ mod tests {
     // Unary Negation trait tests
     //
     // ================================
+
     #[test]
     fn test_neg() {
         let v = FlexVector::from_vec(vec![1, -2, 3]);

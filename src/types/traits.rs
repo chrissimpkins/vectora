@@ -328,7 +328,7 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
     /// ...
     fn normalize(&self) -> Result<Self::Output, VectorError>
     where
-        T: num::Float + Clone + std::iter::Sum<T>,
+        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
         Self::Output: std::iter::FromIterator<T>;
 
     /// ...
@@ -350,7 +350,11 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
     /// Returns a new vector with the same direction and the given magnitude.
     fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
     where
-        T: num::Float + Clone + std::iter::Sum<T>,
+        T: Copy
+            + PartialEq
+            + std::ops::Div<T, Output = T>
+            + std::ops::Mul<T, Output = T>
+            + num::Zero,
         Self::Output: std::iter::FromIterator<T>;
 
     /// ...
@@ -454,7 +458,7 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
     /// ...
     fn normalize(&self) -> Result<Self::Output, VectorError>
     where
-        N: num::Float + Clone + std::iter::Sum<N>,
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>> + num::Zero,
         Self::Output: std::iter::FromIterator<Complex<N>>;
 
     /// ...
@@ -476,7 +480,11 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
     /// Returns a new vector with the same direction and the given magnitude (real).
     fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
     where
-        N: num::Float + Clone + std::iter::Sum<N>,
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>
+            + num::Zero,
         Self::Output: std::iter::FromIterator<Complex<N>>;
 
     /// Scales the complex vector in place to the given (real) magnitude.
