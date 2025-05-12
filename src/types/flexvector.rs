@@ -301,7 +301,6 @@ impl<T> VectorBase<T> for FlexVector<T> {
 // VectorOps trait impl
 //
 // ================================
-// TODO: add tests
 impl<T> VectorOps<T> for FlexVector<T>
 where
     T: num::Num + Clone + Copy,
@@ -2960,7 +2959,43 @@ mod tests {
         assert_eq!(v.minimum(), Some(1));
     }
 
-    // minimum floating point type tests in VectorOpsFloat trait impl testing section
+    #[test]
+    fn test_minimum_f64_basic() {
+        let v = FlexVector::from_vec(vec![1.5, -2.0, 3.0]);
+        assert_eq!(v.minimum(), Some(-2.0));
+    }
+
+    #[test]
+    fn test_minimum_f64_all_positive() {
+        let v = FlexVector::from_vec(vec![2.0, 4.0, 1.0, 3.0]);
+        assert_eq!(v.minimum(), Some(1.0));
+    }
+
+    #[test]
+    fn test_minimum_f64_all_negative() {
+        let v = FlexVector::from_vec(vec![-1.0, -2.0, -3.0]);
+        assert_eq!(v.minimum(), Some(-3.0));
+    }
+
+    #[test]
+    fn test_minimum_f64_single_element() {
+        let v = FlexVector::from_vec(vec![42.0]);
+        assert_eq!(v.minimum(), Some(42.0));
+    }
+
+    #[test]
+    fn test_minimum_f64_empty() {
+        let v: FlexVector<f64> = FlexVector::new();
+        assert_eq!(v.minimum(), None);
+    }
+
+    #[test]
+    fn test_minimum_f64_with_nan() {
+        let v = FlexVector::from_vec(vec![1.0, f64::NAN, 2.0]);
+        // The result is not guaranteed to be meaningful if NaN is present,
+        // but it should return Some value (could be NaN or a number).
+        assert!(v.minimum().is_some());
+    }
 
     #[test]
     fn test_minimum_empty() {
@@ -2975,12 +3010,42 @@ mod tests {
         assert_eq!(v.maximum(), Some(4));
     }
 
-    // maximum floating point type tests in VectorOpsFloat trait impl testing section
+    #[test]
+    fn test_maximum_f64_basic() {
+        let v = FlexVector::from_vec(vec![1.5, -2.0, 3.0]);
+        assert_eq!(v.maximum(), Some(3.0));
+    }
 
     #[test]
-    fn test_maximum_empty() {
-        let v: FlexVector<i32> = FlexVector::new();
+    fn test_maximum_f64_all_positive() {
+        let v = FlexVector::from_vec(vec![2.0, 4.0, 1.0, 3.0]);
+        assert_eq!(v.maximum(), Some(4.0));
+    }
+
+    #[test]
+    fn test_maximum_f64_all_negative() {
+        let v = FlexVector::from_vec(vec![-1.0, -2.0, -3.0]);
+        assert_eq!(v.maximum(), Some(-1.0));
+    }
+
+    #[test]
+    fn test_maximum_f64_single_element() {
+        let v = FlexVector::from_vec(vec![42.0]);
+        assert_eq!(v.maximum(), Some(42.0));
+    }
+
+    #[test]
+    fn test_maximum_f64_empty() {
+        let v: FlexVector<f64> = FlexVector::new();
         assert_eq!(v.maximum(), None);
+    }
+
+    #[test]
+    fn test_maximum_f64_with_nan() {
+        let v = FlexVector::from_vec(vec![1.0, f64::NAN, 2.0]);
+        // The result is not guaranteed to be meaningful if NaN is present,
+        // but it should return Some value (could be NaN or a number).
+        assert!(v.maximum().is_some());
     }
 
     // -- l1_norm --
