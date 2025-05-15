@@ -328,51 +328,28 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
     /// ...
     fn normalize(&self) -> Result<Self::Output, VectorError>
     where
-        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+        T: Copy + PartialEq + std::ops::Div<T, Output = T>,
         Self::Output: std::iter::FromIterator<T>;
 
     /// ...
-    #[inline]
     fn mut_normalize(&mut self) -> Result<(), VectorError>
     where
-        T: num::Float + Copy + std::iter::Sum<T>,
-    {
-        let n = self.norm();
-        if n == T::zero() {
-            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
-        }
-        for a in self.as_mut_slice().iter_mut() {
-            *a = *a / n;
-        }
-        Ok(())
-    }
+        T: Copy + PartialEq + std::ops::Div<T, Output = T>;
 
     /// Returns a new vector with the same direction and the given magnitude.
     fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
+    where
+        T: Copy + PartialEq + std::ops::Div<T, Output = T> + std::ops::Mul<T, Output = T>,
+        Self::Output: std::iter::FromIterator<T>;
+
+    /// ...
+    fn mut_normalize_to(&mut self, magnitude: T) -> Result<(), VectorError>
     where
         T: Copy
             + PartialEq
             + std::ops::Div<T, Output = T>
             + std::ops::Mul<T, Output = T>
-            + num::Zero,
-        Self::Output: std::iter::FromIterator<T>;
-
-    /// ...
-    #[inline]
-    fn mut_normalize_to(&mut self, magnitude: T) -> Result<(), VectorError>
-    where
-        T: num::Float + Copy + std::iter::Sum<T>,
-    {
-        let n = self.norm();
-        if n == T::zero() {
-            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
-        }
-        let scale = magnitude / n;
-        for a in self.as_mut_slice().iter_mut() {
-            *a = *a * scale;
-        }
-        Ok(())
-    }
+            + num::Zero;
 
     /// Linear interpolation between self and end by weight in [0, 1].
     fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
@@ -450,6 +427,11 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
     where
         T: num::Float + Clone + std::iter::Sum<T>,
         Self::Output: std::iter::FromIterator<T>;
+
+    /// ...
+    fn cosine_similarity(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T> + std::ops::Div<Output = T>;
 }
 
 pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
@@ -458,24 +440,13 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
     /// ...
     fn normalize(&self) -> Result<Self::Output, VectorError>
     where
-        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>> + num::Zero,
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
         Self::Output: std::iter::FromIterator<Complex<N>>;
 
     /// ...
-    #[inline]
     fn mut_normalize(&mut self) -> Result<(), VectorError>
     where
-        N: num::Float + Copy + std::iter::Sum<N>,
-    {
-        let n = self.norm();
-        if n == N::zero() {
-            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
-        }
-        for a in self.as_mut_slice().iter_mut() {
-            *a = *a / n;
-        }
-        Ok(())
-    }
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>;
 
     /// Returns a new vector with the same direction and the given magnitude (real).
     fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
@@ -483,51 +454,22 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
         Complex<N>: Copy
             + PartialEq
             + std::ops::Div<Complex<N>, Output = Complex<N>>
-            + std::ops::Mul<Complex<N>, Output = Complex<N>>
-            + num::Zero,
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>,
         Self::Output: std::iter::FromIterator<Complex<N>>;
 
     /// Scales the complex vector in place to the given (real) magnitude.
-    #[inline]
     fn mut_normalize_to(&mut self, magnitude: N) -> Result<(), VectorError>
     where
-        N: num::Float + Copy + std::iter::Sum<N>,
-    {
-        let n = self.norm();
-        if n == N::zero() {
-            return Err(VectorError::ZeroVectorError("Cannot normalize a zero vector".to_string()));
-        }
-        let scale = magnitude / n;
-        for a in self.as_mut_slice().iter_mut() {
-            *a = *a * scale;
-        }
-        Ok(())
-    }
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>
+            + num::Zero;
 
     /// Hermitian dot product: for all complex types
-    #[inline]
-    fn dot(&self, other: &Self) -> Complex<N>
+    fn dot(&self, other: &Self) -> Result<Complex<N>, VectorError>
     where
-        N: num::Num + Copy + std::iter::Sum<N> + std::ops::Neg<Output = N>,
-    {
-        self.as_slice().iter().zip(other.as_slice()).map(|(a, b)| *a * b.conj()).sum()
-    }
-
-    /// Hermitian dot product as f64 (sums real part): for all complex types.
-    #[inline]
-    fn dot_to_f64(&self, other: &Self) -> f64
-    where
-        N: num::Num + num::ToPrimitive + Copy + std::ops::Neg<Output = N>,
-    {
-        self.as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| {
-                let prod = *a * b.conj();
-                prod.re.to_f64().unwrap()
-            })
-            .sum()
-    }
+        N: num::Num + Copy + std::iter::Sum<N> + std::ops::Neg<Output = N>;
 
     /// Linear interpolation between self and end by real weight in [0, 1].
     fn lerp(&self, end: &Self, weight: N) -> Result<Self::Output, VectorError>
@@ -535,93 +477,34 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
         N: num::Float + Clone + PartialOrd;
 
     /// In-place linear interpolation between self and end by real weight in [0, 1].
-    #[inline]
     fn mut_lerp(&mut self, end: &Self, weight: N) -> Result<(), VectorError>
     where
-        N: num::Float + Copy + PartialOrd,
-    {
-        if self.len() != end.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
-        if weight < N::zero() || weight > N::one() {
-            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
-        }
-        let w = Complex::new(weight, N::zero());
-        let one_minus_w = Complex::new(N::one() - weight, N::zero());
-        for (a, b) in self.as_mut_slice().iter_mut().zip(end.as_slice()) {
-            *a = one_minus_w * *a + w * *b;
-        }
-        Ok(())
-    }
+        N: num::Float + Copy + PartialOrd;
 
     /// Midpoint
-    #[inline]
-    fn midpoint(&self, end: &Self) -> Self::Output
+    fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
     where
-        N: num::Float + Clone,
-    {
-        // OK to unwrap because by definition it uses an in-range weight
-        self.lerp(end, num::cast(0.5).unwrap()).unwrap()
-    }
+        N: num::Float + Clone;
 
     /// Euclidean distance (L2 norm) between self and other (returns real).
-    #[inline]
-    fn distance(&self, other: &Self) -> N
+    fn distance(&self, other: &Self) -> Result<N, VectorError>
     where
-        N: num::Float + Clone + std::iter::Sum<N>,
-    {
-        self.as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| {
-                let diff = *a - *b;
-                diff.norm_sqr()
-            })
-            .sum::<N>()
-            .sqrt()
-    }
+        N: num::Float + Clone + std::iter::Sum<N>;
 
     /// Manhattan (L1) distance between self and other (sum of magnitudes of differences).
-    #[inline]
-    fn manhattan_distance(&self, other: &Self) -> N
+    fn manhattan_distance(&self, other: &Self) -> Result<N, VectorError>
     where
-        N: num::Float + Clone + std::iter::Sum<N>,
-    {
-        self.as_slice().iter().zip(other.as_slice()).map(|(a, b)| (*a - *b).norm()).sum()
-    }
+        N: num::Float + Clone + std::iter::Sum<N>;
 
     /// Chebyshev (L∞) distance between self and other (maximum magnitude of differences).
-    #[inline]
-    fn chebyshev_distance(&self, other: &Self) -> N
+    fn chebyshev_distance(&self, other: &Self) -> Result<N, VectorError>
     where
-        N: num::Float + Clone + PartialOrd,
-    {
-        self.as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| (*a - *b).norm())
-            .fold(N::zero(), |acc, x| acc.max(x))
-    }
+        N: num::Float + Clone + PartialOrd;
 
     /// Minkowski (Lp) distance between self and other.
-    #[inline]
     fn minkowski_distance(&self, other: &Self, p: N) -> Result<N, VectorError>
     where
-        N: num::Float + Clone + std::iter::Sum<N>,
-    {
-        if p < N::one() {
-            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
-        }
-        Ok(self
-            .as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| (*a - *b).norm().powf(p))
-            .sum::<N>()
-            .powf(N::one() / p))
-    }
+        N: num::Float + Clone + std::iter::Sum<N>;
 
     /// Euclidean norm (magnitude) of the vector (returns real).
     #[inline]
@@ -630,6 +513,15 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
         N: num::Float + Clone + std::iter::Sum<N>,
     {
         self.as_slice().iter().map(|a| a.norm_sqr()).sum::<N>().sqrt()
+    }
+
+    /// Alias for norm (magnitude).
+    #[inline]
+    fn magnitude(&self) -> N
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        self.norm()
     }
 
     /// L1 norm (sum of magnitudes).
@@ -662,18 +554,15 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
         Ok(self.as_slice().iter().map(|a| a.norm().powf(p)).sum::<N>().powf(N::one() / p))
     }
 
-    /// Alias for norm (magnitude).
-    #[inline]
-    fn magnitude(&self) -> N
-    where
-        N: num::Float + Clone + std::iter::Sum<N>,
-    {
-        self.norm()
-    }
-
     /// ...
     fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
         N: num::Float + Clone + std::iter::Sum<N>,
         Self::Output: std::iter::FromIterator<Complex<N>>;
+
+    /// ...
+    fn cosine_similarity(&self, other: &Self) -> Result<Complex<N>, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+        Complex<N>: std::ops::Div<Output = Complex<N>>;
 }

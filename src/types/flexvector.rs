@@ -11,9 +11,12 @@ use crate::{
 };
 
 use crate::types::utils::{
-    angle_with_impl, chebyshev_distance_impl, cross_impl, distance_impl, dot_impl, dot_to_f64_impl,
-    lerp_impl, manhattan_distance_impl, minkowski_distance_impl, mut_lerp_impl, mut_translate_impl,
-    normalize_impl, normalize_to_impl, project_onto_impl, translate_impl,
+    angle_with_impl, chebyshev_distance_complex_impl, chebyshev_distance_impl,
+    cosine_similarity_complex_impl, cosine_similarity_impl, cross_impl, distance_complex_impl,
+    distance_impl, dot_impl, dot_to_f64_impl, hermitian_dot_impl, lerp_impl,
+    manhattan_distance_complex_impl, manhattan_distance_impl, minkowski_distance_complex_impl,
+    minkowski_distance_impl, mut_lerp_impl, mut_normalize_impl, mut_normalize_to_impl,
+    mut_translate_impl, normalize_impl, normalize_to_impl, project_onto_impl, translate_impl,
 };
 
 use crate::errors::VectorError;
@@ -309,11 +312,7 @@ where
 
     #[inline]
     fn translate(&self, other: &Self) -> Result<Self::Output, VectorError> {
-        if self.len() != other.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(other)?;
         let mut out = FlexVector::zero(self.len());
         translate_impl(self.as_slice(), other.as_slice(), out.as_mut_slice());
         Ok(out)
@@ -321,11 +320,7 @@ where
 
     #[inline]
     fn mut_translate(&mut self, other: &Self) -> Result<(), VectorError> {
-        if self.len() != other.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(other)?;
         mut_translate_impl(self.as_mut_slice(), other.as_slice());
         Ok(())
     }
@@ -353,11 +348,7 @@ where
     where
         T: num::Num + Copy + std::iter::Sum<T>,
     {
-        if self.len() != other.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(other)?;
         Ok(dot_impl(self.as_slice(), other.as_slice()))
     }
 
@@ -366,11 +357,7 @@ where
     where
         T: num::ToPrimitive,
     {
-        if self.len() != other.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(other)?;
         Ok(dot_to_f64_impl(self.as_slice(), other.as_slice()))
     }
 
@@ -405,8 +392,20 @@ where
     type Output = Self;
 
     #[inline]
-    fn normalize(&self) -> Result<Self::Output, VectorError> {
+    fn normalize(&self) -> Result<Self::Output, VectorError>
+    where
+        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+    {
         normalize_impl(self.as_slice(), self.norm())
+    }
+
+    #[inline]
+    fn mut_normalize(&mut self) -> Result<(), VectorError>
+    where
+        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+    {
+        let norm = self.norm();
+        mut_normalize_impl(self.as_mut_slice(), norm)
     }
 
     /// Returns a new vector with the same direction and the given magnitude.
@@ -424,15 +423,24 @@ where
     }
 
     #[inline]
+    fn mut_normalize_to(&mut self, magnitude: T) -> Result<(), VectorError>
+    where
+        T: Copy
+            + PartialEq
+            + std::ops::Div<T, Output = T>
+            + std::ops::Mul<T, Output = T>
+            + num::Zero,
+    {
+        let n = self.norm();
+        mut_normalize_to_impl(self.as_mut_slice(), n, magnitude)
+    }
+
+    #[inline]
     fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
     where
         T: num::Float + Copy,
     {
-        if self.len() != end.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(end)?;
         if weight < T::zero() || weight > T::one() {
             return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
         }
@@ -446,11 +454,7 @@ where
     where
         T: num::Float + Copy + PartialOrd,
     {
-        if self.len() != end.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(end)?;
         if weight < T::zero() || weight > T::one() {
             return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
         }
@@ -463,11 +467,7 @@ where
     where
         T: num::Float + Clone,
     {
-        if self.len() != other.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(other)?;
         let mut out = FlexVector::zero(self.len());
         lerp_impl(self.as_slice(), other.as_slice(), T::from(0.5).unwrap(), out.as_mut_slice());
         Ok(out)
@@ -478,11 +478,7 @@ where
     where
         T: num::Float + Clone + std::iter::Sum<T>,
     {
-        if self.len() != other.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(other)?;
         Ok(distance_impl(self.as_slice(), other.as_slice()))
     }
 
@@ -491,11 +487,7 @@ where
     where
         T: num::Float + Clone + std::iter::Sum<T>,
     {
-        if self.len() != other.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(other)?;
         Ok(manhattan_distance_impl(self.as_slice(), other.as_slice()))
     }
 
@@ -504,11 +496,7 @@ where
     where
         T: num::Float + Clone + PartialOrd,
     {
-        if self.len() != other.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(other)?;
         Ok(chebyshev_distance_impl(self.as_slice(), other.as_slice()))
     }
 
@@ -517,11 +505,7 @@ where
     where
         T: num::Float + Clone + std::iter::Sum<T>,
     {
-        if self.len() != other.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(other)?;
         if p < T::one() {
             return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
         }
@@ -533,11 +517,7 @@ where
     where
         T: num::Float + Clone + std::iter::Sum<T>,
     {
-        if self.len() != other.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(other)?;
         let norm_self = self.norm();
         let norm_other = other.norm();
         if norm_self == T::zero() || norm_other == T::zero() {
@@ -554,18 +534,31 @@ where
         T: num::Float + Clone + std::iter::Sum<T>,
         Self::Output: std::iter::FromIterator<T>,
     {
-        if self.len() != other.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(other)?;
         let denom = dot_impl(other.as_slice(), other.as_slice());
         if denom == T::zero() {
             return Err(VectorError::ZeroVectorError(
                 "Cannot project onto zero vector".to_string(),
             ));
         }
-        Ok(project_onto_impl(self.as_slice(), other.as_slice(), denom))
+        let scalar = dot_impl(self.as_slice(), other.as_slice()) / denom;
+        Ok(project_onto_impl(other.as_slice(), scalar))
+    }
+
+    #[inline]
+    fn cosine_similarity(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T> + std::ops::Div<Output = T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        let norm_self = self.norm();
+        let norm_other = other.norm();
+        if norm_self == T::zero() || norm_other == T::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot compute cosine similarity with zero vector".to_string(),
+            ));
+        }
+        Ok(cosine_similarity_impl(self.as_slice(), other.as_slice(), norm_self, norm_other))
     }
 }
 
@@ -584,10 +577,19 @@ where
     #[inline]
     fn normalize(&self) -> Result<Self::Output, VectorError>
     where
-        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>> + num::Zero,
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
         Self::Output: std::iter::FromIterator<Complex<N>>,
     {
         normalize_impl(self.as_slice(), Complex::new(self.norm(), N::zero()))
+    }
+
+    #[inline]
+    fn mut_normalize(&mut self) -> Result<(), VectorError>
+    where
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>> + num::Zero,
+    {
+        let norm = self.norm();
+        mut_normalize_impl(self.as_mut_slice(), Complex::new(norm, N::zero()))
     }
 
     #[inline]
@@ -608,41 +610,155 @@ where
     }
 
     #[inline]
+    fn mut_normalize_to(&mut self, magnitude: N) -> Result<(), VectorError>
+    where
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>
+            + num::Zero,
+    {
+        let n = self.norm();
+        mut_normalize_to_impl(
+            self.as_mut_slice(),
+            Complex::new(n, N::zero()),
+            Complex::new(magnitude, N::zero()),
+        )
+    }
+
+    #[inline]
+    fn dot(&self, other: &Self) -> Result<Complex<N>, VectorError>
+    where
+        N: num::Num + Copy + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(hermitian_dot_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
     fn lerp(&self, end: &Self, weight: N) -> Result<Self::Output, VectorError>
     where
         N: num::Float + Clone + PartialOrd,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One,
     {
-        if self.len() != end.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Vectors must have the same length".to_string(),
-            ));
-        }
+        self.check_same_length_and_raise(end)?;
         if weight < N::zero() || weight > N::one() {
             return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
         }
         let w = Complex::new(weight, N::zero());
-        let one_minus_w = Complex::new(N::one() - weight, N::zero());
-        Ok(self
-            .components
-            .iter()
-            .zip(&end.components)
-            .map(|(a, b)| one_minus_w * *a + w * *b)
-            .collect())
+        let mut out = FlexVector::zero(self.len());
+        lerp_impl(self.as_slice(), end.as_slice(), w, out.as_mut_slice());
+        Ok(out)
+    }
+
+    #[inline]
+    fn mut_lerp(&mut self, end: &Self, weight: N) -> Result<(), VectorError>
+    where
+        N: num::Float + Copy + PartialOrd,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One,
+    {
+        self.check_same_length_and_raise(end)?;
+        if weight < N::zero() || weight > N::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        let w = Complex::new(weight, N::zero());
+        mut_lerp_impl(self.as_mut_slice(), end.as_slice(), w);
+        Ok(())
+    }
+
+    #[inline]
+    fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float + Clone,
+    {
+        self.check_same_length_and_raise(end)?;
+        self.lerp(end, num::cast(0.5).unwrap())
+    }
+
+    #[inline]
+    fn distance(&self, other: &Self) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(distance_complex_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn manhattan_distance(&self, other: &Self) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(manhattan_distance_complex_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn chebyshev_distance(&self, other: &Self) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + PartialOrd,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(chebyshev_distance_complex_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn minkowski_distance(&self, other: &Self, p: N) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        self.check_same_length_and_raise(other)?;
+        if p < N::one() {
+            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
+        }
+        Ok(minkowski_distance_complex_impl(self.as_slice(), other.as_slice(), p))
     }
 
     #[inline]
     fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
+        N: num::Float + Clone + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+        Complex<N>: Copy
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + num::Zero,
         Self::Output: std::iter::FromIterator<Complex<N>>,
     {
-        let denom = VectorOpsComplex::dot(other, other); // Hermitian dot product
-        if denom == Complex::zero() {
+        self.check_same_length_and_raise(other)?;
+        let denom = hermitian_dot_impl(other.as_slice(), other.as_slice());
+        if denom == Complex::<N>::zero() {
             return Err(VectorError::ZeroVectorError(
                 "Cannot project onto zero vector".to_string(),
             ));
         }
-        let scalar = VectorOpsComplex::dot(self, other) / denom;
-        Ok(other.as_slice().iter().map(|b| *b * scalar).collect())
+        let scalar = hermitian_dot_impl(self.as_slice(), other.as_slice()) / denom;
+        Ok(project_onto_impl(other.as_slice(), scalar))
+    }
+
+    #[inline]
+    fn cosine_similarity(&self, other: &Self) -> Result<num::Complex<N>, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+        Complex<N>: std::ops::Div<Output = Complex<N>>,
+    {
+        self.check_same_length_and_raise(other)?;
+        let norm_self = self.norm();
+        let norm_other = other.norm();
+        if norm_self == N::zero() || norm_other == N::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot compute cosine similarity with zero vector".to_string(),
+            ));
+        }
+        Ok(cosine_similarity_complex_impl(self.as_slice(), other.as_slice(), norm_self, norm_other))
     }
 }
 
@@ -731,19 +847,20 @@ impl<T> FlexVector<T> {
         }
     }
 
-    /// Cosine similarity between self and other.
+    // ================================
+    //
+    // Private methods
+    //
+    // ================================
+
+    /// Returns Ok(()) if self and other have the same length (i.e. vector dimensionality),
+    /// otherwise returns a VectorError.
     #[inline]
-    pub fn cosine_similarity(&self, other: &Self) -> Result<T, VectorError>
-    where
-        T: num::Float + Clone + std::iter::Sum<T>,
-    {
-        let dot = self.dot(other)?;
-        let norm_self = self.norm();
-        let norm_other = other.norm();
-        if norm_self == T::zero() || norm_other == T::zero() {
-            Ok(T::zero())
+    fn check_same_length_and_raise(&self, other: &Self) -> Result<(), VectorError> {
+        if self.len() != other.len() {
+            Err(VectorError::MismatchedLengthError("Vectors must have the same length".to_string()))
         } else {
-            Ok(dot / (norm_self * norm_other))
+            Ok(())
         }
     }
 }
@@ -2561,39 +2678,6 @@ mod tests {
         assert_eq!(v.as_slice(), &[2, 4, 6]);
     }
 
-    // --- cosine_similarity ---
-    #[test]
-    fn test_cosine_similarity_parallel() {
-        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
-        let v2 = FlexVector::from_vec(vec![2.0, 4.0, 6.0]);
-        let cos_sim = v1.cosine_similarity(&v2).unwrap();
-        assert!((cos_sim - 1.0).abs() < 1e-10);
-    }
-
-    #[test]
-    fn test_cosine_similarity_orthogonal() {
-        let v1 = FlexVector::from_vec(vec![1.0, 0.0]);
-        let v2 = FlexVector::from_vec(vec![0.0, 1.0]);
-        let cos_sim = v1.cosine_similarity(&v2).unwrap();
-        assert!((cos_sim - 0.0).abs() < 1e-10);
-    }
-
-    #[test]
-    fn test_cosine_similarity_opposite() {
-        let v1 = FlexVector::from_vec(vec![1.0, 0.0]);
-        let v2 = FlexVector::from_vec(vec![-1.0, 0.0]);
-        let cos_sim = v1.cosine_similarity(&v2).unwrap();
-        assert!((cos_sim + 1.0).abs() < 1e-10);
-    }
-
-    #[test]
-    fn test_cosine_similarity_zero_vector() {
-        let v1 = FlexVector::from_vec(vec![0.0, 0.0]);
-        let v2 = FlexVector::from_vec(vec![1.0, 2.0]);
-        let cos_sim = v1.cosine_similarity(&v2).unwrap();
-        assert_eq!(cos_sim, 0.0);
-    }
-
     // ================================
     //
     // VectorOps trait tests
@@ -3689,6 +3773,39 @@ mod tests {
         let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
         let result = v1.project_onto(&v2);
         assert!(result.is_err());
+    }
+
+    // --- cosine_similarity ---
+    #[test]
+    fn test_cosine_similarity_f64_parallel() {
+        let v1 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![2.0, 4.0, 6.0]);
+        let cos_sim = v1.cosine_similarity(&v2).unwrap();
+        assert!((cos_sim - 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_cosine_similarity_f64_orthogonal() {
+        let v1 = FlexVector::from_vec(vec![1.0, 0.0]);
+        let v2 = FlexVector::from_vec(vec![0.0, 1.0]);
+        let cos_sim = v1.cosine_similarity(&v2).unwrap();
+        assert!((cos_sim - 0.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_cosine_similarity_f64_opposite() {
+        let v1 = FlexVector::from_vec(vec![1.0, 0.0]);
+        let v2 = FlexVector::from_vec(vec![-1.0, 0.0]);
+        let cos_sim = v1.cosine_similarity(&v2).unwrap();
+        assert!((cos_sim + 1.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn test_cosine_similarity_f64_zero_vector() {
+        let v1 = FlexVector::from_vec(vec![0.0, 0.0]);
+        let v2 = FlexVector::from_vec(vec![1.0, 2.0]);
+        let cos_sim = v1.cosine_similarity(&v2);
+        assert!(cos_sim.is_err());
     }
 
     // ================================
