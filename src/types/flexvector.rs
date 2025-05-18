@@ -93,6 +93,32 @@ impl<T> FlexVector<T> {
     pub fn from_vec(vec: Vec<T>) -> Self {
         Self { components: vec }
     }
+
+    /// Fallible error-propagating construction from an iterator of Results.
+    pub fn try_from_iter<I, E>(iter: I) -> Result<Self, E>
+    where
+        I: IntoIterator<Item = Result<T, E>>,
+    {
+        let components: Result<Vec<T>, E> = iter.into_iter().collect();
+        components.map(|vec| FlexVector { components: vec })
+    }
+
+    /// Creates a new FlexVector by calling the provided function or closure for each index.
+    ///
+    /// # Example
+    /// ```
+    /// use vectora::prelude::*;
+    ///
+    /// let v = FlexVector::from_fn(4, |i| i * i);
+    /// assert_eq!(v.as_slice(), &[0, 1, 4, 9]);
+    /// ```
+    pub fn from_fn<F>(len: usize, mut f: F) -> Self
+    where
+        F: FnMut(usize) -> T,
+    {
+        let components = (0..len).map(|i| f(i)).collect();
+        FlexVector { components }
+    }
 }
 
 // ================================
@@ -129,22 +155,6 @@ where
 impl<T> FromIterator<T> for FlexVector<T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         FlexVector { components: iter.into_iter().collect() }
-    }
-}
-
-// ================================
-//
-// try_from_iter method
-//
-// ================================
-impl<T> FlexVector<T> {
-    /// Fallible error-propagating construction from an iterator of Results.
-    pub fn try_from_iter<I, E>(iter: I) -> Result<Self, E>
-    where
-        I: IntoIterator<Item = Result<T, E>>,
-    {
-        let components: Result<Vec<T>, E> = iter.into_iter().collect();
-        components.map(|vec| FlexVector { components: vec })
     }
 }
 
@@ -915,6 +925,19 @@ mod tests {
 
     // ================================
     //
+    // Test utility functions
+    //
+    // ================================
+    fn square(x: i32) -> i32 {
+        x * x
+    }
+
+    fn square_usize(x: usize) -> usize {
+        x * x
+    }
+
+    // ================================
+    //
     // Constructor tests
     //
     // ================================
@@ -1046,6 +1069,39 @@ mod tests {
         let v = FlexVector::<i32>::from_vec(data.clone());
         assert_eq!(v.len(), 3);
         assert_eq!(v.as_slice(), &data[..]);
+    }
+
+    #[test]
+    fn test_from_fn_i32() {
+        let v = FlexVector::from_fn(5, |i| i as i32 * 2);
+        assert_eq!(v.as_slice(), &[0, 2, 4, 6, 8]);
+    }
+
+    #[test]
+    fn test_from_fn_f64() {
+        let v = FlexVector::from_fn(4, |i| (i as f64).powi(2));
+        assert_eq!(v.as_slice(), &[0.0, 1.0, 4.0, 9.0]);
+    }
+
+    #[test]
+    fn test_from_fn_complex() {
+        let v = FlexVector::from_fn(3, |i| Complex::new(i as f64, -(i as f64)));
+        assert_eq!(
+            v.as_slice(),
+            &[Complex::new(0.0, 0.0), Complex::new(1.0, -1.0), Complex::new(2.0, -2.0)]
+        );
+    }
+
+    #[test]
+    fn test_from_fn_zero_length() {
+        let v: FlexVector<i32> = FlexVector::from_fn(0, |_| 42);
+        assert!(v.is_empty());
+    }
+
+    #[test]
+    fn test_from_fn_with_fn_pointer() {
+        let v = FlexVector::from_fn(4, square_usize);
+        assert_eq!(v.as_slice(), &[0, 1, 4, 9]);
     }
 
     #[test]
@@ -2687,11 +2743,6 @@ mod tests {
         let v = FlexVector::<i32>::new();
         let mapped = v.map(|x| x + 1);
         assert!(mapped.is_empty());
-    }
-
-    // used for function pointer test below
-    fn square(x: i32) -> i32 {
-        x * x
     }
 
     #[test]
