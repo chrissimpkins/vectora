@@ -112,11 +112,11 @@ impl<T> FlexVector<T> {
     /// let v = FlexVector::from_fn(4, |i| i * i);
     /// assert_eq!(v.as_slice(), &[0, 1, 4, 9]);
     /// ```
-    pub fn from_fn<F>(len: usize, mut f: F) -> Self
+    pub fn from_fn<F>(len: usize, f: F) -> Self
     where
         F: FnMut(usize) -> T,
     {
-        let components = (0..len).map(|i| f(i)).collect();
+        let components = (0..len).map(f).collect();
         FlexVector { components }
     }
 }
