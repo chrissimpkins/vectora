@@ -145,6 +145,16 @@ impl<T> FlexVector<T> {
 
 // -- more constructors --
 
+impl<T> FlexVector<&T>
+where
+    T: Clone,
+{
+    /// Returns a FlexVector of owned values by cloning each referenced element.
+    pub fn cloned(&self) -> FlexVector<T> {
+        FlexVector::from_vec(self.components.iter().map(|&x| x.clone()).collect())
+    }
+}
+
 impl<T, V> FlexVector<V>
 where
     V: IntoIterator<Item = T>,
@@ -161,6 +171,7 @@ where
     V: IntoIterator<Item = &'a T>,
     T: Clone + 'a,
 {
+    /// Flattens a FlexVector of iterables into a single FlexVector by concatenating all elements as cloned elements.
     pub fn flatten_cloned(self) -> FlexVector<T> {
         let components = self.components.into_iter().flat_map(|v| v.into_iter().cloned()).collect();
         FlexVector { components }
@@ -1176,6 +1187,33 @@ mod tests {
         }
         let v = FlexVector::<i32>::try_from_fn(3, fallible_square).unwrap();
         assert_eq!(v.as_slice(), &[0, 1, 4]);
+    }
+
+    #[test]
+    fn test_cloned_basic() {
+        let a = 1;
+        let b = 2;
+        let c = 3;
+        let refs = FlexVector::from_vec(vec![&a, &b, &c]);
+        let owned = refs.cloned();
+        assert_eq!(owned.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_cloned_empty() {
+        let refs: FlexVector<&i32> = FlexVector::new();
+        let owned = refs.cloned();
+        assert!(owned.is_empty());
+    }
+
+    #[test]
+    fn test_cloned_complex() {
+        use num::Complex;
+        let a = Complex::new(1.0, 2.0);
+        let b = Complex::new(3.0, 4.0);
+        let refs = FlexVector::from_vec(vec![&a, &b]);
+        let owned = refs.cloned();
+        assert_eq!(owned.as_slice(), &[a, b]);
     }
 
     #[test]
