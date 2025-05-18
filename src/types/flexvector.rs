@@ -4,10 +4,11 @@ use std::iter::FromIterator;
 use std::ops::{Deref, DerefMut};
 
 use crate::{
-    impl_vector_binop, impl_vector_binop_assign, impl_vector_scalar_div_op,
-    impl_vector_scalar_div_op_assign, impl_vector_scalar_op, impl_vector_scalar_op_assign,
-    impl_vector_unary_op, types::traits::VectorBase, types::traits::VectorOps,
-    types::traits::VectorOpsComplex, types::traits::VectorOpsFloat,
+    impl_vector_binop, impl_vector_binop_assign, impl_vector_binop_div,
+    impl_vector_binop_div_assign, impl_vector_scalar_div_op, impl_vector_scalar_div_op_assign,
+    impl_vector_scalar_op, impl_vector_scalar_op_assign, impl_vector_unary_op,
+    types::traits::VectorBase, types::traits::VectorOps, types::traits::VectorOpsComplex,
+    types::traits::VectorOpsFloat,
 };
 
 use crate::types::utils::{
@@ -872,13 +873,15 @@ impl<T> FlexVector<T> {
 // ================================
 impl_vector_unary_op!(FlexVector, Neg, neg, -);
 
-impl_vector_binop!(FlexVector, Add, add, +);
-impl_vector_binop!(FlexVector, Sub, sub, -);
-impl_vector_binop!(FlexVector, Mul, mul, *);
+impl_vector_binop!(check_len, FlexVector, Add, add, +);
+impl_vector_binop!(check_len, FlexVector, Sub, sub, -);
+impl_vector_binop!(check_len, FlexVector, Mul, mul, *);
+impl_vector_binop_div!(check_len, FlexVector);
 
-impl_vector_binop_assign!(FlexVector, AddAssign, add_assign, +);
-impl_vector_binop_assign!(FlexVector, SubAssign, sub_assign, -);
-impl_vector_binop_assign!(FlexVector, MulAssign, mul_assign, *);
+impl_vector_binop_assign!(check_len, FlexVector, AddAssign, add_assign, +);
+impl_vector_binop_assign!(check_len, FlexVector, SubAssign, sub_assign, -);
+impl_vector_binop_assign!(check_len, FlexVector, MulAssign, mul_assign, *);
+impl_vector_binop_div_assign!(check_len, FlexVector);
 
 impl_vector_scalar_op!(FlexVector, Mul, mul, *);
 impl_vector_scalar_op_assign!(FlexVector, MulAssign, mul_assign, *);
@@ -3853,7 +3856,7 @@ mod tests {
 
     // ================================
     //
-    // Unary Negation trait tests
+    // Operator overload trait tests
     //
     // ================================
 
@@ -3932,6 +3935,14 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Vector length mismatch")]
+    fn test_add_panic_on_mismatched_length() {
+        let v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![1, 2, 3]);
+        let _ = v1 + v2;
+    }
+
+    #[test]
     fn test_sub() {
         let v1 = FlexVector::from_vec(vec![10, 20, 30]);
         let v2 = FlexVector::from_vec(vec![1, 2, 3]);
@@ -3963,6 +3974,14 @@ mod tests {
         assert!(diff.as_slice()[0].is_nan());
         assert!(diff.as_slice()[1].is_nan()); // inf - inf = NaN
         assert!(diff.as_slice()[2].is_nan());
+    }
+
+    #[test]
+    #[should_panic(expected = "Vector length mismatch")]
+    fn test_sub_panic_on_mismatched_length() {
+        let v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![1, 2, 3]);
+        let _ = v1 - v2;
     }
 
     #[test]
@@ -4006,6 +4025,56 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Vector length mismatch")]
+    fn test_mul_panic_on_mismatched_length() {
+        let v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![1, 2, 3]);
+        let _ = v1 * v2;
+    }
+
+    #[test]
+    fn test_elem_div_f32() {
+        let v1 = FlexVector::from_vec(vec![2.0f32, 4.0, 8.0]);
+        let v2 = FlexVector::from_vec(vec![1.0f32, 2.0, 4.0]);
+        let result = v1 / v2;
+        assert_eq!(result.as_slice(), &[2.0, 2.0, 2.0]);
+    }
+
+    #[test]
+    fn test_elem_div_f64() {
+        let v1 = FlexVector::from_vec(vec![2.0f64, 4.0, 8.0]);
+        let v2 = FlexVector::from_vec(vec![1.0f64, 2.0, 4.0]);
+        let result = v1 / v2;
+        assert_eq!(result.as_slice(), &[2.0, 2.0, 2.0]);
+    }
+
+    #[test]
+    fn test_elem_div_complex_f32() {
+        let v1 = FlexVector::from_vec(vec![Complex::new(2.0f32, 2.0), Complex::new(4.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0f32, 1.0), Complex::new(2.0, 0.0)]);
+        let result = v1 / v2;
+        assert!((result[0] - Complex::new(2.0, 0.0)).norm() < 1e-6);
+        assert!((result[1] - Complex::new(2.0, 0.0)).norm() < 1e-6);
+    }
+
+    #[test]
+    fn test_elem_div_complex_f64() {
+        let v1 = FlexVector::from_vec(vec![Complex::new(2.0f64, 2.0), Complex::new(4.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0f64, 1.0), Complex::new(2.0, 0.0)]);
+        let result = v1 / v2;
+        assert!((result[0] - Complex::new(2.0, 0.0)).norm() < 1e-12);
+        assert!((result[1] - Complex::new(2.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    #[should_panic(expected = "Vector length mismatch")]
+    fn test_elem_div_panic_on_mismatched_length() {
+        let v1 = FlexVector::from_vec(vec![1.0f64, 2.0]);
+        let v2 = FlexVector::from_vec(vec![1.0f64, 2.0, 3.0]);
+        let _ = v1 / v2;
+    }
+
+    #[test]
     fn test_add_assign() {
         let mut v1 = FlexVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
@@ -4027,6 +4096,14 @@ mod tests {
         let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
         v1 += v2;
         assert_eq!(v1.as_slice(), &[Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Vector length mismatch")]
+    fn test_add_assign_panic_on_mismatched_length() {
+        let mut v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![1, 2, 3]);
+        v1 += v2;
     }
 
     #[test]
@@ -4054,6 +4131,14 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Vector length mismatch")]
+    fn test_sub_assign_panic_on_mismatched_length() {
+        let mut v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![1, 2, 3]);
+        v1 -= v2;
+    }
+
+    #[test]
     fn test_mul_assign() {
         let mut v1 = FlexVector::from_vec(vec![2, 3, 4]);
         let v2 = FlexVector::from_vec(vec![5, 6, 7]);
@@ -4075,6 +4160,56 @@ mod tests {
         let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
         v1 *= v2;
         assert_eq!(v1.as_slice(), &[Complex::new(-7.0, 16.0), Complex::new(-11.0, 52.0)]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Vector length mismatch")]
+    fn test_mul_assign_panic_on_mismatched_length() {
+        let mut v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![1, 2, 3]);
+        v1 *= v2;
+    }
+
+    #[test]
+    fn test_elem_div_assign_f32() {
+        let mut v1 = FlexVector::from_vec(vec![2.0f32, 4.0, 8.0]);
+        let v2 = FlexVector::from_vec(vec![1.0f32, 2.0, 4.0]);
+        v1 /= v2;
+        assert_eq!(v1.as_slice(), &[2.0, 2.0, 2.0]);
+    }
+
+    #[test]
+    fn test_elem_div_assign_f64() {
+        let mut v1 = FlexVector::from_vec(vec![2.0f64, 4.0, 8.0]);
+        let v2 = FlexVector::from_vec(vec![1.0f64, 2.0, 4.0]);
+        v1 /= v2;
+        assert_eq!(v1.as_slice(), &[2.0, 2.0, 2.0]);
+    }
+
+    #[test]
+    fn test_elem_div_assign_complex_f32() {
+        let mut v1 = FlexVector::from_vec(vec![Complex::new(2.0f32, 2.0), Complex::new(4.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0f32, 1.0), Complex::new(2.0, 0.0)]);
+        v1 /= v2;
+        assert!((v1[0] - Complex::new(2.0, 0.0)).norm() < 1e-6);
+        assert!((v1[1] - Complex::new(2.0, 0.0)).norm() < 1e-6);
+    }
+
+    #[test]
+    fn test_elem_div_assign_complex_f64() {
+        let mut v1 = FlexVector::from_vec(vec![Complex::new(2.0f64, 2.0), Complex::new(4.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0f64, 1.0), Complex::new(2.0, 0.0)]);
+        v1 /= v2;
+        assert!((v1[0] - Complex::new(2.0, 0.0)).norm() < 1e-12);
+        assert!((v1[1] - Complex::new(2.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    #[should_panic(expected = "Vector length mismatch")]
+    fn test_elem_div_assign_panic_on_mismatched_length() {
+        let mut v1 = FlexVector::from_vec(vec![1.0f64, 2.0]);
+        let v2 = FlexVector::from_vec(vec![1.0f64, 2.0, 3.0]);
+        v1 /= v2;
     }
 
     #[test]
@@ -4263,13 +4398,5 @@ mod tests {
         assert!(sum.is_empty());
         let prod = v1 * v2;
         assert!(prod.is_empty());
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_mismatched_length_add() {
-        let v1 = FlexVector::from_vec(vec![1, 2]);
-        let v2 = FlexVector::from_vec(vec![1, 2, 3]);
-        let _ = v1 + v2; // should panic
     }
 }

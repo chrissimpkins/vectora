@@ -1,79 +1,20 @@
 //! Macros.
 
-/// Returns a [`crate::Vector`] with scalar data contents and order as defined in
-/// the numeric type arguments.
+/// Creates a [`Vector`] with the given elements or repeated value.
 ///
-/// This macro supports standard library [`array`]-like initialization syntax of
-/// a [`crate::Vector`] with the numeric type and length defined by the macro arguments.
-///
-/// Import the macro before use with:
-///
-/// ```
-/// use vectora::vector;
-/// ```
+/// - `vector![x, y, z]` creates a Vector from the elements.
+/// - `vector![elem; n]` creates a Vector of length `n` with all elements set to `elem`.
 ///
 /// # Examples
 ///
-/// ## Integer types
-///
 /// ```
-/// use vectora::{vector, Vector};
-///
-/// let v_i32_1 = vector![1_i32, 2_i32, 3_i32];
-/// let v_i32_2: Vector<i32, 3> = vector![1, 2, 3];
-/// let v_i32_3: Vector<i32, 3> = vector![10; 3];
-///
-/// assert_eq!(v_i32_1[0], 1_i32);
-/// assert_eq!(v_i32_1[1], 2_i32);
-/// assert_eq!(v_i32_1[2], 3_i32);
-///
-/// assert_eq!(v_i32_2[0], 1_i32);
-/// assert_eq!(v_i32_2[1], 2_i32);
-/// assert_eq!(v_i32_2[2], 3_i32);
-///
-/// assert_eq!(v_i32_3[0], 10_i32);
-/// assert_eq!(v_i32_3[1], 10_i32);
-/// assert_eq!(v_i32_3[2], 10_i32);
-/// ```
-///
-/// ## Floating point types
-///
-/// ```
-/// use vectora::{vector, Vector};
-///
-/// use approx::assert_relative_eq;
-///
-/// let v_f64_1 = vector![1.0_f64, 2.0_f64, 3.0_f64];
-/// let v_f64_2: Vector<f64, 3> = vector![1.0, 2.0, 3.0];
-/// let v_f64_3: Vector<f64, 3> = vector![10.0; 3];
-///
-/// assert_relative_eq!(v_f64_1[0], 1.0_f64);
-/// assert_relative_eq!(v_f64_1[1], 2.0_f64);
-/// assert_relative_eq!(v_f64_1[2], 3.0_f64);
-///
-/// assert_relative_eq!(v_f64_2[0], 1.0_f64);
-/// assert_relative_eq!(v_f64_2[1], 2.0_f64);
-/// assert_relative_eq!(v_f64_2[2], 3.0_f64);
-///
-/// assert_relative_eq!(v_f64_3[0], 10.0_f64);
-/// assert_relative_eq!(v_f64_3[1], 10.0_f64);
-/// assert_relative_eq!(v_f64_3[2], 10.0_f64);
-/// ```
-///
-/// ## Complex number types
-///
-/// ```
-/// use vectora::{vector, Vector};
-///
-/// use approx::assert_relative_eq;
+/// use vectora::vector;
 /// use num::Complex;
 ///
-/// let v_complex = vector![Complex::new(1.0_f64, 2.0_f64), Complex::new(-1.0_f64, -2.0_f64)];
-///
-/// assert_relative_eq!(v_complex[0].re, 1.0_f64);
-/// assert_relative_eq!(v_complex[0].im, 2.0_f64);
-/// assert_relative_eq!(v_complex[1].re, -1.0_f64);
-/// assert_relative_eq!(v_complex[1].im, -2.0_f64);
+/// let v = vector![1, 2, 3];
+/// let v_f64 = vector![1.0, 2.0, 3.0];
+/// let v_repeat = vector![0; 4];
+/// let v_complex = vector![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
 /// ```
 #[macro_export]
 macro_rules! vector {
@@ -85,93 +26,60 @@ macro_rules! vector {
     );
 }
 
-/// Returns a [`crate::Vector`] with scalar data contents and order as defined in a supported
-/// fallible numeric data collection type argument.
+/// Converts a collection (like a `Vec` or slice) into a [`Vector`] of matching length, returning a `Result`.
 ///
-/// This macro can be used with supported types that may not have known length at compile
-/// time (e.g., [`Vec`] and [`slice`]).  The macro takes a single numeric data collection
-/// type argument.
-///
-/// Import the macro before use with:
-///
-/// ```
-/// use vectora::try_vector;
-/// ```
-///
-/// # Errors
-///
-/// The macro returns an error if the length of the argument data collection type differs from the
-/// requested [`crate::Vector`] length.  Errors are also propagated from argument data types. Please review
-/// the crate `TryFrom` trait implementation documentation for additional details.
-///
-/// ```
-/// use vectora::{try_vector, Vector};
-///
-/// let stdlib_vec_too_long = vec![1, 2, 3, 4, 5];
-/// let res: Result<Vector<i32, 3>, _> = try_vector!(stdlib_vec_too_long);
-///
-/// assert!(res.is_err());
-/// ```
-///
-/// ```
-/// use vectora::{try_vector, Vector};
-///
-/// let stdlib_vec_too_short = vec![1, 2];
-/// let res: Result<Vector<i32, 3>, _> = try_vector!(stdlib_vec_too_short);
-///
-/// assert!(res.is_err());
-/// ```
+/// - `try_vector!(data)` tries to create a Vector from a runtime collection, returning an error if the length does not match.
 ///
 /// # Examples
 ///
-/// ## Integer types
-///
 /// ```
 /// use vectora::{try_vector, Vector};
-///
-/// let stdlib_vec_i32 = vec![1_i32, 2_i32, 3_i32];
-/// let v_i32: Vector<i32, 3> = try_vector!(stdlib_vec_i32).unwrap();
-///
-/// assert_eq!(v_i32[0], 1_i32);
-/// assert_eq!(v_i32[1], 2_i32);
-/// assert_eq!(v_i32[2], 3_i32);
-/// ```
-///
-/// ## Floating point types
-///
-/// ```
-/// use vectora::{try_vector, Vector};
-///
-/// use approx::assert_relative_eq;
-///
-/// let stdlib_vec_f64 = vec![1.0_f64, 2.0_f64, 3.0_f64];
-/// let v_f64: Vector<f64, 3> = try_vector!(stdlib_vec_f64).unwrap();
-///
-/// assert_relative_eq!(v_f64[0], 1.0_f64);
-/// assert_relative_eq!(v_f64[1], 2.0_f64);
-/// assert_relative_eq!(v_f64[2], 3.0_f64);
-/// ```
-///
-/// ## Complex number types
-///
-/// ```
-/// use vectora::{try_vector, Vector};
-///
-/// use approx::assert_relative_eq;
 /// use num::Complex;
 ///
-/// let stdlib_vec_complex = vec![Complex::new(1.0_f64, 2.0_f64), Complex::new(3.0_f64, 4.0_f64)];
-/// let v_complex_f64: Vector<Complex<f64>, 2> = try_vector!(stdlib_vec_complex).unwrap();
-///
-/// assert_relative_eq!(v_complex_f64[0].re, 1.0_f64);
-/// assert_relative_eq!(v_complex_f64[0].im, 2.0_f64);
-/// assert_relative_eq!(v_complex_f64[1].re, 3.0_f64);
-/// assert_relative_eq!(v_complex_f64[1].im, 4.0_f64);
+/// let v: Vector<i32, 3> = try_vector!(vec![1, 2, 3]).unwrap();
+/// let v_f64: Vector<f64, 3> = try_vector!([1.0, 2.0, 3.0]).unwrap();
+/// let v_complex: Vector<Complex<f64>, 2> = try_vector!(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]).unwrap();
 /// ```
+///
+/// /// Error example:
+///
+/// ```
+/// use vectora::{try_vector, Vector};
+/// // This will return an Err because the length does not match the Vector's size.
+/// let result: Result<Vector<i32, 3>, _> = try_vector!(vec![1, 2]); // Suppose you want Vector<i32, 3>
+/// assert!(result.is_err());
 #[macro_export]
 macro_rules! try_vector {
     ($elem:expr) => {
         $crate::types::vector::Vector::try_from($elem)
+    };
+}
+
+/// Creates a [`FlexVector`] with the given elements or repeated value.
+///
+/// - `flexvector![x, y, z]` creates a FlexVector from the elements.
+/// - `flexvector![elem; n]` creates a FlexVector of length `n` with all elements set to `elem`.
+///
+/// # Examples
+///
+/// ```
+/// use vectora::flexvector;
+/// use num::Complex;
+///
+/// let fv = flexvector![1, 2, 3];
+/// let fv_f64 = flexvector![1.0_f64, 2.0_f64, 3.0_f64];
+/// let fv_repeat = flexvector![0; 4];
+/// let fv_complex = flexvector![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+/// ```
+#[macro_export]
+macro_rules! flexvector {
+    // Repeated element syntax: flexvector![elem; n]
+    ($elem:expr; $n:expr) => {
+        $crate::types::flexvector::FlexVector::from_vec(vec![$elem; $n])
+    };
+    // List syntax: flexvector![x, y, z, ...]
+    ($($x:expr),+ $(,)?) => {
+        $crate::types::flexvector::FlexVector::from_vec(vec![$($x),+])
     };
 }
 
@@ -180,7 +88,7 @@ macro_rules! impl_vector_unary_op {
     ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
         impl<T> std::ops::$trait for $VectorType<T>
         where
-            T: num::Num + Clone + Sync + Send + std::ops::Neg<Output = T>,
+            T: num::Num + Clone + std::ops::Neg<Output = T>,
         {
             type Output = Self;
             fn $method(self) -> Self {
@@ -193,14 +101,31 @@ macro_rules! impl_vector_unary_op {
 
 #[macro_export]
 macro_rules! impl_vector_binop {
-    ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
+    // With length check (for FlexVector)
+    (check_len, $VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
         impl<T> std::ops::$trait for $VectorType<T>
         where
-            T: num::Num + Clone + Sync + Send,
+            T: num::Num + Clone,
         {
             type Output = Self;
             fn $method(self, rhs: Self) -> Self {
-                assert_eq!(self.len(), rhs.len());
+                assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
+                let components = self.components.into_iter()
+                    .zip(rhs.components)
+                    .map(|(a, b)| a $op b)
+                    .collect();
+                Self { components }
+            }
+        }
+    };
+    // Without length check (for Vector)
+    (no_check_len, $VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
+        impl<T> std::ops::$trait for $VectorType<T>
+        where
+            T: num::Num + Clone,
+        {
+            type Output = Self;
+            fn $method(self, rhs: Self) -> Self {
                 let components = self.components.into_iter()
                     .zip(rhs.components)
                     .map(|(a, b)| a $op b)
@@ -212,16 +137,194 @@ macro_rules! impl_vector_binop {
 }
 
 #[macro_export]
+macro_rules! impl_vector_binop_div {
+    // With length check (for FlexVector)
+    (check_len, $VectorType:ident) => {
+        // f32
+        impl std::ops::Div for $VectorType<f32> {
+            type Output = Self;
+            fn div(self, rhs: Self) -> Self {
+                assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
+                let components =
+                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
+                Self { components }
+            }
+        }
+        // f64
+        impl std::ops::Div for $VectorType<f64> {
+            type Output = Self;
+            fn div(self, rhs: Self) -> Self {
+                assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
+                let components =
+                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
+                Self { components }
+            }
+        }
+        // Complex<f32>
+        impl std::ops::Div for $VectorType<num::Complex<f32>> {
+            type Output = Self;
+            fn div(self, rhs: Self) -> Self {
+                assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
+                let components =
+                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
+                Self { components }
+            }
+        }
+        // Complex<f64>
+        impl std::ops::Div for $VectorType<num::Complex<f64>> {
+            type Output = Self;
+            fn div(self, rhs: Self) -> Self {
+                assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
+                let components =
+                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
+                Self { components }
+            }
+        }
+    };
+    // Without length check (for Vector)
+    (no_check_len, $VectorType:ident) => {
+        // f32
+        impl std::ops::Div for $VectorType<f32> {
+            type Output = Self;
+            fn div(self, rhs: Self) -> Self {
+                let components =
+                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
+                Self { components }
+            }
+        }
+        // f64
+        impl std::ops::Div for $VectorType<f64> {
+            type Output = Self;
+            fn div(self, rhs: Self) -> Self {
+                let components =
+                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
+                Self { components }
+            }
+        }
+        // Complex<f32>
+        impl std::ops::Div for $VectorType<num::Complex<f32>> {
+            type Output = Self;
+            fn div(self, rhs: Self) -> Self {
+                let components =
+                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
+                Self { components }
+            }
+        }
+        // Complex<f64>
+        impl std::ops::Div for $VectorType<num::Complex<f64>> {
+            type Output = Self;
+            fn div(self, rhs: Self) -> Self {
+                let components =
+                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
+                Self { components }
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! impl_vector_binop_assign {
-    ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
+    // With length check (for FlexVector)
+    (check_len, $VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
         impl<T> std::ops::$trait for $VectorType<T>
         where
-            T: num::Num + Clone + Sync + Send,
+            T: num::Num + Clone,
         {
             fn $method(&mut self, rhs: Self) {
-                assert_eq!(self.len(), rhs.len());
+                assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
                 for (a, b) in self.components.iter_mut().zip(rhs.components) {
                     *a = a.clone() $op b;
+                }
+            }
+        }
+    };
+    // Without length check (for Vector)
+    (no_check_len, $VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
+        impl<T> std::ops::$trait for $VectorType<T>
+        where
+            T: num::Num + Clone,
+        {
+            fn $method(&mut self, rhs: Self) {
+                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                    *a = a.clone() $op b;
+                }
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_vector_binop_div_assign {
+    // With length check (for FlexVector)
+    (check_len, $VectorType:ident) => {
+        // f32
+        impl std::ops::DivAssign for $VectorType<f32> {
+            fn div_assign(&mut self, rhs: Self) {
+                assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
+                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                    *a /= b;
+                }
+            }
+        }
+        // f64
+        impl std::ops::DivAssign for $VectorType<f64> {
+            fn div_assign(&mut self, rhs: Self) {
+                assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
+                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                    *a /= b;
+                }
+            }
+        }
+        // Complex<f32>
+        impl std::ops::DivAssign for $VectorType<num::Complex<f32>> {
+            fn div_assign(&mut self, rhs: Self) {
+                assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
+                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                    *a /= b;
+                }
+            }
+        }
+        // Complex<f64>
+        impl std::ops::DivAssign for $VectorType<num::Complex<f64>> {
+            fn div_assign(&mut self, rhs: Self) {
+                assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
+                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                    *a /= b;
+                }
+            }
+        }
+    };
+    // Without length check (for Vector)
+    (no_check_len, $VectorType:ident) => {
+        // f32
+        impl std::ops::DivAssign for $VectorType<f32> {
+            fn div_assign(&mut self, rhs: Self) {
+                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                    *a /= b;
+                }
+            }
+        }
+        // f64
+        impl std::ops::DivAssign for $VectorType<f64> {
+            fn div_assign(&mut self, rhs: Self) {
+                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                    *a /= b;
+                }
+            }
+        }
+        // Complex<f32>
+        impl std::ops::DivAssign for $VectorType<num::Complex<f32>> {
+            fn div_assign(&mut self, rhs: Self) {
+                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                    *a /= b;
+                }
+            }
+        }
+        // Complex<f64>
+        impl std::ops::DivAssign for $VectorType<num::Complex<f64>> {
+            fn div_assign(&mut self, rhs: Self) {
+                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                    *a /= b;
                 }
             }
         }
@@ -233,7 +336,7 @@ macro_rules! impl_vector_scalar_op {
     ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
         impl<T> std::ops::$trait<T> for $VectorType<T>
         where
-            T: num::Num + Clone + Sync + Send,
+            T: num::Num + Clone,
         {
             type Output = Self;
             fn $method(self, rhs: T) -> Self {
@@ -249,7 +352,7 @@ macro_rules! impl_vector_scalar_op_assign {
     ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
         impl<T> std::ops::$trait<T> for $VectorType<T>
         where
-            T: num::Num + Clone + Sync + Send,
+            T: num::Num + Clone,
         {
             fn $method(&mut self, rhs: T) {
                 for a in &mut self.components {
@@ -836,5 +939,63 @@ mod tests {
         assert_relative_eq!(v[0].im, 2.0_f64);
         assert_relative_eq!(v[1].re, 3.0_f64);
         assert_relative_eq!(v[1].im, 4.0_f64);
+    }
+
+    #[test]
+    fn macro_flexvector_usize() {
+        let v1 = flexvector![1_usize, 2_usize, 3_usize];
+        let v2 = flexvector![1, 2, 3];
+        let v3 = flexvector![1; 3];
+
+        assert_eq!(v1.len(), 3);
+        assert_eq!(v1[0], 1_usize);
+        assert_eq!(v1[1], 2_usize);
+        assert_eq!(v1[2], 3_usize);
+
+        assert_eq!(v2.len(), 3);
+        assert_eq!(v2[0], 1_usize);
+        assert_eq!(v2[1], 2_usize);
+        assert_eq!(v2[2], 3_usize);
+
+        assert_eq!(v3.len(), 3);
+        assert_eq!(v3[0], 1_usize);
+        assert_eq!(v3[1], 1_usize);
+        assert_eq!(v3[2], 1_usize);
+    }
+
+    #[test]
+    fn macro_flexvector_f64() {
+        let v1 = flexvector![1.0_f64, 2.0, 3.0];
+        let v2 = flexvector![1.0, 2.0, 3.0];
+        let v3 = flexvector![1.0; 3];
+
+        assert_eq!(v1.len(), 3);
+        assert_eq!(v1[0], 1.0);
+        assert_eq!(v1[1], 2.0);
+        assert_eq!(v1[2], 3.0);
+
+        assert_eq!(v2.len(), 3);
+        assert_eq!(v2[0], 1.0);
+        assert_eq!(v2[1], 2.0);
+        assert_eq!(v2[2], 3.0);
+
+        assert_eq!(v3.len(), 3);
+        assert_eq!(v3[0], 1.0);
+        assert_eq!(v3[1], 1.0);
+        assert_eq!(v3[2], 1.0);
+    }
+
+    #[test]
+    fn macro_flexvector_complex_f64() {
+        let v1 = flexvector![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let v2 = flexvector![Complex::new(1.0, 2.0); 2];
+
+        assert_eq!(v1.len(), 2);
+        assert_eq!(v1[0], Complex::new(1.0, 2.0));
+        assert_eq!(v1[1], Complex::new(3.0, 4.0));
+
+        assert_eq!(v2.len(), 2);
+        assert_eq!(v2[0], Complex::new(1.0, 2.0));
+        assert_eq!(v2[1], Complex::new(1.0, 2.0));
     }
 }
