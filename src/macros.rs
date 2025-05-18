@@ -83,6 +83,30 @@ macro_rules! flexvector {
     };
 }
 
+/// Fallibly constructs a [`FlexVector`] from an iterator of `Result<T, E>`, propagating the first error.
+///
+/// - `try_flexvector!(iter)` collects all `Ok(T)` values into a FlexVector, or returns the first `Err(E)` encountered.
+///
+/// # Examples
+///
+/// ```
+/// use vectora::try_flexvector;
+///
+/// let data = vec!["1", "2", "oops"];
+/// let fv = try_flexvector!(data.iter().map(|s| s.parse::<i32>()));
+/// assert!(fv.is_err());
+///
+/// let data = vec!["1", "2", "3"];
+/// let fv = try_flexvector!(data.iter().map(|s| s.parse::<i32>())).unwrap();
+/// assert_eq!(fv.as_slice(), &[1, 2, 3]);
+/// ```
+#[macro_export]
+macro_rules! try_flexvector {
+    ($iter:expr) => {
+        $crate::types::flexvector::FlexVector::try_from_iter($iter)
+    };
+}
+
 #[macro_export]
 macro_rules! impl_vector_unary_op {
     ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
@@ -473,6 +497,7 @@ macro_rules! impl_vector_scalar_div_op_assign {
 
 #[cfg(test)]
 mod tests {
+    use crate::types::traits::VectorBase;
     use crate::Vector;
     #[allow(unused_imports)]
     use approx::{assert_relative_eq, assert_relative_ne};
@@ -997,5 +1022,44 @@ mod tests {
         assert_eq!(v2.len(), 2);
         assert_eq!(v2[0], Complex::new(1.0, 2.0));
         assert_eq!(v2[1], Complex::new(1.0, 2.0));
+    }
+
+    #[test]
+    fn macro_try_flexvector_success() {
+        let data: Vec<Result<i32, ()>> = vec![Ok(1), Ok(2), Ok(3)];
+        let fv = try_flexvector!(data).unwrap();
+        assert_eq!(fv.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn macro_try_flexvector_parse_success() {
+        let data = vec!["1", "2", "3"];
+        let fv = try_flexvector!(data.iter().map(|s| s.parse::<i32>())).unwrap();
+        assert_eq!(fv.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn macro_try_flexvector_parse_error() {
+        let data = vec!["1", "oops", "3"];
+        let result = try_flexvector!(data.iter().map(|s| s.parse::<i32>()));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn macro_try_flexvector_custom_error() {
+        #[derive(Debug, PartialEq)]
+        enum MyError {
+            Fail,
+        }
+        let data = vec![Ok(1), Err(MyError::Fail), Ok(3)];
+        let result = try_flexvector!(data);
+        assert_eq!(result.unwrap_err(), MyError::Fail);
+    }
+
+    #[test]
+    fn macro_try_flexvector_empty() {
+        let data: Vec<Result<i32, &str>> = vec![];
+        let fv = try_flexvector!(data).unwrap();
+        assert!(fv.is_empty());
     }
 }

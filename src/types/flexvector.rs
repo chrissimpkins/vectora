@@ -134,6 +134,22 @@ impl<T> FromIterator<T> for FlexVector<T> {
 
 // ================================
 //
+// try_from_iter method
+//
+// ================================
+impl<T> FlexVector<T> {
+    /// Fallible error-propagating construction from an iterator of Results.
+    pub fn try_from_iter<I, E>(iter: I) -> Result<Self, E>
+    where
+        I: IntoIterator<Item = Result<T, E>>,
+    {
+        let components: Result<Vec<T>, E> = iter.into_iter().collect();
+        components.map(|vec| FlexVector { components: vec })
+    }
+}
+
+// ================================
+//
 // Deref/DerefMut trait impl
 //
 // ================================
@@ -1126,6 +1142,51 @@ mod tests {
     fn test_from_iter_empty() {
         let v: FlexVector<i32> = Vec::<i32>::new().into_iter().collect();
         assert!(v.is_empty());
+    }
+
+    // ================================
+    //
+    // try_from_iter method tests
+    //
+    // ================================
+
+    #[test]
+    fn test_try_from_iter_success() {
+        let data: Vec<Result<i32, ()>> = vec![Ok(1i32), Ok(2i32), Ok(3i32)];
+        let fv = FlexVector::<i32>::try_from_iter(data).unwrap();
+        assert_eq!(fv.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_try_from_iter_parse_success() {
+        let data = vec!["1", "2", "3"];
+        let fv = FlexVector::<i32>::try_from_iter(data.iter().map(|s| s.parse())).unwrap();
+        assert_eq!(fv.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_try_from_iter_parse_error() {
+        let data = vec!["1", "oops", "3"];
+        let result = FlexVector::<i32>::try_from_iter(data.iter().map(|s| s.parse::<i32>()));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_try_from_iter_custom_error() {
+        #[derive(Debug, PartialEq)]
+        enum MyError {
+            Fail,
+        }
+        let data = vec![Ok(1), Err(MyError::Fail), Ok(3)];
+        let result = FlexVector::<i32>::try_from_iter(data);
+        assert_eq!(result.unwrap_err(), MyError::Fail);
+    }
+
+    #[test]
+    fn test_try_from_iter_empty() {
+        let data: Vec<Result<i32, &str>> = vec![];
+        let fv = FlexVector::<i32>::try_from_iter(data).unwrap();
+        assert!(fv.is_empty());
     }
 
     // ================================
