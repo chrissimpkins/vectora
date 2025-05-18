@@ -151,7 +151,7 @@ where
 {
     /// Flattens a FlexVector of iterables into a single FlexVector by concatenating all elements.
     pub fn flatten(self) -> FlexVector<T> {
-        let components = self.components.into_iter().flat_map(|v| v).collect();
+        let components = self.components.into_iter().flatten().collect();
         FlexVector { components }
     }
 }
