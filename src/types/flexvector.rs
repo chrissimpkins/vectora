@@ -357,7 +357,7 @@ where
         T: std::ops::Neg<Output = T> + Clone,
         Self::Output: std::iter::FromIterator<T>,
     {
-        self.as_slice().iter().map(|a| -a.clone()).collect()
+        self.as_slice().iter().map(|a| -*a).collect()
     }
 
     #[inline]
