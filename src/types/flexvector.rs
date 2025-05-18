@@ -143,6 +143,30 @@ impl<T> FlexVector<T> {
     }
 }
 
+// -- more constructors --
+
+impl<T, V> FlexVector<V>
+where
+    V: IntoIterator<Item = T>,
+{
+    /// Flattens a FlexVector of iterables into a single FlexVector by concatenating all elements.
+    pub fn flatten(self) -> FlexVector<T> {
+        let components = self.components.into_iter().flat_map(|v| v).collect();
+        FlexVector { components }
+    }
+}
+
+impl<'a, V, T> FlexVector<V>
+where
+    V: IntoIterator<Item = &'a T>,
+    T: Clone + 'a,
+{
+    pub fn flatten_owned(self) -> FlexVector<T> {
+        let components = self.components.into_iter().flat_map(|v| v.into_iter().cloned()).collect();
+        FlexVector { components }
+    }
+}
+
 // ================================
 //
 // Default trait impl
@@ -1152,6 +1176,87 @@ mod tests {
         }
         let v = FlexVector::<i32>::try_from_fn(3, fallible_square).unwrap();
         assert_eq!(v.as_slice(), &[0, 1, 4]);
+    }
+
+    #[test]
+    fn test_flatten_flexvector_of_flexvector() {
+        let row1 = FlexVector::from_vec(vec![1, 2]);
+        let row2 = FlexVector::from_vec(vec![3, 4, 5]);
+        let nested = FlexVector::from_vec(vec![row1, row2]);
+        let flat = nested.flatten();
+        assert_eq!(flat.as_slice(), &[1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn test_flatten_flexvector_of_vec() {
+        let nested = FlexVector::from_vec(vec![vec![10, 20], vec![30]]);
+        let flat = nested.flatten();
+        assert_eq!(flat.as_slice(), &[10, 20, 30]);
+    }
+
+    #[test]
+    fn test_flatten_flexvector_of_array() {
+        let nested = FlexVector::from_vec(vec![[1, 2], [3, 4]]);
+        let flat = nested.flatten();
+        assert_eq!(flat.as_slice(), &[1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_flatten_flexvector_of_slice_refs() {
+        let a = [7, 8];
+        let b = [9];
+        let nested = FlexVector::from_vec(vec![&a[..], &b[..]]);
+        let flat = nested.flatten();
+        assert_eq!(flat.as_slice(), &[&7, &8, &9]);
+    }
+
+    #[test]
+    fn test_flatten_empty_outer() {
+        let nested: FlexVector<Vec<i32>> = FlexVector::new();
+        let flat = nested.flatten();
+        assert!(flat.is_empty());
+    }
+
+    #[test]
+    fn test_flatten_with_empty_inner() {
+        let nested = FlexVector::from_vec(vec![vec![], vec![1, 2], vec![]]);
+        let flat = nested.flatten();
+        assert_eq!(flat.as_slice(), &[1, 2]);
+    }
+
+    #[test]
+    fn test_flatten_owned_flexvector_of_slice_refs() {
+        let a = [8, 9];
+        let b = [10];
+        let nested = FlexVector::from_vec(vec![&a[..], &b[..]]);
+        let flat = nested.flatten_owned();
+        let expected: Vec<i32> = vec![8, 9, 10];
+        assert_eq!(flat.as_slice(), expected.as_slice());
+        let _: &[i32] = flat.as_slice(); // type check: &[i32]
+    }
+
+    #[test]
+    fn test_flatten_owned_flexvector_of_refs() {
+        let x = 42;
+        let y = 43;
+        let nested = FlexVector::from_vec(vec![vec![&x, &y], vec![&x]]);
+        let flat = nested.flatten_owned();
+        assert_eq!(flat.as_slice(), &[42, 43, 42]);
+        let _: &[i32] = flat.as_slice(); // type check: &[i32]
+    }
+
+    #[test]
+    fn test_flatten_owned_empty_outer() {
+        let nested: FlexVector<Vec<&i32>> = FlexVector::new();
+        let flat = nested.flatten_owned();
+        assert!(flat.is_empty());
+    }
+
+    #[test]
+    fn test_flatten_owned_with_empty_inner() {
+        let nested = FlexVector::from_vec(vec![vec![], vec![&1, &2], vec![]]);
+        let flat = nested.flatten_owned();
+        assert_eq!(flat.as_slice(), &[1, 2]);
     }
 
     #[test]
