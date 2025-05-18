@@ -33,7 +33,7 @@ macro_rules! vector {
 /// # Examples
 ///
 /// ```
-/// use vectora::{try_vector, Vector};
+/// use vectora::prelude::*;
 /// use num::Complex;
 ///
 /// let v: Vector<i32, 3> = try_vector!(vec![1, 2, 3]).unwrap();
@@ -44,7 +44,7 @@ macro_rules! vector {
 /// /// Error example:
 ///
 /// ```
-/// use vectora::{try_vector, Vector};
+/// use vectora::prelude::*;
 /// // This will return an Err because the length does not match the Vector's size.
 /// let result: Result<Vector<i32, 3>, _> = try_vector!(vec![1, 2]); // Suppose you want Vector<i32, 3>
 /// assert!(result.is_err());
@@ -63,7 +63,7 @@ macro_rules! try_vector {
 /// # Examples
 ///
 /// ```
-/// use vectora::flexvector;
+/// use vectora::prelude::*;
 /// use num::Complex;
 ///
 /// let fv = flexvector![1, 2, 3];
@@ -90,7 +90,7 @@ macro_rules! flexvector {
 /// # Examples
 ///
 /// ```
-/// use vectora::try_flexvector;
+/// use vectora::prelude::*;
 ///
 /// let data = vec!["1", "2", "oops"];
 /// let fv = try_flexvector!(data.iter().map(|s| s.parse::<i32>()));

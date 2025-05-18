@@ -898,3 +898,29 @@ pub mod types;
 
 pub use types::flexvector::FlexVector;
 pub use types::vector::Vector;
+
+/// The vectora prelude: import this module to bring all core traits, types, and macros into scope.
+///
+/// # Example
+/// ```
+/// use vectora::prelude::*;
+///
+/// let v = vector![1, 2, 3];
+/// let fv = flexvector![1.0, 2.0, 3.0];
+/// let v2 = Vector::<i32, 3>::from([4, 5, 6]);
+/// let fv2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
+/// ```
+///
+/// This prelude includes:
+/// - Core traits (`VectorBase`, `VectorOps`, `VectorOpsFloat`, `VectorOpsComplex`)
+/// - The main types (`Vector`, `FlexVector`)
+/// - User-facing macros (`vector!`, `flexvector!`, `try_vector!`, `try_flexvector!`)
+pub mod prelude {
+    // Traits
+    pub use crate::types::traits::{VectorBase, VectorOps, VectorOpsComplex, VectorOpsFloat};
+    // Types
+    pub use crate::types::flexvector::FlexVector;
+    pub use crate::types::vector::Vector;
+    // Macros
+    pub use crate::{flexvector, try_flexvector, try_vector, vector};
+}
