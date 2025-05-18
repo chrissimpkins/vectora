@@ -161,7 +161,7 @@ where
     V: IntoIterator<Item = &'a T>,
     T: Clone + 'a,
 {
-    pub fn flatten_owned(self) -> FlexVector<T> {
+    pub fn flatten_cloned(self) -> FlexVector<T> {
         let components = self.components.into_iter().flat_map(|v| v.into_iter().cloned()).collect();
         FlexVector { components }
     }
@@ -1225,37 +1225,37 @@ mod tests {
     }
 
     #[test]
-    fn test_flatten_owned_flexvector_of_slice_refs() {
+    fn test_flatten_cloned_flexvector_of_slice_refs() {
         let a = [8, 9];
         let b = [10];
         let nested = FlexVector::from_vec(vec![&a[..], &b[..]]);
-        let flat = nested.flatten_owned();
+        let flat = nested.flatten_cloned();
         let expected: Vec<i32> = vec![8, 9, 10];
         assert_eq!(flat.as_slice(), expected.as_slice());
         let _: &[i32] = flat.as_slice(); // type check: &[i32]
     }
 
     #[test]
-    fn test_flatten_owned_flexvector_of_refs() {
+    fn test_flatten_cloned_flexvector_of_refs() {
         let x = 42;
         let y = 43;
         let nested = FlexVector::from_vec(vec![vec![&x, &y], vec![&x]]);
-        let flat = nested.flatten_owned();
+        let flat = nested.flatten_cloned();
         assert_eq!(flat.as_slice(), &[42, 43, 42]);
         let _: &[i32] = flat.as_slice(); // type check: &[i32]
     }
 
     #[test]
-    fn test_flatten_owned_empty_outer() {
+    fn test_flatten_cloned_empty_outer() {
         let nested: FlexVector<Vec<&i32>> = FlexVector::new();
-        let flat = nested.flatten_owned();
+        let flat = nested.flatten_cloned();
         assert!(flat.is_empty());
     }
 
     #[test]
-    fn test_flatten_owned_with_empty_inner() {
+    fn test_flatten_cloned_with_empty_inner() {
         let nested = FlexVector::from_vec(vec![vec![], vec![&1, &2], vec![]]);
-        let flat = nested.flatten_owned();
+        let flat = nested.flatten_cloned();
         assert_eq!(flat.as_slice(), &[1, 2]);
     }
 
