@@ -103,7 +103,7 @@ impl<T> FlexVector<T> {
         components.map(|vec| FlexVector { components: vec })
     }
 
-    /// Creates a new FlexVector by calling the provided function or closure for each index.
+    /// Creates a new [`FlexVector`] by calling the provided function or closure for each index.
     ///
     /// # Example
     /// ```
@@ -118,6 +118,28 @@ impl<T> FlexVector<T> {
     {
         let components = (0..len).map(f).collect();
         FlexVector { components }
+    }
+
+    /// Fallibly creates a new [`FlexVector`] by calling the provided function or closure for each index.
+    ///
+    /// Returns the first error encountered, or a [`FlexVector`] of all results if successful.
+    ///
+    /// # Example
+    /// ```
+    /// use vectora::prelude::*;
+    ///
+    /// let v = FlexVector::<i32>::try_from_fn(3, |i| if i == 1 { Err("fail") } else { Ok(i as i32) });
+    /// assert!(v.is_err());
+    /// ```
+    pub fn try_from_fn<F, E>(len: usize, mut f: F) -> Result<Self, E>
+    where
+        F: FnMut(usize) -> Result<T, E>,
+    {
+        let mut components = Vec::with_capacity(len);
+        for i in 0..len {
+            components.push(f(i)?);
+        }
+        Ok(FlexVector { components })
     }
 }
 
@@ -1102,6 +1124,34 @@ mod tests {
     fn test_from_fn_with_fn_pointer() {
         let v = FlexVector::from_fn(4, square_usize);
         assert_eq!(v.as_slice(), &[0, 1, 4, 9]);
+    }
+
+    #[test]
+    fn test_try_from_fn_success() {
+        let v = FlexVector::<i32>::try_from_fn(4, |i| Ok::<i32, ()>(i as i32 * 2)).unwrap();
+        assert_eq!(v.as_slice(), &[0, 2, 4, 6]);
+    }
+
+    #[test]
+    fn test_try_from_fn_error() {
+        let result =
+            FlexVector::<i32>::try_from_fn(5, |i| if i == 3 { Err("fail") } else { Ok(i as i32) });
+        assert_eq!(result.unwrap_err(), "fail");
+    }
+
+    #[test]
+    fn test_try_from_fn_empty() {
+        let v = FlexVector::<i32>::try_from_fn(0, |_| Ok::<i32, ()>(42)).unwrap();
+        assert!(v.is_empty());
+    }
+
+    #[test]
+    fn test_try_from_fn_with_fn_pointer() {
+        fn fallible_square(i: usize) -> Result<i32, ()> {
+            Ok((i * i) as i32)
+        }
+        let v = FlexVector::<i32>::try_from_fn(3, fallible_square).unwrap();
+        assert_eq!(v.as_slice(), &[0, 1, 4]);
     }
 
     #[test]
