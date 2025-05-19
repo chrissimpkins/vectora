@@ -2,7 +2,10 @@
 
 use std::borrow::{Borrow, BorrowMut};
 use std::iter::FromIterator;
-use std::ops::{Deref, DerefMut};
+use std::ops::{
+    Deref, DerefMut, Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo,
+    RangeToInclusive,
+};
 
 use crate::{
     impl_vector_binop, impl_vector_binop_assign, impl_vector_binop_div,
@@ -331,6 +334,107 @@ impl<T: Clone> From<&[T]> for FlexVector<T> {
     #[inline]
     fn from(slice: &[T]) -> Self {
         FlexVector { components: slice.to_vec() }
+    }
+}
+
+// ================================
+//
+// Index trait impl
+//
+// ================================
+impl<T> Index<usize> for FlexVector<T> {
+    type Output = T;
+    fn index(&self, idx: usize) -> &Self::Output {
+        &self.components[idx]
+    }
+}
+
+impl<T> Index<Range<usize>> for FlexVector<T> {
+    type Output = [T];
+    fn index(&self, range: Range<usize>) -> &Self::Output {
+        &self.components[range]
+    }
+}
+
+impl<T> Index<RangeFrom<usize>> for FlexVector<T> {
+    type Output = [T];
+    fn index(&self, range: RangeFrom<usize>) -> &Self::Output {
+        &self.components[range]
+    }
+}
+
+impl<T> Index<RangeTo<usize>> for FlexVector<T> {
+    type Output = [T];
+    fn index(&self, range: RangeTo<usize>) -> &Self::Output {
+        &self.components[range]
+    }
+}
+
+impl<T> Index<RangeFull> for FlexVector<T> {
+    type Output = [T];
+    fn index(&self, range: RangeFull) -> &Self::Output {
+        &self.components[range]
+    }
+}
+
+impl<T> Index<RangeInclusive<usize>> for FlexVector<T> {
+    type Output = [T];
+    fn index(&self, range: RangeInclusive<usize>) -> &Self::Output {
+        &self.components[range]
+    }
+}
+
+impl<T> Index<RangeToInclusive<usize>> for FlexVector<T> {
+    type Output = [T];
+    fn index(&self, range: RangeToInclusive<usize>) -> &Self::Output {
+        &self.components[range]
+    }
+}
+
+// ================================
+//
+// IndexMut trait impl
+//
+// ================================
+impl<T> IndexMut<usize> for FlexVector<T> {
+    fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
+        &mut self.components[idx]
+    }
+}
+
+impl<T> IndexMut<Range<usize>> for FlexVector<T> {
+    fn index_mut(&mut self, range: Range<usize>) -> &mut Self::Output {
+        &mut self.components[range]
+    }
+}
+
+impl<T> IndexMut<RangeFrom<usize>> for FlexVector<T> {
+    fn index_mut(&mut self, range: RangeFrom<usize>) -> &mut Self::Output {
+        &mut self.components[range]
+    }
+}
+
+impl<T> IndexMut<RangeTo<usize>> for FlexVector<T> {
+    fn index_mut(&mut self, range: RangeTo<usize>) -> &mut Self::Output {
+        &mut self.components[range]
+    }
+}
+
+impl<T> IndexMut<RangeFull> for FlexVector<T> {
+    fn index_mut(&mut self, range: RangeFull) -> &mut Self::Output {
+        &mut self.components[range]
+    }
+}
+
+impl<T> IndexMut<RangeInclusive<usize>> for FlexVector<T> {
+    fn index_mut(&mut self, range: RangeInclusive<usize>) -> &mut Self::Output {
+        &mut self.components[range]
+    }
+}
+
+impl<T> IndexMut<RangeToInclusive<usize>> for FlexVector<T> {
+    fn index_mut(&mut self, range: RangeToInclusive<usize>) -> &mut Self::Output {
+        &mut self.components[range]
     }
 }
 
@@ -2111,6 +2215,174 @@ mod tests {
         let slice: &[Complex<f64>] = &[Complex::new(7.0, 8.0), Complex::new(9.0, 10.0)];
         let fv = FlexVector::from(slice);
         assert_eq!(fv.as_slice(), slice);
+    }
+
+    // ================================
+    //
+    // Index trait tests
+    //
+    // ================================
+
+    #[test]
+    fn test_index_usize() {
+        let v = FlexVector::from_vec(vec![10, 20, 30, 40]);
+        assert_eq!(v[0], 10);
+        assert_eq!(v[1], 20);
+        assert_eq!(v[3], 40);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_index_usize_out_of_bounds() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let _ = v[10];
+    }
+
+    #[test]
+    fn test_index_range() {
+        let v = FlexVector::from_vec(vec![1, 2, 3, 4, 5]);
+        assert_eq!(&v[1..4], &[2, 3, 4]);
+        assert_eq!(&v[0..2], &[1, 2]);
+        assert_eq!(&v[2..5], &[3, 4, 5]);
+    }
+
+    #[test]
+    fn test_index_range_from() {
+        let v = FlexVector::from_vec(vec![1, 2, 3, 4, 5]);
+        assert_eq!(&v[2..], &[3, 4, 5]);
+        assert_eq!(&v[0..], &[1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn test_index_range_to() {
+        let v = FlexVector::from_vec(vec![1, 2, 3, 4, 5]);
+        assert_eq!(&v[..3], &[1, 2, 3]);
+        assert_eq!(&v[..1], &[1]);
+    }
+
+    #[test]
+    fn test_index_range_full() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        assert_eq!(&v[..], &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_index_range_inclusive() {
+        let v = FlexVector::from_vec(vec![1, 2, 3, 4, 5]);
+        assert_eq!(&v[1..=3], &[2, 3, 4]);
+        assert_eq!(&v[0..=4], &[1, 2, 3, 4, 5]);
+    }
+
+    #[test]
+    fn test_index_range_to_inclusive() {
+        let v = FlexVector::from_vec(vec![1, 2, 3, 4, 5]);
+        assert_eq!(&v[..=2], &[1, 2, 3]);
+        assert_eq!(&v[..=0], &[1]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_index_range_out_of_bounds() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let _ = &v[2..5];
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_index_range_inclusive_out_of_bounds() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let _ = &v[1..=5];
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_index_range_to_inclusive_out_of_bounds() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let _ = &v[..=5];
+    }
+
+    // ================================
+    //
+    // IndexMut trait tests
+    //
+    // ================================
+
+    #[test]
+    fn test_index_mut_usize() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3]);
+        v[0] = 10;
+        v[2] = 30;
+        assert_eq!(v.as_slice(), &[10, 2, 30]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_index_mut_usize_out_of_bounds() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3]);
+        v[10] = 99;
+    }
+
+    #[test]
+    fn test_index_mut_range() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3, 4, 5]);
+        v[1..4].copy_from_slice(&[20, 30, 40]);
+        assert_eq!(v.as_slice(), &[1, 20, 30, 40, 5]);
+    }
+
+    #[test]
+    fn test_index_mut_range_from() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3, 4, 5]);
+        v[2..].copy_from_slice(&[99, 100, 101]);
+        assert_eq!(v.as_slice(), &[1, 2, 99, 100, 101]);
+    }
+
+    #[test]
+    fn test_index_mut_range_to() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3, 4, 5]);
+        v[..3].copy_from_slice(&[7, 8, 9]);
+        assert_eq!(v.as_slice(), &[7, 8, 9, 4, 5]);
+    }
+
+    #[test]
+    fn test_index_mut_range_full() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3]);
+        v[..].copy_from_slice(&[10, 20, 30]);
+        assert_eq!(v.as_slice(), &[10, 20, 30]);
+    }
+
+    #[test]
+    fn test_index_mut_range_inclusive() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3, 4, 5]);
+        v[1..=3].copy_from_slice(&[21, 31, 41]);
+        assert_eq!(v.as_slice(), &[1, 21, 31, 41, 5]);
+    }
+
+    #[test]
+    fn test_index_mut_range_to_inclusive() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3, 4, 5]);
+        v[..=2].copy_from_slice(&[100, 200, 300]);
+        assert_eq!(v.as_slice(), &[100, 200, 300, 4, 5]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_index_mut_range_out_of_bounds() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3]);
+        v[2..5].copy_from_slice(&[9, 9, 9]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_index_mut_range_inclusive_out_of_bounds() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3]);
+        v[1..=5].copy_from_slice(&[9, 9, 9, 9, 9]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_index_mut_range_to_inclusive_out_of_bounds() {
+        let mut v = FlexVector::from_vec(vec![1, 2, 3]);
+        v[..=5].copy_from_slice(&[9, 9, 9, 9, 9, 9]);
     }
 
     // ================================
