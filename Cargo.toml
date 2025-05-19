@@ -6,7 +6,7 @@ license = "Apache-2.0"
 edition = "2021"
 keywords = ["vector", "math", "real", "imaginary", "complex"]
 repository = "https://github.com/chrissimpkins/vectora"
-description = "A vector computation library"
+description = "Fast, Flexible n-Dimensional Vector Math for Rust"
 readme = "README.md"
 
 exclude = [
