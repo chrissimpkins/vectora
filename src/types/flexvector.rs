@@ -932,6 +932,20 @@ impl<T> FlexVector<T> {
         FlexVector { components }
     }
 
+    /// Returns a new FlexVector containing every `step`th element, starting from the first.
+    /// Returns an error if step == 0.
+    #[inline]
+    pub fn step_by(&self, step: usize) -> Result<FlexVector<T>, VectorError>
+    where
+        T: Clone,
+    {
+        if step == 0 {
+            return Err(VectorError::ValueError("step must be non-zero".to_string()));
+        }
+        let components = self.components.iter().step_by(step).cloned().collect();
+        Ok(FlexVector { components })
+    }
+
     // ================================
     //
     // Private methods
@@ -3201,6 +3215,100 @@ mod tests {
         let v2: FlexVector<i32> = FlexVector::new();
         let zipped = v1.zip_with(v2, |a, b| a + b);
         assert!(zipped.is_empty());
+    }
+
+    // --- step_by ---
+
+    #[test]
+    fn test_step_by_i32_basic() {
+        let v = FlexVector::from_vec(vec![1, 2, 3, 4, 5, 6]);
+        let stepped = v.step_by(2).unwrap();
+        assert_eq!(stepped.as_slice(), &[1, 3, 5]);
+    }
+
+    #[test]
+    fn test_step_by_i32_step_one() {
+        let v = FlexVector::from_vec(vec![10, 20, 30]);
+        let stepped = v.step_by(1).unwrap();
+        assert_eq!(stepped.as_slice(), &[10, 20, 30]);
+    }
+
+    #[test]
+    fn test_step_by_i32_step_equals_len() {
+        let v = FlexVector::from_vec(vec![7, 8, 9]);
+        let stepped = v.step_by(3).unwrap();
+        assert_eq!(stepped.as_slice(), &[7]);
+    }
+
+    #[test]
+    fn test_step_by_i32_step_greater_than_len() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let stepped = v.step_by(5).unwrap();
+        assert_eq!(stepped.as_slice(), &[1]);
+    }
+
+    #[test]
+    fn test_step_by_i32_empty() {
+        let v: FlexVector<i32> = FlexVector::new();
+        let stepped = v.step_by(2).unwrap();
+        assert!(stepped.is_empty());
+    }
+
+    #[test]
+    fn test_step_by_i32_zero_step() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let result = v.step_by(0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_step_by_f64_basic() {
+        let v = FlexVector::from_vec(vec![1.0, 2.0, 3.0, 4.0]);
+        let stepped = v.step_by(2).unwrap();
+        assert_eq!(stepped.as_slice(), &[1.0, 3.0]);
+    }
+
+    #[test]
+    fn test_step_by_f64_empty() {
+        let v: FlexVector<f64> = FlexVector::new();
+        let stepped = v.step_by(3).unwrap();
+        assert!(stepped.is_empty());
+    }
+
+    #[test]
+    fn test_step_by_f64_zero_step() {
+        let v = FlexVector::from_vec(vec![1.1, 2.2]);
+        let result = v.step_by(0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_step_by_complex_f64_basic() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+            Complex::new(5.0, 6.0),
+            Complex::new(7.0, 8.0),
+        ]);
+        let stepped = v.step_by(2).unwrap();
+        assert_eq!(stepped.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(5.0, 6.0)]);
+    }
+
+    #[test]
+    fn test_step_by_complex_f64_empty() {
+        use num::Complex;
+        let v: FlexVector<Complex<f64>> = FlexVector::new();
+        let stepped = v.step_by(2).unwrap();
+        assert!(stepped.is_empty());
+    }
+
+    #[test]
+    fn test_step_by_complex_f64_zero_step() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let result = v.step_by(0);
+        assert!(result.is_err());
     }
 
     // ================================
