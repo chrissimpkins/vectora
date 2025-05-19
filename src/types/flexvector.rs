@@ -143,41 +143,6 @@ impl<T> FlexVector<T> {
     }
 }
 
-// -- more constructors --
-
-impl<T> FlexVector<&T>
-where
-    T: Clone,
-{
-    /// Returns a FlexVector of owned values by cloning each referenced element.
-    pub fn cloned(&self) -> FlexVector<T> {
-        FlexVector::from_vec(self.components.iter().map(|&x| x.clone()).collect())
-    }
-}
-
-impl<T, V> FlexVector<V>
-where
-    V: IntoIterator<Item = T>,
-{
-    /// Flattens a FlexVector of iterables into a single FlexVector by concatenating all elements.
-    pub fn flatten(self) -> FlexVector<T> {
-        let components = self.components.into_iter().flatten().collect();
-        FlexVector { components }
-    }
-}
-
-impl<'a, V, T> FlexVector<V>
-where
-    V: IntoIterator<Item = &'a T>,
-    T: Clone + 'a,
-{
-    /// Flattens a FlexVector of iterables into a single FlexVector by concatenating all elements as cloned elements.
-    pub fn flatten_cloned(self) -> FlexVector<T> {
-        let components = self.components.into_iter().flat_map(|v| v.into_iter().cloned()).collect();
-        FlexVector { components }
-    }
-}
-
 // ================================
 //
 // Default trait impl
@@ -914,8 +879,8 @@ impl<T> FlexVector<T> {
         F: FnMut(T) -> U,
         T: Clone,
     {
-        let new_components = self.components.iter().cloned().map(&mut f).collect();
-        FlexVector { components: new_components }
+        let components = self.components.iter().cloned().map(&mut f).collect();
+        FlexVector { components }
     }
 
     /// Applies a closure or function to each element, modifying them in place.
@@ -929,6 +894,29 @@ impl<T> FlexVector<T> {
             // Use clone since T may not be Copy
             *x = f(x.clone());
         }
+    }
+
+    /// Zips two FlexVectors into a FlexVector of pairs.
+    pub fn zip<U>(self, other: FlexVector<U>) -> FlexVector<(T, U)> {
+        let len = self.len().min(other.len());
+        let components = self.components.into_iter().zip(other.components).take(len).collect();
+        FlexVector { components }
+    }
+
+    /// Zips two FlexVectors with a function, producing a FlexVector of the function's output.
+    pub fn zip_with<U, R, F>(self, other: FlexVector<U>, mut f: F) -> FlexVector<R>
+    where
+        F: FnMut(T, U) -> R,
+    {
+        let len = self.len().min(other.len());
+        let components = self
+            .components
+            .into_iter()
+            .zip(other.components)
+            .map(|(a, b)| f(a, b))
+            .take(len)
+            .collect();
+        FlexVector { components }
     }
 
     // ================================
@@ -946,6 +934,39 @@ impl<T> FlexVector<T> {
         } else {
             Ok(())
         }
+    }
+}
+
+impl<T> FlexVector<&T>
+where
+    T: Clone,
+{
+    /// Returns a FlexVector of owned values by cloning each referenced element.
+    pub fn cloned(&self) -> FlexVector<T> {
+        FlexVector::from_vec(self.components.iter().map(|&x| x.clone()).collect())
+    }
+}
+
+impl<T, V> FlexVector<V>
+where
+    V: IntoIterator<Item = T>,
+{
+    /// Flattens a FlexVector of iterables into a single FlexVector by concatenating all elements.
+    pub fn flatten(self) -> FlexVector<T> {
+        let components = self.components.into_iter().flatten().collect();
+        FlexVector { components }
+    }
+}
+
+impl<'a, V, T> FlexVector<V>
+where
+    V: IntoIterator<Item = &'a T>,
+    T: Clone + 'a,
+{
+    /// Flattens a FlexVector of iterables into a single FlexVector by concatenating all elements as cloned elements.
+    pub fn flatten_cloned(self) -> FlexVector<T> {
+        let components = self.components.into_iter().flat_map(|v| v.into_iter().cloned()).collect();
+        FlexVector { components }
     }
 }
 
@@ -985,6 +1006,10 @@ mod tests {
     // Test utility functions
     //
     // ================================
+    fn double(x: i32) -> i32 {
+        x * 2
+    }
+
     fn square(x: i32) -> i32 {
         x * x
     }
@@ -2974,16 +2999,101 @@ mod tests {
         assert!(v.is_empty());
     }
 
-    // used for function pointer test below
-    fn double(x: i32) -> i32 {
-        x * 2
-    }
-
     #[test]
     fn test_mut_map_with_fn_pointer() {
         let mut v = FlexVector::from_vec(vec![1, 2, 3]);
         v.mut_map(double);
         assert_eq!(v.as_slice(), &[2, 4, 6]);
+    }
+
+    // --- zip ---
+    #[test]
+    fn test_zip_i32() {
+        let v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let zipped = v1.zip(v2);
+        assert_eq!(zipped.as_slice(), &[(1, 4), (2, 5), (3, 6)]);
+    }
+
+    #[test]
+    fn test_zip_f64() {
+        let v1 = FlexVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v2 = FlexVector::from_vec(vec![4.4, 5.5, 6.6]);
+        let zipped = v1.zip(v2);
+        assert_eq!(zipped.as_slice(), &[(1.1, 4.4), (2.2, 5.5), (3.3, 6.6)]);
+    }
+
+    #[test]
+    fn test_zip_complex_f64() {
+        use num::Complex;
+        let v1 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let zipped = v1.zip(v2);
+        assert_eq!(
+            zipped.as_slice(),
+            &[
+                (Complex::new(1.0, 2.0), Complex::new(5.0, 6.0)),
+                (Complex::new(3.0, 4.0), Complex::new(7.0, 8.0))
+            ]
+        );
+    }
+
+    #[test]
+    fn test_zip_different_lengths() {
+        let v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![3, 4, 5]);
+        let zipped = v1.zip(v2);
+        assert_eq!(zipped.as_slice(), &[(1, 3), (2, 4)]);
+    }
+
+    #[test]
+    fn test_zip_empty() {
+        let v1: FlexVector<i32> = FlexVector::new();
+        let v2: FlexVector<i32> = FlexVector::new();
+        let zipped = v1.zip(v2);
+        assert!(zipped.is_empty());
+    }
+
+    // --- zip_with ---
+    #[test]
+    fn test_zip_with_i32() {
+        let v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let summed = v1.zip_with(v2, |a, b| a + b);
+        assert_eq!(summed.as_slice(), &[5, 7, 9]);
+    }
+
+    #[test]
+    fn test_zip_with_f64() {
+        let v1 = FlexVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let v2 = FlexVector::from_vec(vec![4.5, 5.5, 6.5]);
+        let prod = v1.zip_with(v2, |a, b| a * b);
+        assert_eq!(prod.as_slice(), &[6.75, 13.75, 22.75]);
+    }
+
+    #[test]
+    fn test_zip_with_complex_f64() {
+        use num::Complex;
+        let v1 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let sum = v1.zip_with(v2, |a, b| a + b);
+        assert_eq!(sum.as_slice(), &[Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
+    }
+
+    #[test]
+    fn test_zip_with_different_lengths() {
+        let v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![10, 20, 30]);
+        let zipped = v1.zip_with(v2, |a, b| a + b);
+        assert_eq!(zipped.as_slice(), &[11, 22]);
+    }
+
+    #[test]
+    fn test_zip_with_empty() {
+        let v1: FlexVector<i32> = FlexVector::new();
+        let v2: FlexVector<i32> = FlexVector::new();
+        let zipped = v1.zip_with(v2, |a, b| a + b);
+        assert!(zipped.is_empty());
     }
 
     // ================================
