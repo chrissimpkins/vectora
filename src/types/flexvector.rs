@@ -1,5 +1,6 @@
 //! FlexVector type.
 
+use std::borrow::{Borrow, BorrowMut};
 use std::iter::FromIterator;
 use std::ops::{Deref, DerefMut};
 
@@ -214,6 +215,22 @@ impl<T> AsRef<[T]> for FlexVector<T> {
 impl<T> AsMut<[T]> for FlexVector<T> {
     #[inline]
     fn as_mut(&mut self) -> &mut [T] {
+        &mut self.components
+    }
+}
+
+// ================================
+//
+// Borrow/BorrowMut trait impl
+//
+// ================================
+impl<T> Borrow<[T]> for FlexVector<T> {
+    fn borrow(&self) -> &[T] {
+        &self.components
+    }
+}
+impl<T> BorrowMut<[T]> for FlexVector<T> {
+    fn borrow_mut(&mut self) -> &mut [T] {
         &mut self.components
     }
 }
@@ -1634,6 +1651,73 @@ mod tests {
         let slice: &mut [Complex<f64>] = v.as_mut();
         slice[0].re = 10.0;
         slice[1].im = 40.0;
+        assert_eq!(v.as_slice(), &[Complex::new(10.0, 2.0), Complex::new(3.0, 40.0)]);
+    }
+
+    // ================================
+    //
+    // Borrow/BorrowMut trait method tests
+    //
+    // ================================
+
+    #[test]
+    fn test_borrow_i32() {
+        use std::borrow::Borrow;
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let slice: &[i32] = v.borrow();
+        assert_eq!(slice, &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_borrow_f64() {
+        use std::borrow::Borrow;
+        let v = FlexVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let slice: &[f64] = v.borrow();
+        assert_eq!(slice, &[1.1, 2.2, 3.3]);
+    }
+
+    #[test]
+    fn test_borrow_complex_f64() {
+        use num::Complex;
+        use std::borrow::Borrow;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let slice: &[Complex<f64>] = v.borrow();
+        assert_eq!(slice, &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+    }
+
+    #[test]
+    fn test_borrow_mut_i32() {
+        use std::borrow::BorrowMut;
+        let mut v = FlexVector::from_vec(vec![1, 2, 3]);
+        {
+            let slice: &mut [i32] = v.borrow_mut();
+            slice[0] = 10;
+            slice[2] = 30;
+        }
+        assert_eq!(v.as_slice(), &[10, 2, 30]);
+    }
+
+    #[test]
+    fn test_borrow_mut_f64() {
+        use std::borrow::BorrowMut;
+        let mut v = FlexVector::from_vec(vec![1.1, 2.2, 3.3]);
+        {
+            let slice: &mut [f64] = v.borrow_mut();
+            slice[1] = 9.9;
+        }
+        assert_eq!(v.as_slice(), &[1.1, 9.9, 3.3]);
+    }
+
+    #[test]
+    fn test_borrow_mut_complex_f64() {
+        use num::Complex;
+        use std::borrow::BorrowMut;
+        let mut v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        {
+            let slice: &mut [Complex<f64>] = v.borrow_mut();
+            slice[0].re = 10.0;
+            slice[1].im = 40.0;
+        }
         assert_eq!(v.as_slice(), &[Complex::new(10.0, 2.0), Complex::new(3.0, 40.0)]);
     }
 
