@@ -1086,6 +1086,35 @@ impl<T> FlexVector<T> {
         Ok(FlexVector { components })
     }
 
+    /// Returns a boolean vector mask where each element is the result of applying the predicate to the corresponding element.
+    #[inline]
+    pub fn create_mask<F>(&self, predicate: F) -> FlexVector<bool>
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.components.iter().map(predicate).collect()
+    }
+
+    /// Returns a new FlexVector containing elements where the corresponding mask value is true.
+    #[inline]
+    pub fn filter_by_mask(&self, mask: &[bool]) -> Result<FlexVector<T>, VectorError>
+    where
+        T: Clone,
+    {
+        if self.len() != mask.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Mask length must match vector length".to_string(),
+            ));
+        }
+        let components = self
+            .components
+            .iter()
+            .zip(mask)
+            .filter_map(|(x, &m)| if m { Some(x.clone()) } else { None })
+            .collect();
+        Ok(FlexVector { components })
+    }
+
     // ================================
     //
     // Private methods
@@ -3772,6 +3801,198 @@ mod tests {
         use num::Complex;
         let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
         let result = v.step_by(0);
+        assert!(result.is_err());
+    }
+
+    // -- create_mask --
+
+    #[test]
+    fn test_create_mask_i32_greater_than() {
+        let v = FlexVector::from_vec(vec![1, 5, 3, 7]);
+        let mask = v.create_mask(|&x| x > 3);
+        assert_eq!(mask.as_slice(), &[false, true, false, true]);
+    }
+
+    #[test]
+    fn test_create_mask_i32_even() {
+        let v = FlexVector::from_vec(vec![2, 3, 4, 5]);
+        let mask = v.create_mask(|&x| x % 2 == 0);
+        assert_eq!(mask.as_slice(), &[true, false, true, false]);
+    }
+
+    #[test]
+    fn test_create_mask_f64_positive() {
+        let v = FlexVector::from_vec(vec![-1.0, 0.0, 2.5, -3.3]);
+        let mask = v.create_mask(|&x| x > 0.0);
+        assert_eq!(mask.as_slice(), &[false, false, true, false]);
+    }
+
+    #[test]
+    fn test_create_mask_f64_nan() {
+        let v = FlexVector::from_vec(vec![1.0, f64::NAN, 2.0]);
+        let mask = v.create_mask(|&x| x.is_nan());
+        assert_eq!(mask.as_slice(), &[false, true, false]);
+    }
+
+    #[test]
+    fn test_create_mask_complex_f64_real_positive() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(-3.0, 4.0),
+            Complex::new(0.0, 0.0),
+        ]);
+        let mask = v.create_mask(|z| z.re > 0.0);
+        assert_eq!(mask.as_slice(), &[true, false, false]);
+    }
+
+    #[test]
+    fn test_create_mask_complex_f64_imag_nonzero() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![
+            Complex::new(1.0, 0.0),
+            Complex::new(0.0, 2.0),
+            Complex::new(3.0, 0.0),
+        ]);
+        let mask = v.create_mask(|z| z.im != 0.0);
+        assert_eq!(mask.as_slice(), &[false, true, false]);
+    }
+
+    #[test]
+    fn test_create_mask_empty() {
+        let v: FlexVector<i32> = FlexVector::new();
+        let mask = v.create_mask(|&x| x > 0);
+        assert!(mask.is_empty());
+    }
+
+    // -- filter_by_mask --
+
+    #[test]
+    fn test_filter_by_mask_i32_basic() {
+        let v = FlexVector::from_vec(vec![10, 20, 30, 40]);
+        let mask = vec![false, true, false, true];
+        let filtered = v.filter_by_mask(&mask).unwrap();
+        assert_eq!(filtered.as_slice(), &[20, 40]);
+    }
+
+    #[test]
+    fn test_filter_by_mask_i32_all_true() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let mask = vec![true, true, true];
+        let filtered = v.filter_by_mask(&mask).unwrap();
+        assert_eq!(filtered.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_filter_by_mask_i32_all_false() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let mask = vec![false, false, false];
+        let filtered = v.filter_by_mask(&mask).unwrap();
+        assert!(filtered.is_empty());
+    }
+
+    #[test]
+    fn test_filter_by_mask_i32_empty() {
+        let v: FlexVector<i32> = FlexVector::new();
+        let mask: Vec<bool> = vec![];
+        let filtered = v.filter_by_mask(&mask).unwrap();
+        assert!(filtered.is_empty());
+    }
+
+    #[test]
+    fn test_filter_by_mask_i32_mismatched_length() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let mask = vec![true, false];
+        let result = v.filter_by_mask(&mask);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_filter_by_mask_f64_basic() {
+        let v = FlexVector::from_vec(vec![1.1, 2.2, 3.3, 4.4]);
+        let mask = vec![true, false, true, false];
+        let filtered = v.filter_by_mask(&mask).unwrap();
+        assert_eq!(filtered.as_slice(), &[1.1, 3.3]);
+    }
+
+    #[test]
+    fn test_filter_by_mask_f64_all_true() {
+        let v = FlexVector::from_vec(vec![1.1, 2.2]);
+        let mask = vec![true, true];
+        let filtered = v.filter_by_mask(&mask).unwrap();
+        assert_eq!(filtered.as_slice(), &[1.1, 2.2]);
+    }
+
+    #[test]
+    fn test_filter_by_mask_f64_all_false() {
+        let v = FlexVector::from_vec(vec![1.1, 2.2]);
+        let mask = vec![false, false];
+        let filtered = v.filter_by_mask(&mask).unwrap();
+        assert!(filtered.is_empty());
+    }
+
+    #[test]
+    fn test_filter_by_mask_f64_empty() {
+        let v: FlexVector<f64> = FlexVector::new();
+        let mask: Vec<bool> = vec![];
+        let filtered = v.filter_by_mask(&mask).unwrap();
+        assert!(filtered.is_empty());
+    }
+
+    #[test]
+    fn test_filter_by_mask_f64_mismatched_length() {
+        let v = FlexVector::from_vec(vec![1.1, 2.2]);
+        let mask = vec![true];
+        let result = v.filter_by_mask(&mask);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_filter_by_mask_complex_f64_basic() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+            Complex::new(5.0, 6.0),
+        ]);
+        let mask = vec![false, true, true];
+        let filtered = v.filter_by_mask(&mask).unwrap();
+        assert_eq!(filtered.as_slice(), &[Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
+    }
+
+    #[test]
+    fn test_filter_by_mask_complex_f64_all_true() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let mask = vec![true, true];
+        let filtered = v.filter_by_mask(&mask).unwrap();
+        assert_eq!(filtered.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+    }
+
+    #[test]
+    fn test_filter_by_mask_complex_f64_all_false() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let mask = vec![false, false];
+        let filtered = v.filter_by_mask(&mask).unwrap();
+        assert!(filtered.is_empty());
+    }
+
+    #[test]
+    fn test_filter_by_mask_complex_f64_empty() {
+        use num::Complex;
+        let v: FlexVector<Complex<f64>> = FlexVector::new();
+        let mask: Vec<bool> = vec![];
+        let filtered = v.filter_by_mask(&mask).unwrap();
+        assert!(filtered.is_empty());
+    }
+
+    #[test]
+    fn test_filter_by_mask_complex_f64_mismatched_length() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let mask = vec![true, false];
+        let result = v.filter_by_mask(&mask);
         assert!(result.is_err());
     }
 
