@@ -495,12 +495,15 @@ impl<T> VectorBase<T> for FlexVector<T> {
 // ================================
 impl<T> VectorOps<T> for FlexVector<T>
 where
-    T: num::Num + Clone + Copy,
+    T: Clone,
 {
     type Output = Self;
 
     #[inline]
-    fn translate(&self, other: &Self) -> Result<Self::Output, VectorError> {
+    fn translate(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Num + Copy,
+    {
         self.check_same_length_and_raise(other)?;
         let mut out = FlexVector::zero(self.len());
         translate_impl(self.as_slice(), other.as_slice(), out.as_mut_slice());
@@ -508,7 +511,10 @@ where
     }
 
     #[inline]
-    fn mut_translate(&mut self, other: &Self) -> Result<(), VectorError> {
+    fn mut_translate(&mut self, other: &Self) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy,
+    {
         self.check_same_length_and_raise(other)?;
         mut_translate_impl(self.as_mut_slice(), other.as_slice());
         Ok(())
@@ -517,10 +523,10 @@ where
     #[inline]
     fn scale(&self, scalar: T) -> Self::Output
     where
-        T: num::Num + Copy,
+        T: num::Num + Clone,
         Self::Output: std::iter::FromIterator<T>,
     {
-        self.as_slice().iter().map(|a| *a * scalar).collect()
+        self.as_slice().iter().map(|a| a.clone() * scalar.clone()).collect()
     }
 
     #[inline]
@@ -529,7 +535,7 @@ where
         T: std::ops::Neg<Output = T> + Clone,
         Self::Output: std::iter::FromIterator<T>,
     {
-        self.as_slice().iter().map(|a| -*a).collect()
+        self.as_slice().iter().map(|a| -(a.clone())).collect()
     }
 
     #[inline]
