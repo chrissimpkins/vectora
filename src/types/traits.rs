@@ -310,6 +310,27 @@ pub trait VectorOps<T>: VectorBase<T> {
     where
         T: PartialOrd + Clone;
 
+    /// Returns a new vector where each element is clamped to the [min, max] range.
+    #[inline]
+    fn elementwise_clamp(&self, min: T, max: T) -> Self::Output
+    where
+        T: PartialOrd + Clone,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        self.as_slice()
+            .iter()
+            .map(|x| {
+                if *x < min {
+                    min.clone()
+                } else if *x > max {
+                    max.clone()
+                } else {
+                    x.clone()
+                }
+            })
+            .collect()
+    }
+
     /// L1 norm (sum of absolute values).
     #[inline]
     fn l1_norm(&self) -> T

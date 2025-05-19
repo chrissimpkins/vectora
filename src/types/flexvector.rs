@@ -4589,6 +4589,73 @@ mod tests {
         assert!(max[0].is_nan());
     }
 
+    // -- elementwise_clamp --
+
+    #[test]
+    fn test_elementwise_clamp_i32_basic() {
+        let v = FlexVector::from_vec(vec![-5, 0, 5, 10, 15]);
+        let clamped = v.elementwise_clamp(0, 10);
+        assert_eq!(clamped.as_slice(), &[0, 0, 5, 10, 10]);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_i32_all_below() {
+        let v = FlexVector::from_vec(vec![-3, -2, -1]);
+        let clamped = v.elementwise_clamp(0, 5);
+        assert_eq!(clamped.as_slice(), &[0, 0, 0]);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_i32_all_above() {
+        let v = FlexVector::from_vec(vec![11, 12, 13]);
+        let clamped = v.elementwise_clamp(0, 10);
+        assert_eq!(clamped.as_slice(), &[10, 10, 10]);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_i32_empty() {
+        let v: FlexVector<i32> = FlexVector::new();
+        let clamped = v.elementwise_clamp(0, 10);
+        assert!(clamped.is_empty());
+    }
+
+    #[test]
+    fn test_elementwise_clamp_f64_basic() {
+        let v = FlexVector::from_vec(vec![-2.5, 0.0, 3.5, 7.2, 12.0]);
+        let clamped = v.elementwise_clamp(0.0, 10.0);
+        assert_eq!(clamped.as_slice(), &[0.0, 0.0, 3.5, 7.2, 10.0]);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_f64_all_below() {
+        let v = FlexVector::from_vec(vec![-1.1, -2.2]);
+        let clamped = v.elementwise_clamp(0.0, 5.0);
+        assert_eq!(clamped.as_slice(), &[0.0, 0.0]);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_f64_all_above() {
+        let v = FlexVector::from_vec(vec![11.1, 12.2]);
+        let clamped = v.elementwise_clamp(0.0, 10.0);
+        assert_eq!(clamped.as_slice(), &[10.0, 10.0]);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_f64_with_nan() {
+        let v = FlexVector::from_vec(vec![1.0, f64::NAN, 5.0]);
+        let clamped = v.elementwise_clamp(0.0, 4.0);
+        assert_eq!(clamped[0], 1.0);
+        assert!(clamped[1].is_nan());
+        assert_eq!(clamped[2], 4.0);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_f64_empty() {
+        let v: FlexVector<f64> = FlexVector::new();
+        let clamped = v.elementwise_clamp(0.0, 10.0);
+        assert!(clamped.is_empty());
+    }
+
     // -- l1_norm --
     #[test]
     fn test_l1_norm_i32() {
