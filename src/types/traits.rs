@@ -291,6 +291,11 @@ pub trait VectorOps<T>: VectorBase<T> {
         self.as_slice().iter().copied().reduce(|a, b| if a < b { a } else { b })
     }
 
+    /// Element-wise minimum
+    fn elementwise_min(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: PartialOrd + Clone;
+
     /// ...
     #[inline]
     fn maximum(&self) -> Option<T>
@@ -299,6 +304,11 @@ pub trait VectorOps<T>: VectorBase<T> {
     {
         self.as_slice().iter().copied().reduce(|a, b| if a > b { a } else { b })
     }
+
+    /// Element-wise maximum
+    fn elementwise_max(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: PartialOrd + Clone;
 
     /// L1 norm (sum of absolute values).
     #[inline]

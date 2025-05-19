@@ -573,6 +573,38 @@ where
         let result = cross_impl(a, b);
         Ok(result.into_iter().collect())
     }
+
+    /// Element-wise min
+    #[inline]
+    fn elementwise_min(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        self.check_same_length_and_raise(other)?;
+        let components = self
+            .as_slice()
+            .iter()
+            .zip(other.as_slice())
+            .map(|(a, b)| if a < b { a.clone() } else { b.clone() })
+            .collect();
+        Ok(FlexVector { components })
+    }
+
+    /// Element-wise max
+    #[inline]
+    fn elementwise_max(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        self.check_same_length_and_raise(other)?;
+        let components = self
+            .as_slice()
+            .iter()
+            .zip(other.as_slice())
+            .map(|(a, b)| if a > b { a.clone() } else { b.clone() })
+            .collect();
+        Ok(FlexVector { components })
+    }
 }
 
 // ================================
@@ -4408,6 +4440,58 @@ mod tests {
         assert_eq!(v.minimum(), None);
     }
 
+    // -- elementwise_min --
+
+    #[test]
+    fn test_elementwise_min_i32() {
+        let v1 = FlexVector::from_vec(vec![1, 5, 3, 7]);
+        let v2 = FlexVector::from_vec(vec![2, 4, 6, 0]);
+        let min = v1.elementwise_min(&v2).unwrap();
+        assert_eq!(min.as_slice(), &[1, 4, 3, 0]);
+    }
+
+    #[test]
+    fn test_elementwise_min_f64() {
+        let v1 = FlexVector::from_vec(vec![1.5, -2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![2.5, -3.0, 2.0]);
+        let min = v1.elementwise_min(&v2).unwrap();
+        assert_eq!(min.as_slice(), &[1.5, -3.0, 2.0]);
+    }
+
+    #[test]
+    fn test_elementwise_min_empty() {
+        let v1: FlexVector<i32> = FlexVector::new();
+        let v2: FlexVector<i32> = FlexVector::new();
+        let min = v1.elementwise_min(&v2).unwrap();
+        assert!(min.is_empty());
+    }
+
+    #[test]
+    fn test_elementwise_min_mismatched_length() {
+        let v1 = FlexVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![3, 4, 5]);
+        let result = v1.elementwise_min(&v2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_elementwise_min_f64_with_nan() {
+        let v1 = FlexVector::from_vec(vec![1.0, f64::NAN, 3.0]);
+        let v2 = FlexVector::from_vec(vec![2.0, 2.0, f64::NAN]);
+        let min = v1.elementwise_min(&v2).unwrap();
+        assert_eq!(min[0], 1.0); // min(1.0, 2.0) = 1.0
+        assert_eq!(min[1], 2.0); // min(NaN, 2.0) = 2.0 (since NaN < 2.0 is false)
+        assert!(min[2].is_nan()); // min(3.0, NaN) = NaN (since 3.0 < NaN is false, returns NaN)
+    }
+
+    #[test]
+    fn test_elementwise_min_f64_both_nan() {
+        let v1 = FlexVector::from_vec(vec![f64::NAN]);
+        let v2 = FlexVector::from_vec(vec![f64::NAN]);
+        let min = v1.elementwise_min(&v2).unwrap();
+        assert!(min[0].is_nan());
+    }
+
     // -- maximum --
     #[test]
     fn test_maximum_i32() {
@@ -4451,6 +4535,58 @@ mod tests {
         // The result is not guaranteed to be meaningful if NaN is present,
         // but it should return Some value (could be NaN or a number).
         assert!(v.maximum().is_some());
+    }
+
+    // -- elementwise_max --
+
+    #[test]
+    fn test_elementwise_max_i32() {
+        let v1 = FlexVector::from_vec(vec![1, 5, 3, 7]);
+        let v2 = FlexVector::from_vec(vec![2, 4, 6, 0]);
+        let max = v1.elementwise_max(&v2).unwrap();
+        assert_eq!(max.as_slice(), &[2, 5, 6, 7]);
+    }
+
+    #[test]
+    fn test_elementwise_max_f64() {
+        let v1 = FlexVector::from_vec(vec![1.5, -2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![2.5, -3.0, 2.0]);
+        let max = v1.elementwise_max(&v2).unwrap();
+        assert_eq!(max.as_slice(), &[2.5, -2.0, 3.0]);
+    }
+
+    #[test]
+    fn test_elementwise_max_empty() {
+        let v1: FlexVector<i32> = FlexVector::new();
+        let v2: FlexVector<i32> = FlexVector::new();
+        let max = v1.elementwise_max(&v2).unwrap();
+        assert!(max.is_empty());
+    }
+
+    #[test]
+    fn test_elementwise_max_mismatched_length() {
+        let v1 = FlexVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5]);
+        let result = v1.elementwise_max(&v2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_elementwise_max_f64_with_nan() {
+        let v1 = FlexVector::from_vec(vec![1.0, f64::NAN, 3.0]);
+        let v2 = FlexVector::from_vec(vec![2.0, 2.0, f64::NAN]);
+        let max = v1.elementwise_max(&v2).unwrap();
+        assert_eq!(max[0], 2.0); // max(1.0, 2.0) = 2.0
+        assert_eq!(max[1], 2.0); // max(NaN, 2.0) = 2.0 (since NaN > 2.0 is false)
+        assert!(max[2].is_nan()); // max(3.0, NaN) = NaN (since 3.0 > NaN is false, returns NaN)
+    }
+
+    #[test]
+    fn test_elementwise_max_f64_both_nan() {
+        let v1 = FlexVector::from_vec(vec![f64::NAN]);
+        let v2 = FlexVector::from_vec(vec![f64::NAN]);
+        let max = v1.elementwise_max(&v2).unwrap();
+        assert!(max[0].is_nan());
     }
 
     // -- l1_norm --
