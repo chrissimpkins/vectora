@@ -897,6 +897,7 @@ impl<T> FlexVector<T> {
     }
 
     /// Zips two FlexVectors into a FlexVector of pairs.
+    #[inline]
     pub fn zip<U>(self, other: FlexVector<U>) -> FlexVector<(T, U)> {
         let len = self.len().min(other.len());
         let components = self.components.into_iter().zip(other.components).take(len).collect();
@@ -904,6 +905,7 @@ impl<T> FlexVector<T> {
     }
 
     /// Zips two FlexVectors with a function, producing a FlexVector of the function's output.
+    #[inline]
     pub fn zip_with<U, R, F>(self, other: FlexVector<U>, mut f: F) -> FlexVector<R>
     where
         F: FnMut(T, U) -> R,
@@ -942,6 +944,7 @@ where
     T: Clone,
 {
     /// Returns a FlexVector of owned values by cloning each referenced element.
+    #[inline]
     pub fn cloned(&self) -> FlexVector<T> {
         FlexVector::from_vec(self.components.iter().map(|&x| x.clone()).collect())
     }
@@ -952,6 +955,7 @@ where
     V: IntoIterator<Item = T>,
 {
     /// Flattens a FlexVector of iterables into a single FlexVector by concatenating all elements.
+    #[inline]
     pub fn flatten(self) -> FlexVector<T> {
         let components = self.components.into_iter().flatten().collect();
         FlexVector { components }
@@ -964,6 +968,7 @@ where
     T: Clone + 'a,
 {
     /// Flattens a FlexVector of iterables into a single FlexVector by concatenating all elements as cloned elements.
+    #[inline]
     pub fn flatten_cloned(self) -> FlexVector<T> {
         let components = self.components.into_iter().flat_map(|v| v.into_iter().cloned()).collect();
         FlexVector { components }
