@@ -896,6 +896,17 @@ impl<T> FlexVector<T> {
         }
     }
 
+    /// Returns a new FlexVector by mapping each element to an iterator and flattening the result.
+    #[inline]
+    pub fn flat_map<U, F, I>(self, mut f: F) -> FlexVector<U>
+    where
+        F: FnMut(T) -> I,
+        I: IntoIterator<Item = U>,
+    {
+        let components = self.components.into_iter().flat_map(&mut f).collect();
+        FlexVector { components }
+    }
+
     /// Zips two FlexVectors into a FlexVector of pairs.
     #[inline]
     pub fn zip<U>(self, other: FlexVector<U>) -> FlexVector<(T, U)> {
@@ -3009,6 +3020,97 @@ mod tests {
         let mut v = FlexVector::from_vec(vec![1, 2, 3]);
         v.mut_map(double);
         assert_eq!(v.as_slice(), &[2, 4, 6]);
+    }
+
+    // --- flat_map ---
+    #[test]
+    fn test_flat_map_i32_basic() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let flat = v.flat_map(|x| vec![x, x * 10]);
+        assert_eq!(flat.as_slice(), &[1, 10, 2, 20, 3, 30]);
+    }
+
+    #[test]
+    fn test_flat_map_i32_empty_inner() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let flat = v.flat_map(|x| if x % 2 == 0 { vec![] } else { vec![x] });
+        assert_eq!(flat.as_slice(), &[1, 3]);
+    }
+
+    #[test]
+    fn test_flat_map_i32_option() {
+        let v = FlexVector::from_vec(vec![1, 2, 3, 4]);
+        let flat = v.flat_map(|x| if x % 2 == 0 { Some(x) } else { None });
+        assert_eq!(flat.as_slice(), &[2, 4]);
+    }
+
+    #[test]
+    fn test_flat_map_f64_basic() {
+        let v = FlexVector::from_vec(vec![1.0, 2.0]);
+        let flat = v.flat_map(|x| vec![x, x + 0.5]);
+        assert_eq!(flat.as_slice(), &[1.0, 1.5, 2.0, 2.5]);
+    }
+
+    #[test]
+    fn test_flat_map_f64_empty() {
+        let v: FlexVector<f64> = FlexVector::new();
+        let flat = v.flat_map(|x| vec![x, x + 1.0]);
+        assert!(flat.is_empty());
+    }
+
+    #[test]
+    fn test_flat_map_f64_nan_infinity() {
+        let v = FlexVector::from_vec(vec![f64::NAN, f64::INFINITY, 1.0]);
+        let flat = v.flat_map(|x| vec![x]);
+        assert!(flat.as_slice()[0].is_nan());
+        assert_eq!(flat.as_slice()[1], f64::INFINITY);
+        assert_eq!(flat.as_slice()[2], 1.0);
+    }
+
+    #[test]
+    fn test_flat_map_complex_f64_basic() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let flat = v.flat_map(|z| vec![z, z.conj()]);
+        assert_eq!(
+            flat.as_slice(),
+            &[
+                Complex::new(1.0, 2.0),
+                Complex::new(1.0, -2.0),
+                Complex::new(3.0, 4.0),
+                Complex::new(3.0, -4.0)
+            ]
+        );
+    }
+
+    #[test]
+    fn test_flat_map_complex_f64_empty_inner() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(0.0, 0.0), Complex::new(1.0, 1.0)]);
+        let flat = v.flat_map(|z| if z == Complex::new(0.0, 0.0) { vec![] } else { vec![z] });
+        assert_eq!(flat.as_slice(), &[Complex::new(1.0, 1.0)]);
+    }
+
+    #[test]
+    fn test_flat_map_complex_f64_option() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)]);
+        let flat = v.flat_map(|z| if z.im == 0.0 { Some(z) } else { None });
+        assert_eq!(flat.as_slice(), &[Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)]);
+    }
+
+    #[test]
+    fn test_flat_map_empty_outer() {
+        let v: FlexVector<i32> = FlexVector::new();
+        let flat = v.flat_map(|x| vec![x]);
+        assert!(flat.is_empty());
+    }
+
+    #[test]
+    fn test_flat_map_all_empty_inner() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let flat = v.flat_map(|_| Vec::<i32>::new());
+        assert!(flat.is_empty());
     }
 
     // --- zip ---
