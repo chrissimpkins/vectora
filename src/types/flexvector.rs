@@ -99,6 +99,7 @@ impl<T> FlexVector<T> {
     }
 
     /// Fallible error-propagating construction from an iterator of Results.
+    #[inline]
     pub fn try_from_iter<I, E>(iter: I) -> Result<Self, E>
     where
         I: IntoIterator<Item = Result<T, E>>,
@@ -116,6 +117,7 @@ impl<T> FlexVector<T> {
     /// let v = FlexVector::from_fn(4, |i| i * i);
     /// assert_eq!(v.as_slice(), &[0, 1, 4, 9]);
     /// ```
+    #[inline]
     pub fn from_fn<F>(len: usize, f: F) -> Self
     where
         F: FnMut(usize) -> T,
@@ -135,6 +137,7 @@ impl<T> FlexVector<T> {
     /// let v = FlexVector::<i32>::try_from_fn(3, |i| if i == 1 { Err("fail") } else { Ok(i as i32) });
     /// assert!(v.is_err());
     /// ```
+    #[inline]
     pub fn try_from_fn<F, E>(len: usize, mut f: F) -> Result<Self, E>
     where
         F: FnMut(usize) -> Result<T, E>,
@@ -143,6 +146,22 @@ impl<T> FlexVector<T> {
         for i in 0..len {
             components.push(f(i)?);
         }
+        Ok(FlexVector { components })
+    }
+
+    /// Returns a new FlexVector by repeating the pattern until length `len` is reached.
+    /// Returns an error if `pattern` is empty and `len` > 0.
+    #[inline]
+    pub fn repeat_pattern(pattern: &[T], len: usize) -> Result<Self, VectorError>
+    where
+        T: Clone,
+    {
+        if pattern.is_empty() && len > 0 {
+            return Err(VectorError::ValueError(
+                "pattern must not be empty if len > 0".to_string(),
+            ));
+        }
+        let components = pattern.iter().cloned().cycle().take(len).collect();
         Ok(FlexVector { components })
     }
 }
@@ -1363,6 +1382,95 @@ mod tests {
         }
         let v = FlexVector::<i32>::try_from_fn(3, fallible_square).unwrap();
         assert_eq!(v.as_slice(), &[0, 1, 4]);
+    }
+
+    #[test]
+    fn test_repeat_pattern_i32_basic() {
+        let pattern = [1, 2, 3];
+        let v = FlexVector::repeat_pattern(&pattern, 8).unwrap();
+        assert_eq!(v.as_slice(), &[1, 2, 3, 1, 2, 3, 1, 2]);
+    }
+
+    #[test]
+    fn test_repeat_pattern_i32_exact_multiple() {
+        let pattern = [4, 5];
+        let v = FlexVector::repeat_pattern(&pattern, 6).unwrap();
+        assert_eq!(v.as_slice(), &[4, 5, 4, 5, 4, 5]);
+    }
+
+    #[test]
+    fn test_repeat_pattern_i32_len_zero() {
+        let pattern = [1, 2, 3];
+        let v = FlexVector::repeat_pattern(&pattern, 0).unwrap();
+        assert!(v.is_empty());
+    }
+
+    #[test]
+    fn test_repeat_pattern_i32_pattern_empty_len_zero() {
+        let pattern: [i32; 0] = [];
+        let v = FlexVector::repeat_pattern(&pattern, 0).unwrap();
+        assert!(v.is_empty());
+    }
+
+    #[test]
+    fn test_repeat_pattern_i32_pattern_empty_len_nonzero() {
+        let pattern: [i32; 0] = [];
+        let result = FlexVector::repeat_pattern(&pattern, 3);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_repeat_pattern_f64_basic() {
+        let pattern = [1.5, 2.5];
+        let v = FlexVector::repeat_pattern(&pattern, 5).unwrap();
+        assert_eq!(v.as_slice(), &[1.5, 2.5, 1.5, 2.5, 1.5]);
+    }
+
+    #[test]
+    fn test_repeat_pattern_f64_empty_pattern_len_zero() {
+        let pattern: [f64; 0] = [];
+        let v = FlexVector::repeat_pattern(&pattern, 0).unwrap();
+        assert!(v.is_empty());
+    }
+
+    #[test]
+    fn test_repeat_pattern_f64_empty_pattern_len_nonzero() {
+        let pattern: [f64; 0] = [];
+        let result = FlexVector::repeat_pattern(&pattern, 2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_repeat_pattern_complex_f64_basic() {
+        use num::Complex;
+        let pattern = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let v = FlexVector::repeat_pattern(&pattern, 5).unwrap();
+        assert_eq!(
+            v.as_slice(),
+            &[
+                Complex::new(1.0, 2.0),
+                Complex::new(3.0, 4.0),
+                Complex::new(1.0, 2.0),
+                Complex::new(3.0, 4.0),
+                Complex::new(1.0, 2.0)
+            ]
+        );
+    }
+
+    #[test]
+    fn test_repeat_pattern_complex_f64_empty_pattern_len_zero() {
+        use num::Complex;
+        let pattern: [Complex<f64>; 0] = [];
+        let v = FlexVector::repeat_pattern(&pattern, 0).unwrap();
+        assert!(v.is_empty());
+    }
+
+    #[test]
+    fn test_repeat_pattern_complex_f64_empty_pattern_len_nonzero() {
+        use num::Complex;
+        let pattern: [Complex<f64>; 0] = [];
+        let result = FlexVector::repeat_pattern(&pattern, 1);
+        assert!(result.is_err());
     }
 
     #[test]
