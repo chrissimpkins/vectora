@@ -1069,7 +1069,6 @@ impl<T> FlexVector<T> {
         T: Clone,
     {
         for x in self.components.iter_mut() {
-            // Use clone since T may not be Copy
             *x = f(x.clone());
         }
     }
@@ -1083,6 +1082,38 @@ impl<T> FlexVector<T> {
     {
         let components = self.components.into_iter().flat_map(&mut f).collect();
         FlexVector { components }
+    }
+
+    /// Returns a new FlexVector containing only the elements that satisfy the predicate.
+    #[inline]
+    pub fn filter<F>(&self, mut predicate: F) -> FlexVector<T>
+    where
+        F: FnMut(&T) -> bool,
+        T: Clone,
+    {
+        let components = self.components.iter().filter(|&x| predicate(x)).cloned().collect();
+        FlexVector { components }
+    }
+
+    /// Reduces the elements to a single value using the provided closure, or returns None if empty.
+    #[inline]
+    pub fn reduce<F>(&self, mut f: F) -> Option<T>
+    where
+        F: FnMut(T, T) -> T,
+        T: Clone,
+    {
+        let mut iter = self.components.iter().cloned();
+        let first = iter.next()?;
+        Some(iter.fold(first, &mut f))
+    }
+
+    /// Folds the elements using an initial value and a closure.
+    #[inline]
+    pub fn fold<B, F>(&self, init: B, mut f: F) -> B
+    where
+        F: FnMut(B, &T) -> B,
+    {
+        self.components.iter().fold(init, &mut f)
     }
 
     /// Zips two FlexVectors into a FlexVector of pairs.
@@ -3656,6 +3687,219 @@ mod tests {
         let v = FlexVector::from_vec(vec![1, 2, 3]);
         let flat = v.flat_map(|_| Vec::<i32>::new());
         assert!(flat.is_empty());
+    }
+
+    // -- filter --
+
+    #[test]
+    fn test_filter_i32_basic() {
+        let v = FlexVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let filtered = v.filter(|&x| x % 2 == 0);
+        assert_eq!(filtered.as_slice(), &[2, 4]);
+    }
+
+    #[test]
+    fn test_filter_i32_all_false() {
+        let v = FlexVector::from_vec(vec![1, 3, 5]);
+        let filtered = v.filter(|&x| x > 10);
+        assert!(filtered.is_empty());
+    }
+
+    #[test]
+    fn test_filter_i32_all_true() {
+        let v = FlexVector::from_vec(vec![1, 2, 3]);
+        let filtered = v.filter(|_| true);
+        assert_eq!(filtered.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_filter_f64_positive() {
+        let v = FlexVector::from_vec(vec![-1.5, 0.0, 2.5, 3.3]);
+        let filtered = v.filter(|&x| x > 0.0);
+        assert_eq!(filtered.as_slice(), &[2.5, 3.3]);
+    }
+
+    #[test]
+    fn test_filter_f64_nan() {
+        let v = FlexVector::from_vec(vec![1.0, f64::NAN, 2.0]);
+        let filtered = v.filter(|&x| x.is_nan());
+        assert_eq!(filtered.len(), 1);
+        assert!(filtered[0].is_nan());
+    }
+
+    #[test]
+    fn test_filter_complex_f64_real_positive() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(-3.0, 4.0),
+            Complex::new(0.0, 0.0),
+        ]);
+        let filtered = v.filter(|z| z.re > 0.0);
+        assert_eq!(filtered.as_slice(), &[Complex::new(1.0, 2.0)]);
+    }
+
+    #[test]
+    fn test_filter_complex_f64_imag_nonzero() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![
+            Complex::new(1.0, 0.0),
+            Complex::new(0.0, 2.0),
+            Complex::new(3.0, 0.0),
+        ]);
+        let filtered = v.filter(|z| z.im != 0.0);
+        assert_eq!(filtered.as_slice(), &[Complex::new(0.0, 2.0)]);
+    }
+
+    #[test]
+    fn test_filter_empty() {
+        let v: FlexVector<i32> = FlexVector::new();
+        let filtered = v.filter(|&x| x > 0);
+        assert!(filtered.is_empty());
+    }
+
+    // -- reduce --
+
+    #[test]
+    fn test_reduce_i32_sum() {
+        let v = FlexVector::from_vec(vec![1, 2, 3, 4]);
+        let sum = v.reduce(|a, b| a + b);
+        assert_eq!(sum, Some(10));
+    }
+
+    #[test]
+    fn test_reduce_i32_product() {
+        let v = FlexVector::from_vec(vec![2, 3, 4]);
+        let product = v.reduce(|a, b| a * b);
+        assert_eq!(product, Some(24));
+    }
+
+    #[test]
+    fn test_reduce_i32_empty() {
+        let v: FlexVector<i32> = FlexVector::new();
+        let result = v.reduce(|a, b| a + b);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_reduce_f64_sum() {
+        let v = FlexVector::from_vec(vec![1.5, 2.5, 3.0]);
+        let sum = v.reduce(|a, b| a + b);
+        assert_eq!(sum, Some(7.0));
+    }
+
+    #[test]
+    fn test_reduce_f64_product() {
+        let v = FlexVector::from_vec(vec![1.5, 2.0, 3.0]);
+        let product = v.reduce(|a, b| a * b);
+        assert!((product.unwrap() - 9.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_reduce_f64_empty() {
+        let v: FlexVector<f64> = FlexVector::new();
+        let result = v.reduce(|a, b| a + b);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_reduce_complex_f64_sum() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+            Complex::new(5.0, 6.0),
+        ]);
+        let sum = v.reduce(|a, b| a + b);
+        assert_eq!(sum, Some(Complex::new(9.0, 12.0)));
+    }
+
+    #[test]
+    fn test_reduce_complex_f64_product() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let product = v.reduce(|a, b| a * b);
+        assert_eq!(product, Some(Complex::new(-5.0, 10.0))); // (1+2i)*(3+4i) = -5+10i
+    }
+
+    #[test]
+    fn test_reduce_complex_f64_empty() {
+        use num::Complex;
+        let v: FlexVector<Complex<f64>> = FlexVector::new();
+        let result = v.reduce(|a, b| a + b);
+        assert_eq!(result, None);
+    }
+
+    // -- fold --
+
+    #[test]
+    fn test_fold_i32_sum() {
+        let v = FlexVector::from_vec(vec![1, 2, 3, 4]);
+        let sum = v.fold(0, |acc, x| acc + x);
+        assert_eq!(sum, 10);
+    }
+
+    #[test]
+    fn test_fold_i32_product() {
+        let v = FlexVector::from_vec(vec![2, 3, 4]);
+        let product = v.fold(1, |acc, x| acc * x);
+        assert_eq!(product, 24);
+    }
+
+    #[test]
+    fn test_fold_i32_empty() {
+        let v: FlexVector<i32> = FlexVector::new();
+        let sum = v.fold(0, |acc, x| acc + x);
+        assert_eq!(sum, 0);
+    }
+
+    #[test]
+    fn test_fold_f64_sum() {
+        let v = FlexVector::from_vec(vec![1.5, 2.5, 3.0]);
+        let sum = v.fold(0.0, |acc, x| acc + x);
+        assert!((sum - 7.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_fold_f64_product() {
+        let v = FlexVector::from_vec(vec![1.5, 2.0, 3.0]);
+        let product = v.fold(1.0, |acc, x| acc * x);
+        assert!((product - 9.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_fold_f64_empty() {
+        let v: FlexVector<f64> = FlexVector::new();
+        let sum = v.fold(0.0, |acc, x| acc + x);
+        assert_eq!(sum, 0.0);
+    }
+
+    #[test]
+    fn test_fold_complex_f64_sum() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+            Complex::new(5.0, 6.0),
+        ]);
+        let sum = v.fold(Complex::new(0.0, 0.0), |acc, x| acc + x);
+        assert_eq!(sum, Complex::new(9.0, 12.0));
+    }
+
+    #[test]
+    fn test_fold_complex_f64_product() {
+        use num::Complex;
+        let v = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let product = v.fold(Complex::new(1.0, 0.0), |acc, x| acc * x);
+        assert_eq!(product, Complex::new(-5.0, 10.0)); // (1+0i)*(1+2i)*(3+4i) = (1+2i)*(3+4i) = -5+10i
+    }
+
+    #[test]
+    fn test_fold_complex_f64_empty() {
+        use num::Complex;
+        let v: FlexVector<Complex<f64>> = FlexVector::new();
+        let sum = v.fold(Complex::new(0.0, 0.0), |acc, x| acc + x);
+        assert_eq!(sum, Complex::new(0.0, 0.0));
     }
 
     // --- zip ---
