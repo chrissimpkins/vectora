@@ -29,10 +29,10 @@ impl std::fmt::Display for VectorError {
                 write!(f, "VectorError::EmptyVectorError: {s}")
             }
             VectorError::MismatchedLengthError(s) => {
-                write!(f, "VectorError::MismatchedLengthError: {}", s)
+                write!(f, "VectorError::MismatchedLengthError: {s}")
             }
             VectorError::OutOfRangeError(s) => {
-                write!(f, "VectorError::OutOfRangeError: {}", s)
+                write!(f, "VectorError::OutOfRangeError: {s}")
             }
             VectorError::TryFromVecError(s) => {
                 write!(f, "VectorError::TryFromVecError: {s}")
@@ -44,7 +44,7 @@ impl std::fmt::Display for VectorError {
                 write!(f, "VectorError::ValueError: {s}")
             }
             VectorError::ZeroVectorError(s) => {
-                write!(f, "VectorError::ZeroVectorError: {}", s)
+                write!(f, "VectorError::ZeroVectorError: {s}")
             }
         }
     }
