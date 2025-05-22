@@ -1,9 +1,12 @@
 //! Traits.
 
+use crate::types::orientation::VectorOrientation;
 use num::Complex;
+use std::borrow::Cow;
 
 use crate::errors::VectorError;
 
+/// ...
 pub trait VectorBase<T> {
     // --- Core accessors ---
     /// ...
@@ -70,6 +73,15 @@ pub trait VectorBase<T> {
         T: Clone,
     {
         self.as_slice().to_vec()
+    }
+
+    /// Returns a Cow<[T]> of the vector's data.
+    #[inline]
+    fn as_cow(&self) -> Cow<'_, [T]>
+    where
+        T: Clone,
+    {
+        Cow::Borrowed(self.as_slice())
     }
 
     /// ...
@@ -190,6 +202,16 @@ pub trait VectorBase<T> {
     }
 }
 
+/// A trait for types that can be transposed between row and column orientation.
+pub trait Transposable {
+    /// The type returned by transposing.
+    type Transposed;
+
+    /// Returns a new value with the opposite orientation.
+    fn transpose(self) -> Self::Transposed;
+}
+
+/// ...
 pub trait VectorOps<T>: VectorBase<T> {
     type Output;
 
@@ -353,6 +375,7 @@ pub trait VectorOps<T>: VectorBase<T> {
     }
 }
 
+/// ...
 pub trait VectorOpsFloat<T>: VectorBase<T> {
     type Output;
 
@@ -465,6 +488,7 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
         T: num::Float + Clone + std::iter::Sum<T> + std::ops::Div<Output = T>;
 }
 
+/// ...
 pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
     type Output;
 
@@ -596,4 +620,22 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
     where
         N: num::Float + Clone + std::iter::Sum<N> + std::ops::Neg<Output = N>,
         Complex<N>: std::ops::Div<Output = Complex<N>>;
+}
+
+/// ...
+pub trait VectorHasOrientation {
+    /// ...
+    fn orientation(&self) -> VectorOrientation;
+}
+
+// ================================
+//
+// pub(crate) trait impls
+//
+// ================================
+
+/// Helper trait for orientation name.
+pub(crate) trait VectorOrientationName {
+    /// Returns orientation name.
+    fn orientation_name() -> &'static str;
 }

@@ -1,6 +1,7 @@
 //! Library types.
 
 pub mod flexvector;
+pub mod orientation;
 pub mod traits;
 mod utils;
 pub mod vector;
