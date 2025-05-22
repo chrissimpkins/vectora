@@ -436,6 +436,22 @@ where
     }
 }
 
+impl<T, O> From<Box<[T]>> for FlexVector<T, O> {
+    fn from(b: Box<[T]>) -> Self {
+        FlexVector::from_vec(b.into_vec())
+    }
+}
+
+#[cfg(target_has_atomic = "ptr")]
+impl<T, O> From<std::sync::Arc<[T]>> for FlexVector<T, O>
+where
+    T: Clone,
+{
+    fn from(a: std::sync::Arc<[T]>) -> Self {
+        FlexVector::from_slice(&a)
+    }
+}
+
 impl<T> From<FlexVector<T, Column>> for FlexVector<T, Row> {
     #[inline]
     fn from(v: FlexVector<T, Column>) -> Self {
@@ -2995,6 +3011,57 @@ mod tests {
         // From &Cow
         let fv: FlexVector<Complex<f64>> = FlexVector::from(&cow);
         assert_eq!(fv.as_slice(), &owned_vec[..]);
+    }
+
+    #[test]
+    fn test_from_box_slice_i32() {
+        let boxed: Box<[i32]> = vec![1, 2, 3].into_boxed_slice();
+        let fv: FlexVector<i32> = FlexVector::from(boxed);
+        assert_eq!(fv.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_from_box_slice_f64() {
+        let boxed: Box<[f64]> = vec![1.1, 2.2, 3.3].into_boxed_slice();
+        let fv: FlexVector<f64, Row> = FlexVector::from(boxed);
+        assert_eq!(fv.as_slice(), &[1.1, 2.2, 3.3]);
+    }
+
+    #[test]
+    fn test_from_box_slice_complex_f64() {
+        use num::Complex;
+        let boxed: Box<[Complex<f64>]> =
+            vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)].into_boxed_slice();
+        let fv: FlexVector<Complex<f64>> = FlexVector::from(boxed);
+        assert_eq!(fv.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+    }
+
+    #[cfg(target_has_atomic = "ptr")]
+    #[test]
+    fn test_from_arc_slice_i32() {
+        use std::sync::Arc;
+        let arc: Arc<[i32]> = Arc::from(vec![4, 5, 6].into_boxed_slice());
+        let fv: FlexVector<i32, Row> = FlexVector::from(arc);
+        assert_eq!(fv.as_slice(), &[4, 5, 6]);
+    }
+
+    #[cfg(target_has_atomic = "ptr")]
+    #[test]
+    fn test_from_arc_slice_f64() {
+        use std::sync::Arc;
+        let arc: Arc<[f64]> = Arc::from(vec![7.7, 8.8].into_boxed_slice());
+        let fv: FlexVector<f64> = FlexVector::from(arc);
+        assert_eq!(fv.as_slice(), &[7.7, 8.8]);
+    }
+
+    #[cfg(target_has_atomic = "ptr")]
+    #[test]
+    fn test_from_arc_slice_complex_f64() {
+        use num::Complex;
+        use std::sync::Arc;
+        let arc: Arc<[Complex<f64>]> = Arc::from(vec![Complex::new(9.0, 10.0)].into_boxed_slice());
+        let fv: FlexVector<Complex<f64>> = FlexVector::from(arc);
+        assert_eq!(fv.as_slice(), &[Complex::new(9.0, 10.0)]);
     }
 
     #[test]
