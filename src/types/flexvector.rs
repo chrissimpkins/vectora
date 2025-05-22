@@ -393,7 +393,10 @@ where
 // From trait impl
 //
 // ================================
-impl<T, O> From<Vec<T>> for FlexVector<T, O> {
+impl<T, O> From<Vec<T>> for FlexVector<T, O>
+where
+    T: Clone,
+{
     #[inline]
     fn from(vec: Vec<T>) -> Self {
         FlexVector { components: vec, _orientation: PhantomData }
@@ -406,6 +409,26 @@ where
     #[inline]
     fn from(slice: &[T]) -> Self {
         FlexVector { components: slice.to_vec(), _orientation: PhantomData }
+    }
+}
+
+impl<T, O> From<&mut [T]> for FlexVector<T, O>
+where
+    T: Clone,
+{
+    #[inline]
+    fn from(slice: &mut [T]) -> Self {
+        FlexVector::from_slice(slice)
+    }
+}
+
+impl<T, O, const N: usize> From<[T; N]> for FlexVector<T, O>
+where
+    T: Clone,
+{
+    #[inline]
+    fn from(arr: [T; N]) -> Self {
+        FlexVector::from_vec(Vec::from(arr))
     }
 }
 
@@ -436,7 +459,21 @@ where
     }
 }
 
-impl<T, O> From<Box<[T]>> for FlexVector<T, O> {
+impl<T, O> From<std::collections::VecDeque<T>> for FlexVector<T, O>
+where
+    T: Clone,
+{
+    #[inline]
+    fn from(deque: std::collections::VecDeque<T>) -> Self {
+        FlexVector::from_vec(deque.into())
+    }
+}
+
+impl<T, O> From<Box<[T]>> for FlexVector<T, O>
+where
+    T: Clone,
+{
+    #[inline]
     fn from(b: Box<[T]>) -> Self {
         FlexVector::from_vec(b.into_vec())
     }
@@ -447,11 +484,23 @@ impl<T, O> From<std::sync::Arc<[T]>> for FlexVector<T, O>
 where
     T: Clone,
 {
+    #[inline]
     fn from(a: std::sync::Arc<[T]>) -> Self {
         FlexVector::from_slice(&a)
     }
 }
 
+impl<T, O> From<std::rc::Rc<[T]>> for FlexVector<T, O>
+where
+    T: Clone,
+{
+    #[inline]
+    fn from(rc: std::rc::Rc<[T]>) -> Self {
+        FlexVector::from_slice(&rc)
+    }
+}
+
+// From trait impl for Column <==> Row FlexVector conversions
 impl<T> From<FlexVector<T, Column>> for FlexVector<T, Row> {
     #[inline]
     fn from(v: FlexVector<T, Column>) -> Self {
@@ -1404,6 +1453,31 @@ impl<T, O> FlexVector<T, O> {
             .filter_map(|(x, &m)| if m { Some(x.clone()) } else { None })
             .collect();
         Ok(FlexVector { components, _orientation: PhantomData })
+    }
+
+    /// Consumes the FlexVector and returns a Vec<T>.
+    #[inline]
+    pub fn into_vec(self) -> Vec<T> {
+        self.components
+    }
+
+    /// Consumes the FlexVector and returns a Box<T>.
+    #[inline]
+    pub fn into_boxed_slice(self) -> Box<[T]> {
+        self.components.into_boxed_slice()
+    }
+
+    /// Consumes the FlexVector and returns an Arc<T>.
+    #[cfg(target_has_atomic = "ptr")]
+    #[inline]
+    pub fn into_arc_slice(self) -> std::sync::Arc<[T]> {
+        std::sync::Arc::from(self.components)
+    }
+
+    /// Consumes the FlexVector and returns a Rc<T>.
+    #[inline]
+    pub fn into_rc_slice(self) -> std::rc::Rc<[T]> {
+        std::rc::Rc::from(self.components)
     }
 
     // ================================
@@ -2956,6 +3030,80 @@ mod tests {
     }
 
     #[test]
+    fn test_from_mut_slice_i32() {
+        let mut data = [10, 20, 30];
+        let fv: FlexVector<i32> = FlexVector::from(&mut data[..]);
+        assert_eq!(fv.as_slice(), &[10, 20, 30]);
+        // Changing the original slice does not affect the FlexVector
+        data[0] = 99;
+        assert_eq!(fv.as_slice(), &[10, 20, 30]);
+    }
+
+    #[test]
+    fn test_from_mut_slice_f64() {
+        let mut data = [1.1, 2.2, 3.3];
+        let fv: FlexVector<f64, Row> = FlexVector::from(&mut data[..]);
+        assert_eq!(fv.as_slice(), &[1.1, 2.2, 3.3]);
+        data[2] = 9.9;
+        assert_eq!(fv.as_slice(), &[1.1, 2.2, 3.3]);
+    }
+
+    #[test]
+    fn test_from_mut_slice_complex_f64() {
+        use num::Complex;
+        let mut data = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let fv: FlexVector<Complex<f64>> = FlexVector::from(&mut data[..]);
+        assert_eq!(fv.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        data[0] = Complex::new(9.0, 9.0);
+        assert_eq!(fv.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+    }
+
+    #[test]
+    fn test_from_array_i32() {
+        let arr = [1, 2, 3];
+        let fv: FlexVector<i32> = FlexVector::from(arr);
+        assert_eq!(fv.as_slice(), &[1, 2, 3]);
+        let fv_col: FlexVector<i32, Column> = arr.into();
+        assert_eq!(fv_col.as_slice(), &[1, 2, 3]);
+        let fv_row: FlexVector<i32, Row> = arr.into();
+        assert_eq!(fv_row.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_from_array_f64() {
+        let arr = [1.1, 2.2, 3.3];
+        let fv: FlexVector<f64> = FlexVector::from(arr);
+        assert_eq!(fv.as_slice(), &[1.1, 2.2, 3.3]);
+        let fv_col: FlexVector<f64, Column> = arr.into();
+        assert_eq!(fv_col.as_slice(), &[1.1, 2.2, 3.3]);
+        let fv_row: FlexVector<f64, Row> = arr.into();
+        assert_eq!(fv_row.as_slice(), &[1.1, 2.2, 3.3]);
+    }
+
+    #[test]
+    fn test_from_array_complex_f64() {
+        use num::Complex;
+        let arr = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let fv: FlexVector<Complex<f64>> = FlexVector::from(arr);
+        assert_eq!(fv.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let fv_col: FlexVector<Complex<f64>, Column> = arr.into();
+        assert_eq!(fv_col.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let fv_row: FlexVector<Complex<f64>, Row> = arr.into();
+        assert_eq!(fv_row.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+    }
+
+    #[test]
+    fn test_from_empty_array() {
+        let arr: [i32; 0] = [];
+        let fv: FlexVector<i32> = FlexVector::from(arr);
+        assert!(fv.is_empty());
+        let fv_col: FlexVector<i32, Column> = arr.into();
+        assert!(fv_col.is_empty());
+        let fv_row: FlexVector<i32, Row> = arr.into();
+        assert!(fv_row.is_empty());
+    }
+
+    #[test]
     fn test_from_cow_i32() {
         // Borrowed
         let slice: &[i32] = &[1, 2, 3];
@@ -3014,6 +3162,62 @@ mod tests {
     }
 
     #[test]
+    fn test_from_vecdeque_i32() {
+        use std::collections::VecDeque;
+        let mut deque = VecDeque::new();
+        deque.push_back(1);
+        deque.push_back(2);
+        deque.push_back(3);
+        let fv: FlexVector<i32> = FlexVector::from(deque.clone());
+        assert_eq!(fv.as_slice(), &[1, 2, 3]);
+        let fv_col: FlexVector<i32, Column> = deque.clone().into();
+        assert_eq!(fv_col.as_slice(), &[1, 2, 3]);
+        let fv_row: FlexVector<i32, Row> = deque.into();
+        assert_eq!(fv_row.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_from_vecdeque_f64() {
+        use std::collections::VecDeque;
+        let mut deque = VecDeque::new();
+        deque.push_back(1.1);
+        deque.push_back(2.2);
+        deque.push_back(3.3);
+        let fv: FlexVector<f64> = FlexVector::from(deque.clone());
+        assert_eq!(fv.as_slice(), &[1.1, 2.2, 3.3]);
+        let fv_col: FlexVector<f64, Column> = deque.clone().into();
+        assert_eq!(fv_col.as_slice(), &[1.1, 2.2, 3.3]);
+        let fv_row: FlexVector<f64, Row> = deque.into();
+        assert_eq!(fv_row.as_slice(), &[1.1, 2.2, 3.3]);
+    }
+
+    #[test]
+    fn test_from_vecdeque_complex_f64() {
+        use std::collections::VecDeque;
+        let mut deque = VecDeque::new();
+        deque.push_back(Complex::new(1.0, 2.0));
+        deque.push_back(Complex::new(3.0, 4.0));
+        let fv: FlexVector<Complex<f64>> = FlexVector::from(deque.clone());
+        assert_eq!(fv.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let fv_col: FlexVector<Complex<f64>, Column> = deque.clone().into();
+        assert_eq!(fv_col.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let fv_row: FlexVector<Complex<f64>, Row> = deque.into();
+        assert_eq!(fv_row.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+    }
+
+    #[test]
+    fn test_from_vecdeque_empty() {
+        use std::collections::VecDeque;
+        let deque: VecDeque<i32> = VecDeque::new();
+        let fv: FlexVector<i32> = FlexVector::from(deque.clone());
+        assert!(fv.is_empty());
+        let fv_col: FlexVector<i32, Column> = deque.clone().into();
+        assert!(fv_col.is_empty());
+        let fv_row: FlexVector<i32, Row> = deque.into();
+        assert!(fv_row.is_empty());
+    }
+
+    #[test]
     fn test_from_box_slice_i32() {
         let boxed: Box<[i32]> = vec![1, 2, 3].into_boxed_slice();
         let fv: FlexVector<i32> = FlexVector::from(boxed);
@@ -3062,6 +3266,56 @@ mod tests {
         let arc: Arc<[Complex<f64>]> = Arc::from(vec![Complex::new(9.0, 10.0)].into_boxed_slice());
         let fv: FlexVector<Complex<f64>> = FlexVector::from(arc);
         assert_eq!(fv.as_slice(), &[Complex::new(9.0, 10.0)]);
+    }
+
+    #[test]
+    fn test_from_rc_slice_i32() {
+        use std::rc::Rc;
+        let rc: Rc<[i32]> = Rc::from(vec![1, 2, 3].into_boxed_slice());
+        let fv: FlexVector<i32> = FlexVector::from(rc.clone());
+        assert_eq!(fv.as_slice(), &[1, 2, 3]);
+        let fv_col: FlexVector<i32, Column> = rc.clone().into();
+        assert_eq!(fv_col.as_slice(), &[1, 2, 3]);
+        let fv_row: FlexVector<i32, Row> = rc.into();
+        assert_eq!(fv_row.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_from_rc_slice_f64() {
+        use std::rc::Rc;
+        let rc: Rc<[f64]> = Rc::from(vec![1.1, 2.2, 3.3].into_boxed_slice());
+        let fv: FlexVector<f64> = FlexVector::from(rc.clone());
+        assert_eq!(fv.as_slice(), &[1.1, 2.2, 3.3]);
+        let fv_col: FlexVector<f64, Column> = rc.clone().into();
+        assert_eq!(fv_col.as_slice(), &[1.1, 2.2, 3.3]);
+        let fv_row: FlexVector<f64, Row> = rc.into();
+        assert_eq!(fv_row.as_slice(), &[1.1, 2.2, 3.3]);
+    }
+
+    #[test]
+    fn test_from_rc_slice_complex_f64() {
+        use num::Complex;
+        use std::rc::Rc;
+        let rc: Rc<[Complex<f64>]> =
+            Rc::from(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)].into_boxed_slice());
+        let fv: FlexVector<Complex<f64>> = FlexVector::from(rc.clone());
+        assert_eq!(fv.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let fv_col: FlexVector<Complex<f64>, Column> = rc.clone().into();
+        assert_eq!(fv_col.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let fv_row: FlexVector<Complex<f64>, Row> = rc.into();
+        assert_eq!(fv_row.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+    }
+
+    #[test]
+    fn test_from_rc_slice_empty() {
+        use std::rc::Rc;
+        let rc: Rc<[i32]> = Rc::from(Vec::<i32>::new().into_boxed_slice());
+        let fv: FlexVector<i32> = FlexVector::from(rc.clone());
+        assert!(fv.is_empty());
+        let fv_col: FlexVector<i32, Column> = rc.clone().into();
+        assert!(fv_col.is_empty());
+        let fv_row: FlexVector<i32, Row> = rc.into();
+        assert!(fv_row.is_empty());
     }
 
     #[test]
@@ -3579,6 +3833,34 @@ mod tests {
         let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let vec_copy = v.to_vec();
         assert_eq!(vec_copy, vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0),]);
+    }
+
+    // -- to_boxed_slice --
+
+    #[test]
+    fn test_to_boxed_slice() {
+        let fv: FlexVector<i32, Row> = FlexVector::from_vec(vec![1, 2, 3]);
+        let boxed = fv.to_boxed_slice();
+        assert_eq!(&*boxed, &[1, 2, 3]);
+    }
+
+    // -- to_arc_slice --
+
+    #[cfg(target_has_atomic = "ptr")]
+    #[test]
+    fn test_to_arc_slice() {
+        let fv: FlexVector<f64, Column> = FlexVector::from_vec(vec![4.4, 5.5, 6.6]);
+        let arc = fv.to_arc_slice();
+        assert_eq!(&*arc, &[4.4, 5.5, 6.6]);
+    }
+
+    // -- to_rc_slice --
+
+    #[test]
+    fn test_to_rc_slice() {
+        let fv: FlexVector<i32, Row> = FlexVector::from_vec(vec![7, 8, 9]);
+        let rc = fv.to_rc_slice();
+        assert_eq!(&*rc, &[7, 8, 9]);
     }
 
     // --- as_cow ---
@@ -5150,6 +5432,45 @@ mod tests {
         let mask = vec![true, false];
         let result = v.filter_by_mask(&mask);
         assert!(result.is_err());
+    }
+
+    // -- into_vec --
+
+    #[test]
+    fn test_into_vec() {
+        let fv: FlexVector<i32, Column> = FlexVector::from_vec(vec![1, 2, 3]);
+        let vec = fv.into_vec();
+        assert_eq!(vec, vec![1, 2, 3]);
+    }
+
+    // -- into_boxed_slice --
+
+    #[test]
+    fn test_into_boxed_slice() {
+        let fv: FlexVector<f64, Column> = FlexVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let boxed = fv.into_boxed_slice();
+        assert_eq!(&*boxed, &[1.1, 2.2, 3.3]);
+    }
+
+    // -- into_arc_slice --
+
+    #[cfg(target_has_atomic = "ptr")]
+    #[test]
+    fn test_into_arc_slice() {
+        use std::sync::Arc;
+        let fv: FlexVector<i32, Row> = FlexVector::from_vec(vec![4, 5, 6]);
+        let arc: Arc<[i32]> = fv.into_arc_slice();
+        assert_eq!(&*arc, &[4, 5, 6]);
+    }
+
+    // -- into_rc_slice --
+
+    #[test]
+    fn test_into_rc_slice() {
+        use std::rc::Rc;
+        let fv: FlexVector<i32, Row> = FlexVector::from_vec(vec![7, 8, 9]);
+        let rc: Rc<[i32]> = fv.into_rc_slice();
+        assert_eq!(&*rc, &[7, 8, 9]);
     }
 
     // ================================

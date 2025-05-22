@@ -75,6 +75,34 @@ pub trait VectorBase<T> {
         self.as_slice().to_vec()
     }
 
+    /// Returns a boxed slice containing a clone of the vector's data.
+    #[inline]
+    fn to_boxed_slice(&self) -> Box<[T]>
+    where
+        T: Clone,
+    {
+        self.as_slice().to_vec().into_boxed_slice()
+    }
+
+    /// Returns an Arc slice containing a clone of the vector's data.
+    #[cfg(target_has_atomic = "ptr")]
+    #[inline]
+    fn to_arc_slice(&self) -> std::sync::Arc<[T]>
+    where
+        T: Clone,
+    {
+        std::sync::Arc::from(self.as_slice().to_vec())
+    }
+
+    /// Returns an Rc slice containing a clone of the vector's data.
+    #[inline]
+    fn to_rc_slice(&self) -> std::rc::Rc<[T]>
+    where
+        T: Clone,
+    {
+        std::rc::Rc::from(self.as_slice().to_vec())
+    }
+
     /// Returns a Cow<[T]> of the vector's data.
     #[inline]
     fn as_cow(&self) -> Cow<'_, [T]>
