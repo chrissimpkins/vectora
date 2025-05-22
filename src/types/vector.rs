@@ -1441,8 +1441,7 @@ where
         // weight bounds check
         if weight > T::one() || weight < T::zero() {
             return Err(VectorError::ValueError(format!(
-                "invalid interpolation weight request. The weight must be in the closed interval [0,1]. Received '{:?}'",
-                weight
+                "invalid interpolation weight request. The weight must be in the closed interval [0,1]. Received '{weight:?}'"
             )));
         }
 
@@ -1714,8 +1713,7 @@ where
                 .map(|x| {
                     if x.is_sign_negative() || x.is_zero() {
                         Err(VectorError::ValueError(format!(
-                            "found invalid value less than or equal to zero: {:?}",
-                            x,
+                            "found invalid value less than or equal to zero: {x:?}",
                         )))
                     } else {
                         Ok(x)
@@ -1854,8 +1852,7 @@ where
             ))
         } else if ddof.is_sign_negative() || ddof > T::from(self.len()).unwrap() {
             Err(VectorError::ValueError(format!(
-                "ddof parameter must have a value greater than or equal to zero and must not be larger than the Vector length, received '{:?}'",
-                ddof
+                "ddof parameter must have a value greater than or equal to zero and must not be larger than the Vector length, received '{ddof:?}'"
             )))
         } else {
             Ok(self.variance_impl(ddof))
@@ -1914,8 +1911,7 @@ where
             ))
         } else if ddof.is_sign_negative() || ddof > T::from(self.len()).unwrap() {
             Err(VectorError::ValueError(format!(
-                "ddof parameter must have a value greater than or equal to zero and must not be larger than the Vector length, received '{:?}'",
-                ddof
+                "ddof parameter must have a value greater than or equal to zero and must not be larger than the Vector length, received '{ddof:?}'"
             )))
         } else {
             Ok(self.variance_impl(ddof).sqrt())
@@ -1994,7 +1990,7 @@ where
         } else if x > y {
             Ordering::Greater
         } else {
-            panic!("unable to determine order of {:?} and {:?}", x, y);
+            panic!("unable to determine order of {x:?} and {y:?}");
         }
     }
 
@@ -2866,8 +2862,7 @@ where
         match t_vec.try_into() {
             Ok(s) => Ok(Self { components: s }),
             Err(err) => Err(VectorError::TryFromVecError(format!(
-                "failed to cast Vec to Vector type: {:?}",
-                err
+                "failed to cast Vec to Vector type: {err:?}"
             ))),
         }
     }
@@ -2979,8 +2974,7 @@ where
         match t_slice.try_into() {
             Ok(s) => Ok(Self { components: s }),
             Err(err) => Err(VectorError::TryFromSliceError(format!(
-                "failed to cast slice to Vector type: {}",
-                err
+                "failed to cast slice to Vector type: {err}"
             ))),
         }
     }

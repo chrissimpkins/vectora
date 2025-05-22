@@ -20,16 +20,16 @@ impl std::fmt::Display for VectorError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             VectorError::EmptyVectorError(s) => {
-                write!(f, "VectorError::EmptyVectorError: {}", s)
+                write!(f, "VectorError::EmptyVectorError: {s}")
             }
             VectorError::TryFromVecError(s) => {
-                write!(f, "VectorError::TryFromVecError: {}", s)
+                write!(f, "VectorError::TryFromVecError: {s}")
             }
             VectorError::TryFromSliceError(s) => {
-                write!(f, "VectorError::TryFromSliceError: {}", s)
+                write!(f, "VectorError::TryFromSliceError: {s}")
             }
             VectorError::ValueError(s) => {
-                write!(f, "VectorError::ValueError: {}", s)
+                write!(f, "VectorError::ValueError: {s}")
             }
         }
     }
