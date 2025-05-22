@@ -215,6 +215,7 @@ macro_rules! try_fv_iter {
     };
 }
 
+/// ...
 #[macro_export]
 macro_rules! impl_vector_unary_op {
     ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
@@ -232,6 +233,7 @@ macro_rules! impl_vector_unary_op {
     };
 }
 
+/// ...
 #[macro_export]
 macro_rules! impl_vector_binop {
     // With length check (for FlexVector)
@@ -271,6 +273,7 @@ macro_rules! impl_vector_binop {
     };
 }
 
+/// ...
 #[macro_export]
 macro_rules! impl_vector_binop_div {
     // With length check (for FlexVector)
@@ -365,6 +368,7 @@ macro_rules! impl_vector_binop_div {
     };
 }
 
+/// ...
 #[macro_export]
 macro_rules! impl_vector_binop_assign {
     // With length check (for FlexVector)
@@ -398,6 +402,7 @@ macro_rules! impl_vector_binop_assign {
     };
 }
 
+/// ...
 #[macro_export]
 macro_rules! impl_vector_binop_div_assign {
     // With length check (for FlexVector)
@@ -484,6 +489,7 @@ macro_rules! impl_vector_binop_div_assign {
     };
 }
 
+/// ...
 #[macro_export]
 macro_rules! impl_vector_scalar_op {
     ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
@@ -501,6 +507,7 @@ macro_rules! impl_vector_scalar_op {
     };
 }
 
+/// ...
 #[macro_export]
 macro_rules! impl_vector_scalar_op_assign {
     ($VectorType:ident, $trait:ident, $method:ident, $op:tt) => {
@@ -518,6 +525,7 @@ macro_rules! impl_vector_scalar_op_assign {
     };
 }
 
+/// ...
 #[macro_export]
 macro_rules! impl_vector_scalar_div_op {
     ($VectorType:ident) => {
@@ -578,6 +586,7 @@ macro_rules! impl_vector_scalar_div_op {
     };
 }
 
+/// ...
 #[macro_export]
 macro_rules! impl_vector_scalar_div_op_assign {
     ($VectorType:ident) => {

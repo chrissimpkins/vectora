@@ -25,8 +25,11 @@ impl VectorOrientationName for Column {
     }
 }
 
+/// ...
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum VectorOrientation {
+    /// ...
     Row,
+    /// ...
     Column,
 }

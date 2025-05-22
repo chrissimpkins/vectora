@@ -38,12 +38,16 @@ use num::{Complex, Zero};
 /// This type is analogous to `Vector<T, N>` but supports dynamic sizing.
 #[derive(Clone)]
 pub struct FlexVector<T, O = Column> {
+    /// ...
     pub components: Vec<T>,
     _orientation: PhantomData<O>,
 }
 
+/// ...
 pub type FVector<T> = FlexVector<T, Column>;
+/// ...
 pub type ColFVector<T> = FlexVector<T, Column>;
+/// ...
 pub type RowFVector<T> = FlexVector<T, Row>;
 
 // ================================
