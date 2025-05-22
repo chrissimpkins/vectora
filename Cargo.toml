@@ -23,7 +23,7 @@ rayon = { version = "1.10.0", optional = true }
 parallel = ["rayon"]
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.6.0"
 pretty_assertions = "1.4.1"
 tempdir = "0.3.7"
 
