@@ -175,6 +175,73 @@ macro_rules! try_vector {
     };
 }
 
+/// Returns a [`crate::Matrix`] with row and column number, and numeric type
+/// defined by the row vector arguments.
+///
+/// The row vector arguments have an [`array`]-like syntax
+/// that supports the [T; N] repeat expression idiom.
+///
+/// **Note**: The user is responsible for validation of the matrix shape
+/// with this macro.  There are no shape validity checks.
+///
+/// # Examples
+///
+/// ## With each row vector scalar defined
+///
+/// ```
+/// use vectora::matrix;
+///
+/// let m = matrix!(
+///     [1, 2, 3],
+///     [4, 5, 6],
+///     [7, 8, 9]
+/// );
+///
+/// assert_eq!(m.dim(), (3, 3));
+/// assert_eq!(m[0][0], 1_i32);
+/// assert_eq!(m[0][1], 2);
+/// assert_eq!(m[0][2], 3);
+/// assert_eq!(m[1][0], 4);
+/// assert_eq!(m[1][1], 5);
+/// assert_eq!(m[1][2], 6);
+/// assert_eq!(m[2][0], 7);
+/// assert_eq!(m[2][1], 8);
+/// assert_eq!(m[2][2], 9);
+/// ```
+///
+/// ## With an array-like repeat expression idiom
+///
+/// The first number defines the scalar value that is repeated.  
+/// The number following the semicolon defines the number of columns
+/// in the row.
+///
+/// ```
+/// use vectora::matrix;
+///
+/// let m = matrix!(
+///     [1; 2],
+///     [1; 2],
+///     [1; 2]
+/// );
+///
+/// assert_eq!(m.dim(), (3, 2));
+/// assert_eq!(m[0][0], 1_i32);
+/// assert_eq!(m[0][1], 1);
+/// assert_eq!(m[1][0], 1);
+/// assert_eq!(m[1][1], 1);
+/// assert_eq!(m[2][0], 1);
+/// assert_eq!(m[2][1], 1);
+/// ```
+#[macro_export]
+macro_rules! matrix {
+    ([$elem:expr; $n:expr],+ $(,)?) => (
+        $crate::types::matrix::Matrix {rows: vec![$([$elem; $n].to_vec()),+]};
+    );
+    ($($x:expr),+ $(,)?) => (
+        $crate::types::matrix::Matrix {rows: vec![$($x.to_vec()),+]}
+    );
+}
+
 #[cfg(test)]
 mod tests {
     use crate::Vector;
@@ -184,6 +251,12 @@ mod tests {
     use num::complex::Complex;
     #[allow(unused_imports)]
     use pretty_assertions::{assert_eq, assert_ne};
+
+    // ================================
+    //
+    // vector! macro tests
+    //
+    // ================================
 
     #[test]
     fn macro_vector_usize() {
@@ -643,5 +716,151 @@ mod tests {
         assert_relative_eq!(v[0].im, 2.0_f64);
         assert_relative_eq!(v[1].re, 3.0_f64);
         assert_relative_eq!(v[1].im, 4.0_f64);
+    }
+
+    // ================================
+    //
+    // matrix! macro tests
+    //
+    // ================================
+
+    #[test]
+    fn macro_matrix_i32() {
+        let m1 = matrix!([1_i32, 2, 3], [4, 5, 6]);
+        let m2 = matrix!([1_i32, 2], [3, 4], [5, 6],); // trailing comma
+        let m3 = matrix!([1_i32; 3], [1; 3]);
+        let m4 = matrix!([1_i32]);
+
+        assert_eq!(m1.dim(), (2, 3));
+        assert_eq!(m1[0][0], 1);
+        assert_eq!(m1[0][1], 2);
+        assert_eq!(m1[0][2], 3);
+        assert_eq!(m1[1][0], 4);
+        assert_eq!(m1[1][1], 5);
+        assert_eq!(m1[1][2], 6);
+
+        assert_eq!(m2.dim(), (3, 2));
+        assert_eq!(m2[0][0], 1);
+        assert_eq!(m2[0][1], 2);
+        assert_eq!(m2[1][0], 3);
+        assert_eq!(m2[1][1], 4);
+
+        assert_eq!(m3.dim(), (2, 3));
+        assert_eq!(m3[0][0], 1);
+        assert_eq!(m3[0][1], 1);
+        assert_eq!(m3[0][2], 1);
+        assert_eq!(m3[1][0], 1);
+        assert_eq!(m3[1][1], 1);
+        assert_eq!(m3[1][2], 1);
+
+        assert_eq!(m4.dim(), (1, 1));
+        assert_eq!(m4[0][0], 1);
+    }
+
+    #[test]
+    fn macro_matrix_f64() {
+        let m1 = matrix!([1.0_f64, 2.0, 3.0], [4.0_f64, 5.0, 6.0]);
+        let m2 = matrix!([1.0_f64, 2.0], [3.0_f64, 4.0], [5.0_f64, 6.0],); // trailing comma
+        let m3 = matrix!([1.0_f64; 3], [1.0_f64; 3]);
+        let m4 = matrix!([1.0_f64]);
+
+        assert_eq!(m1.dim(), (2, 3));
+        assert_relative_eq!(m1[0][0], 1.0_f64);
+        assert_relative_eq!(m1[0][1], 2.0);
+        assert_relative_eq!(m1[0][2], 3.0);
+        assert_relative_eq!(m1[1][0], 4.0);
+        assert_relative_eq!(m1[1][1], 5.0);
+        assert_relative_eq!(m1[1][2], 6.0);
+
+        assert_eq!(m2.dim(), (3, 2));
+        assert_relative_eq!(m2[0][0], 1.0_f64);
+        assert_relative_eq!(m2[0][1], 2.0);
+        assert_relative_eq!(m2[1][0], 3.0);
+        assert_relative_eq!(m2[1][1], 4.0);
+
+        assert_eq!(m3.dim(), (2, 3));
+        assert_relative_eq!(m3[0][0], 1.0_f64);
+        assert_relative_eq!(m3[0][1], 1.0);
+        assert_relative_eq!(m3[0][2], 1.0);
+        assert_relative_eq!(m3[1][0], 1.0);
+        assert_relative_eq!(m3[1][1], 1.0);
+        assert_relative_eq!(m3[1][2], 1.0);
+
+        assert_eq!(m4.dim(), (1, 1));
+        assert_relative_eq!(m4[0][0], 1.0_f64);
+    }
+
+    #[test]
+    fn macro_matrix_complex_i32() {
+        let m1 = matrix!(
+            [Complex::new(1_i32, 2), Complex::new(3_i32, 4)],
+            [Complex::new(5_i32, 6), Complex::new(-7_i32, 8)]
+        );
+        let m2 = matrix!(
+            [Complex::new(1_i32, 2), Complex::new(3_i32, 4)],
+            [Complex::new(5_i32, 6), Complex::new(-7_i32, 8)],
+        ); // trailing comma
+        let m3 = matrix!([Complex::new(1_i32, 2_i32); 3], [Complex::new(3_i32, 4_i32); 3]);
+        let m4 = matrix!([Complex::new(1_i32, 2_i32)]);
+
+        assert_eq!(m1.dim(), (2, 2));
+        assert_eq!(m1[0][0], Complex::new(1_i32, 2));
+        assert_eq!(m1[0][1], Complex::new(3_i32, 4));
+        assert_eq!(m1[1][0], Complex::new(5_i32, 6));
+        assert_eq!(m1[1][1], Complex::new(-7_i32, 8));
+
+        assert_eq!(m2.dim(), (2, 2));
+        assert_eq!(m2[0][0], Complex::new(1_i32, 2));
+        assert_eq!(m2[0][1], Complex::new(3_i32, 4));
+        assert_eq!(m2[1][0], Complex::new(5_i32, 6));
+        assert_eq!(m2[1][1], Complex::new(-7_i32, 8));
+
+        assert_eq!(m3.dim(), (2, 3));
+        assert_eq!(m3[0][0], Complex::new(1_i32, 2_i32));
+        assert_eq!(m3[0][1], Complex::new(1_i32, 2_i32));
+        assert_eq!(m3[0][2], Complex::new(1_i32, 2_i32));
+        assert_eq!(m3[1][0], Complex::new(3_i32, 4_i32));
+        assert_eq!(m3[1][1], Complex::new(3_i32, 4_i32));
+        assert_eq!(m3[1][2], Complex::new(3_i32, 4_i32));
+
+        assert_eq!(m4.dim(), (1, 1));
+        assert_eq!(m4[0][0], Complex::new(1_i32, 2_i32));
+    }
+
+    #[test]
+    fn macro_matrix_complex_f64() {
+        let m1 = matrix!(
+            [Complex::new(1.0_f64, 2.0), Complex::new(3.0_f64, 4.0)],
+            [Complex::new(5.0_f64, 6.0), Complex::new(-7.0_f64, 8.0)]
+        );
+        let m2 = matrix!(
+            [Complex::new(1.0_f64, 2.0), Complex::new(3.0_f64, 4.0)],
+            [Complex::new(5.0_f64, 6.0), Complex::new(-7.0_f64, 8.0)],
+        ); // trailing comma
+        let m3 = matrix!([Complex::new(1.0_f64, 2.0); 3], [Complex::new(3.0_f64, 4.0); 3]);
+        let m4 = matrix!([Complex::new(1.0_f64, 2.0)]);
+
+        assert_eq!(m1.dim(), (2, 2));
+        assert_eq!(m1[0][0], Complex::new(1.0_f64, 2.0));
+        assert_eq!(m1[0][1], Complex::new(3.0_f64, 4.0));
+        assert_eq!(m1[1][0], Complex::new(5.0_f64, 6.0));
+        assert_eq!(m1[1][1], Complex::new(-7.0_f64, 8.0));
+
+        assert_eq!(m2.dim(), (2, 2));
+        assert_eq!(m2[0][0], Complex::new(1.0_f64, 2.0));
+        assert_eq!(m2[0][1], Complex::new(3.0_f64, 4.0));
+        assert_eq!(m2[1][0], Complex::new(5.0_f64, 6.0));
+        assert_eq!(m2[1][1], Complex::new(-7.0_f64, 8.0));
+
+        assert_eq!(m3.dim(), (2, 3));
+        assert_eq!(m3[0][0], Complex::new(1.0_f64, 2.0));
+        assert_eq!(m3[0][1], Complex::new(1.0_f64, 2.0));
+        assert_eq!(m3[0][2], Complex::new(1.0_f64, 2.0));
+        assert_eq!(m3[1][0], Complex::new(3.0_f64, 4.0));
+        assert_eq!(m3[1][1], Complex::new(3.0_f64, 4.0));
+        assert_eq!(m3[1][2], Complex::new(3.0_f64, 4.0));
+
+        assert_eq!(m4.dim(), (1, 1));
+        assert_eq!(m4[0][0], Complex::new(1.0_f64, 2.0));
     }
 }

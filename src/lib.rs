@@ -895,4 +895,5 @@
 pub mod errors;
 pub mod types;
 
+pub use types::matrix::Matrix;
 pub use types::vector::Vector;
