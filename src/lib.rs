@@ -893,6 +893,27 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 pub mod errors;
+pub mod macros;
 pub mod types;
 
+pub use types::flexvector::FlexVector;
 pub use types::vector::Vector;
+
+/// The vectora prelude: import this module to bring all core traits, types, and macros into scope.
+///
+/// This prelude includes:
+/// - Core traits
+/// - Main types
+/// - Main macros
+pub mod prelude {
+    // Traits
+    pub use crate::types::traits::{
+        Transposable, VectorBase, VectorHasOrientation, VectorOps, VectorOpsComplex, VectorOpsFloat,
+    };
+    // Types
+    pub use crate::types::flexvector::FlexVector;
+    pub use crate::types::orientation::{Column, Row, VectorOrientation};
+    pub use crate::types::vector::Vector;
+    // Macros
+    pub use crate::{fv, fv_from, fv_iter, try_fv_iter, try_vector, vector};
+}

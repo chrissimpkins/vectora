@@ -1,6 +1,6 @@
 <img src="https://raw.githubusercontent.com/chrissimpkins/vectora/img/img/vectora.png" width="350">
 
-## A Rust library for vector computation
+## Fast, Flexible n-Dimensional Vector Math for Rust
 
 [![Crates.io](https://img.shields.io/crates/v/vectora)](https://crates.io/crates/vectora)
 [![docs.rs](https://img.shields.io/docsrs/vectora)](https://docs.rs/vectora)
@@ -15,7 +15,7 @@
 
 ## About
 
-Vectora is a library for n-dimensional vector computation with real and complex scalar types. The main library entry point is the [`Vector`](https://docs.rs/vectora/latest/vectora/types/vector/struct.Vector.html) struct.  Please see the [Gettting Started Guide](https://docs.rs/vectora/latest/vectora/#getting-started) for a detailed library API overview with examples.
+Vectora is a library for n-dimensional vector math with real and complex scalar types. The main library entry point is the [`Vector`](https://docs.rs/vectora/latest/vectora/types/vector/struct.Vector.html) struct.  Please see the [Gettting Started Guide](https://docs.rs/vectora/latest/vectora/#getting-started) for a detailed library API overview with examples.
 
 ## User documentation
 
