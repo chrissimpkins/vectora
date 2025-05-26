@@ -14,8 +14,10 @@ use crate::{
     impl_vector_binop_div_assign, impl_vector_scalar_div_op, impl_vector_scalar_div_op_assign,
     impl_vector_scalar_op, impl_vector_scalar_op_assign, impl_vector_unary_op,
     types::orientation::Column, types::orientation::Row, types::orientation::VectorOrientation,
-    types::traits::Transposable, types::traits::VectorBase, types::traits::VectorHasOrientation,
-    types::traits::VectorOps, types::traits::VectorOpsComplex, types::traits::VectorOpsFloat,
+    types::traits::Transposable, types::traits::VectorBase, types::traits::VectorBaseMut,
+    types::traits::VectorHasOrientation, types::traits::VectorOps, types::traits::VectorOpsComplex,
+    types::traits::VectorOpsComplexMut, types::traits::VectorOpsFloat,
+    types::traits::VectorOpsFloatMut, types::traits::VectorOpsMut,
     types::traits::VectorOrientationName, types::vectorslice::VectorSlice,
     types::vectorslice::VectorSliceMut,
 };
@@ -652,7 +654,7 @@ impl<T, O> Extend<T> for FlexVector<T, O> {
 
 // ================================
 //
-// VectorBase trait impl
+// VectorBase/VectorBaseMut trait impl
 //
 // ================================
 impl<T, O> VectorBase<T> for FlexVector<T, O> {
@@ -661,7 +663,9 @@ impl<T, O> VectorBase<T> for FlexVector<T, O> {
     fn as_slice(&self) -> &[T] {
         &self.elements
     }
+}
 
+impl<T, O> VectorBaseMut<T> for FlexVector<T, O> {
     /// Returns a mutable slice of the FlexVector's elements.
     #[inline]
     fn as_mut_slice(&mut self) -> &mut [T] {
@@ -733,16 +737,6 @@ where
         let mut out = FlexVector::zero(self.len());
         translate_impl(self.as_slice(), other.as_slice(), out.as_mut_slice());
         Ok(out)
-    }
-
-    #[inline]
-    fn mut_translate(&mut self, other: &Self) -> Result<(), VectorError>
-    where
-        T: num::Num + Copy,
-    {
-        self.check_same_length_and_raise(other)?;
-        mut_translate_impl(self.as_mut_slice(), other.as_slice());
-        Ok(())
     }
 
     #[inline]
@@ -834,6 +828,28 @@ where
 
 // ================================
 //
+// VectorOpsMut trait impl
+//
+// ================================
+impl<T, O> VectorOpsMut<T> for FlexVector<T, O>
+where
+    T: Clone,
+{
+    type Output = Self;
+
+    #[inline]
+    fn mut_translate(&mut self, other: &Self) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy,
+    {
+        self.check_same_length_and_raise(other)?;
+        mut_translate_impl(self.as_mut_slice(), other.as_slice());
+        Ok(())
+    }
+}
+
+// ================================
+//
 // VectorOpsFloat trait impl
 //
 // ================================
@@ -851,15 +867,6 @@ where
         normalize_impl(self.as_slice(), self.norm())
     }
 
-    #[inline]
-    fn mut_normalize(&mut self) -> Result<(), VectorError>
-    where
-        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
-    {
-        let norm = self.norm();
-        mut_normalize_impl(self.as_mut_slice(), norm)
-    }
-
     /// Returns a new vector with the same direction and the given magnitude.
     #[inline]
     fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
@@ -875,19 +882,6 @@ where
     }
 
     #[inline]
-    fn mut_normalize_to(&mut self, magnitude: T) -> Result<(), VectorError>
-    where
-        T: Copy
-            + PartialEq
-            + std::ops::Div<T, Output = T>
-            + std::ops::Mul<T, Output = T>
-            + num::Zero,
-    {
-        let n = self.norm();
-        mut_normalize_to_impl(self.as_mut_slice(), n, magnitude)
-    }
-
-    #[inline]
     fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
     where
         T: num::Float + Copy,
@@ -899,19 +893,6 @@ where
         let mut out = FlexVector::zero(self.len());
         lerp_impl(self.as_slice(), end.as_slice(), weight, out.as_mut_slice());
         Ok(out)
-    }
-
-    #[inline]
-    fn mut_lerp(&mut self, end: &Self, weight: T) -> Result<(), VectorError>
-    where
-        T: num::Float + Copy + PartialOrd,
-    {
-        self.check_same_length_and_raise(end)?;
-        if weight < T::zero() || weight > T::one() {
-            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
-        }
-        mut_lerp_impl(self.as_mut_slice(), end.as_slice(), weight);
-        Ok(())
     }
 
     #[inline]
@@ -1016,6 +997,53 @@ where
 
 // ================================
 //
+// VectorOpsFloatMut trait impl
+//
+// ================================
+impl<T, O> VectorOpsFloatMut<T> for FlexVector<T, O>
+where
+    T: num::Float + Clone + std::iter::Sum<T>,
+{
+    type Output = Self;
+
+    #[inline]
+    fn mut_normalize(&mut self) -> Result<(), VectorError>
+    where
+        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+    {
+        let norm = self.norm();
+        mut_normalize_impl(self.as_mut_slice(), norm)
+    }
+
+    #[inline]
+    fn mut_normalize_to(&mut self, magnitude: T) -> Result<(), VectorError>
+    where
+        T: Copy
+            + PartialEq
+            + std::ops::Div<T, Output = T>
+            + std::ops::Mul<T, Output = T>
+            + num::Zero,
+    {
+        let n = self.norm();
+        mut_normalize_to_impl(self.as_mut_slice(), n, magnitude)
+    }
+
+    #[inline]
+    fn mut_lerp(&mut self, end: &Self, weight: T) -> Result<(), VectorError>
+    where
+        T: num::Float + Copy + PartialOrd,
+    {
+        self.check_same_length_and_raise(end)?;
+        if weight < T::zero() || weight > T::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        mut_lerp_impl(self.as_mut_slice(), end.as_slice(), weight);
+        Ok(())
+    }
+}
+
+// ================================
+//
 // VectorOpsComplex trait impl
 //
 // ================================
@@ -1036,15 +1064,6 @@ where
     }
 
     #[inline]
-    fn mut_normalize(&mut self) -> Result<(), VectorError>
-    where
-        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>> + num::Zero,
-    {
-        let norm = self.norm();
-        mut_normalize_impl(self.as_mut_slice(), Complex::new(norm, N::zero()))
-    }
-
-    #[inline]
     fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
     where
         Complex<N>: Copy
@@ -1057,23 +1076,6 @@ where
         normalize_to_impl(
             self.as_slice(),
             Complex::new(self.norm(), N::zero()),
-            Complex::new(magnitude, N::zero()),
-        )
-    }
-
-    #[inline]
-    fn mut_normalize_to(&mut self, magnitude: N) -> Result<(), VectorError>
-    where
-        Complex<N>: Copy
-            + PartialEq
-            + std::ops::Div<Complex<N>, Output = Complex<N>>
-            + std::ops::Mul<Complex<N>, Output = Complex<N>>
-            + num::Zero,
-    {
-        let n = self.norm();
-        mut_normalize_to_impl(
-            self.as_mut_slice(),
-            Complex::new(n, N::zero()),
             Complex::new(magnitude, N::zero()),
         )
     }
@@ -1105,25 +1107,6 @@ where
         let mut out = FlexVector::zero(self.len());
         lerp_impl(self.as_slice(), end.as_slice(), w, out.as_mut_slice());
         Ok(out)
-    }
-
-    #[inline]
-    fn mut_lerp(&mut self, end: &Self, weight: N) -> Result<(), VectorError>
-    where
-        N: num::Float + Copy + PartialOrd,
-        Complex<N>: Copy
-            + std::ops::Add<Output = Complex<N>>
-            + std::ops::Mul<Output = Complex<N>>
-            + std::ops::Sub<Output = Complex<N>>
-            + num::One,
-    {
-        self.check_same_length_and_raise(end)?;
-        if weight < N::zero() || weight > N::one() {
-            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
-        }
-        let w = Complex::new(weight, N::zero());
-        mut_lerp_impl(self.as_mut_slice(), end.as_slice(), w);
-        Ok(())
     }
 
     #[inline]
@@ -1214,11 +1197,65 @@ where
     }
 }
 
+// TODO: add tests
+impl<N, O> VectorOpsComplexMut<N> for FlexVector<Complex<N>, O>
+where
+    N: num::Float + Clone + std::iter::Sum<N>,
+{
+    type Output = Self;
+
+    #[inline]
+    fn mut_normalize(&mut self) -> Result<(), VectorError>
+    where
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>> + num::Zero,
+    {
+        let norm = self.norm();
+        mut_normalize_impl(self.as_mut_slice(), Complex::new(norm, N::zero()))
+    }
+
+    #[inline]
+    fn mut_normalize_to(&mut self, magnitude: N) -> Result<(), VectorError>
+    where
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>
+            + num::Zero,
+    {
+        let n = self.norm();
+        mut_normalize_to_impl(
+            self.as_mut_slice(),
+            Complex::new(n, N::zero()),
+            Complex::new(magnitude, N::zero()),
+        )
+    }
+
+    #[inline]
+    fn mut_lerp(&mut self, end: &Self, weight: N) -> Result<(), VectorError>
+    where
+        N: num::Float + Copy + PartialOrd,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One,
+    {
+        self.check_same_length_and_raise(end)?;
+        if weight < N::zero() || weight > N::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        let w = Complex::new(weight, N::zero());
+        mut_lerp_impl(self.as_mut_slice(), end.as_slice(), w);
+        Ok(())
+    }
+}
+
 // ================================
 //
 // Methods
 //
 // ================================
+
 impl<T, O> FlexVector<T, O> {
     /// ...
     #[inline]

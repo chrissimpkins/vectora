@@ -13,9 +13,6 @@ pub trait VectorBase<T> {
     fn as_slice(&self) -> &[T];
 
     /// ...
-    fn as_mut_slice(&mut self) -> &mut [T];
-
-    /// ...
     #[inline]
     fn len(&self) -> usize {
         self.as_slice().len()
@@ -230,6 +227,13 @@ pub trait VectorBase<T> {
     }
 }
 
+/// ...
+pub trait VectorBaseMut<T> {
+    // --- Core accessors ---
+    /// ...
+    fn as_mut_slice(&mut self) -> &mut [T];
+}
+
 /// A trait for types that can be transposed between row and column orientation.
 pub trait Transposable {
     /// The type returned by transposing.
@@ -249,55 +253,17 @@ pub trait VectorOps<T>: VectorBase<T> {
     where
         T: num::Num + Copy;
 
-    /// ...
-    fn mut_translate(&mut self, other: &Self) -> Result<(), VectorError>
-    where
-        T: num::Num + Copy;
-
     /// Returns a new vector scaled by the given scalar.
     fn scale(&self, scalar: T) -> Self::Output
     where
         T: num::Num + Copy,
         Self::Output: std::iter::FromIterator<T>;
 
-    /// Scales the vector in place by the given scalar.
-    #[inline]
-    fn mut_scale(&mut self, scalar: T)
-    where
-        T: num::Num + Copy,
-    {
-        for a in self.as_mut_slice().iter_mut() {
-            *a = *a * scalar;
-        }
-    }
-
     /// Returns a new vector with all elements negated.
     fn negate(&self) -> Self::Output
     where
         T: std::ops::Neg<Output = T> + Clone,
         Self::Output: std::iter::FromIterator<T>;
-
-    /// Negates all elements in place.
-    #[inline]
-    fn mut_negate(&mut self)
-    where
-        T: std::ops::Neg<Output = T> + Clone,
-    {
-        for a in self.as_mut_slice().iter_mut() {
-            *a = -a.clone();
-        }
-    }
-
-    /// Sets all elements to zero in place.
-    #[inline]
-    fn mut_zero(&mut self)
-    where
-        T: num::Zero + Clone,
-    {
-        for a in self.as_mut_slice().iter_mut() {
-            *a = T::zero();
-        }
-    }
 
     /// ...
     fn dot(&self, other: &Self) -> Result<T, VectorError>
@@ -405,6 +371,49 @@ pub trait VectorOps<T>: VectorBase<T> {
 }
 
 /// ...
+pub trait VectorOpsMut<T>: VectorBaseMut<T> {
+    /// ...
+    type Output;
+
+    /// ...
+    fn mut_translate(&mut self, other: &Self) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy;
+
+    /// Scales the vector in place by the given scalar.
+    #[inline]
+    fn mut_scale(&mut self, scalar: T)
+    where
+        T: num::Num + Copy,
+    {
+        for a in self.as_mut_slice().iter_mut() {
+            *a = *a * scalar;
+        }
+    }
+
+    /// Negates all elements in place.
+    #[inline]
+    fn mut_negate(&mut self)
+    where
+        T: std::ops::Neg<Output = T> + Clone,
+    {
+        for a in self.as_mut_slice().iter_mut() {
+            *a = -a.clone();
+        }
+    }
+
+    /// Sets all elements to zero in place.
+    #[inline]
+    fn mut_zero(&mut self)
+    where
+        T: num::Zero,
+    {
+        for a in self.as_mut_slice().iter_mut() {
+            *a = T::zero();
+        }
+    }
+}
+/// ...
 pub trait VectorOpsFloat<T>: VectorBase<T> {
     /// ...
     type Output;
@@ -415,35 +424,16 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
         T: Copy + PartialEq + std::ops::Div<T, Output = T>,
         Self::Output: std::iter::FromIterator<T>;
 
-    /// ...
-    fn mut_normalize(&mut self) -> Result<(), VectorError>
-    where
-        T: Copy + PartialEq + std::ops::Div<T, Output = T>;
-
     /// Returns a new vector with the same direction and the given magnitude.
     fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
     where
         T: Copy + PartialEq + std::ops::Div<T, Output = T> + std::ops::Mul<T, Output = T>,
         Self::Output: std::iter::FromIterator<T>;
 
-    /// ...
-    fn mut_normalize_to(&mut self, magnitude: T) -> Result<(), VectorError>
-    where
-        T: Copy
-            + PartialEq
-            + std::ops::Div<T, Output = T>
-            + std::ops::Mul<T, Output = T>
-            + num::Zero;
-
     /// Linear interpolation between self and end by weight in [0, 1].
     fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
     where
         T: num::Float + Clone + PartialOrd;
-
-    /// In-place linear interpolation between self and end by weight in [0, 1].
-    fn mut_lerp(&mut self, end: &Self, weight: T) -> Result<(), VectorError>
-    where
-        T: num::Float + Copy + PartialOrd;
 
     /// Midpoint
     fn midpoint(&self, other: &Self) -> Result<Self::Output, VectorError>
@@ -519,6 +509,30 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
 }
 
 /// ...
+pub trait VectorOpsFloatMut<T>: VectorBaseMut<T> {
+    /// ...
+    type Output;
+
+    /// ...
+    fn mut_normalize(&mut self) -> Result<(), VectorError>
+    where
+        T: Copy + PartialEq + std::ops::Div<T, Output = T>;
+
+    /// ...
+    fn mut_normalize_to(&mut self, magnitude: T) -> Result<(), VectorError>
+    where
+        T: Copy
+            + PartialEq
+            + std::ops::Div<T, Output = T>
+            + std::ops::Mul<T, Output = T>
+            + num::Zero;
+
+    /// In-place linear interpolation between self and end by weight in [0, 1].
+    fn mut_lerp(&mut self, end: &Self, weight: T) -> Result<(), VectorError>
+    where
+        T: num::Float + Copy + PartialOrd;
+}
+/// ...
 pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
     /// ...
     type Output;
@@ -529,11 +543,6 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
         Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
         Self::Output: std::iter::FromIterator<Complex<N>>;
 
-    /// ...
-    fn mut_normalize(&mut self) -> Result<(), VectorError>
-    where
-        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>;
-
     /// Returns a new vector with the same direction and the given magnitude (real).
     fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
     where
@@ -542,15 +551,6 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
             + std::ops::Div<Complex<N>, Output = Complex<N>>
             + std::ops::Mul<Complex<N>, Output = Complex<N>>,
         Self::Output: std::iter::FromIterator<Complex<N>>;
-
-    /// Scales the complex vector in place to the given (real) magnitude.
-    fn mut_normalize_to(&mut self, magnitude: N) -> Result<(), VectorError>
-    where
-        Complex<N>: Copy
-            + PartialEq
-            + std::ops::Div<Complex<N>, Output = Complex<N>>
-            + std::ops::Mul<Complex<N>, Output = Complex<N>>
-            + num::Zero;
 
     /// Hermitian dot product: for all complex types
     fn dot(&self, other: &Self) -> Result<Complex<N>, VectorError>
@@ -561,11 +561,6 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
     fn lerp(&self, end: &Self, weight: N) -> Result<Self::Output, VectorError>
     where
         N: num::Float + Clone + PartialOrd;
-
-    /// In-place linear interpolation between self and end by real weight in [0, 1].
-    fn mut_lerp(&mut self, end: &Self, weight: N) -> Result<(), VectorError>
-    where
-        N: num::Float + Copy + PartialOrd;
 
     /// Midpoint
     fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
@@ -653,6 +648,30 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
         Complex<N>: std::ops::Div<Output = Complex<N>>;
 }
 
+/// ...
+pub trait VectorOpsComplexMut<N>: VectorBaseMut<Complex<N>> {
+    /// ...
+    type Output;
+
+    /// ...
+    fn mut_normalize(&mut self) -> Result<(), VectorError>
+    where
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>;
+
+    /// Scales the complex vector in place to the given (real) magnitude.
+    fn mut_normalize_to(&mut self, magnitude: N) -> Result<(), VectorError>
+    where
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>
+            + num::Zero;
+
+    /// In-place linear interpolation between self and end by real weight in [0, 1].
+    fn mut_lerp(&mut self, end: &Self, weight: N) -> Result<(), VectorError>
+    where
+        N: num::Float + Copy + PartialOrd;
+}
 /// ...
 pub trait VectorHasOrientation {
     /// ...

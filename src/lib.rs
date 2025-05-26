@@ -908,7 +908,8 @@ pub use types::vector::Vector;
 pub mod prelude {
     // Traits
     pub use crate::types::traits::{
-        Transposable, VectorBase, VectorHasOrientation, VectorOps, VectorOpsComplex, VectorOpsFloat,
+        Transposable, VectorBase, VectorBaseMut, VectorHasOrientation, VectorOps, VectorOpsComplex,
+        VectorOpsComplexMut, VectorOpsFloat, VectorOpsFloatMut, VectorOpsMut,
     };
     // Types
     pub use crate::types::flexvector::FlexVector;
