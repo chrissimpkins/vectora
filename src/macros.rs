@@ -226,8 +226,8 @@ macro_rules! impl_vector_unary_op {
             type Output = Self;
             #[inline]
             fn $method(self) -> Self {
-                let components = self.components.into_iter().map(|a| $op a).collect();
-                Self { components, _orientation: PhantomData }
+                let elements = self.elements.into_iter().map(|a| $op a).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
     };
@@ -246,11 +246,11 @@ macro_rules! impl_vector_binop {
             #[inline]
             fn $method(self, rhs: Self) -> Self {
                 assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
-                let components = self.components.into_iter()
-                    .zip(rhs.components)
+                let elements = self.elements.into_iter()
+                    .zip(rhs.elements)
                     .map(|(a, b)| a $op b)
                     .collect();
-                Self { components, _orientation: PhantomData }
+                Self { elements, _orientation: PhantomData }
             }
         }
     };
@@ -263,11 +263,11 @@ macro_rules! impl_vector_binop {
             type Output = Self;
             #[inline]
             fn $method(self, rhs: Self) -> Self {
-                let components = self.components.into_iter()
-                    .zip(rhs.components)
+                let elements = self.elements.into_iter()
+                    .zip(rhs.elements)
                     .map(|(a, b)| a $op b)
                     .collect();
-                Self { components, _orientation: PhantomData }
+                Self { elements, _orientation: PhantomData }
             }
         }
     };
@@ -284,9 +284,9 @@ macro_rules! impl_vector_binop_div {
             #[inline]
             fn div(self, rhs: Self) -> Self {
                 assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
-                let components =
-                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
-                Self { components, _orientation: PhantomData }
+                let elements =
+                    self.elements.into_iter().zip(rhs.elements).map(|(a, b)| a / b).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
         // f64
@@ -295,9 +295,9 @@ macro_rules! impl_vector_binop_div {
             #[inline]
             fn div(self, rhs: Self) -> Self {
                 assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
-                let components =
-                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
-                Self { components, _orientation: PhantomData }
+                let elements =
+                    self.elements.into_iter().zip(rhs.elements).map(|(a, b)| a / b).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
         // Complex<f32>
@@ -306,9 +306,9 @@ macro_rules! impl_vector_binop_div {
             #[inline]
             fn div(self, rhs: Self) -> Self {
                 assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
-                let components =
-                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
-                Self { components, _orientation: PhantomData }
+                let elements =
+                    self.elements.into_iter().zip(rhs.elements).map(|(a, b)| a / b).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
         // Complex<f64>
@@ -317,9 +317,9 @@ macro_rules! impl_vector_binop_div {
             #[inline]
             fn div(self, rhs: Self) -> Self {
                 assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
-                let components =
-                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
-                Self { components, _orientation: PhantomData }
+                let elements =
+                    self.elements.into_iter().zip(rhs.elements).map(|(a, b)| a / b).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
     };
@@ -330,9 +330,9 @@ macro_rules! impl_vector_binop_div {
             type Output = Self;
             #[inline]
             fn div(self, rhs: Self) -> Self {
-                let components =
-                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
-                Self { components, _orientation: PhantomData }
+                let elements =
+                    self.elements.into_iter().zip(rhs.elements).map(|(a, b)| a / b).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
         // f64
@@ -340,9 +340,9 @@ macro_rules! impl_vector_binop_div {
             type Output = Self;
             #[inline]
             fn div(self, rhs: Self) -> Self {
-                let components =
-                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
-                Self { components, _orientation: PhantomData }
+                let elements =
+                    self.elements.into_iter().zip(rhs.elements).map(|(a, b)| a / b).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
         // Complex<f32>
@@ -350,9 +350,9 @@ macro_rules! impl_vector_binop_div {
             type Output = Self;
             #[inline]
             fn div(self, rhs: Self) -> Self {
-                let components =
-                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
-                Self { components, _orientation: PhantomData }
+                let elements =
+                    self.elements.into_iter().zip(rhs.elements).map(|(a, b)| a / b).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
         // Complex<f64>
@@ -360,9 +360,9 @@ macro_rules! impl_vector_binop_div {
             type Output = Self;
             #[inline]
             fn div(self, rhs: Self) -> Self {
-                let components =
-                    self.components.into_iter().zip(rhs.components).map(|(a, b)| a / b).collect();
-                Self { components, _orientation: PhantomData }
+                let elements =
+                    self.elements.into_iter().zip(rhs.elements).map(|(a, b)| a / b).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
     };
@@ -380,7 +380,7 @@ macro_rules! impl_vector_binop_assign {
             #[inline]
             fn $method(&mut self, rhs: Self) {
                 assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
-                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                for (a, b) in self.elements.iter_mut().zip(rhs.elements) {
                     *a = a.clone() $op b;
                 }
             }
@@ -394,7 +394,7 @@ macro_rules! impl_vector_binop_assign {
         {
             #[inline]
             fn $method(&mut self, rhs: Self) {
-                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                for (a, b) in self.elements.iter_mut().zip(rhs.elements) {
                     *a = a.clone() $op b;
                 }
             }
@@ -412,7 +412,7 @@ macro_rules! impl_vector_binop_div_assign {
             #[inline]
             fn div_assign(&mut self, rhs: Self) {
                 assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
-                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                for (a, b) in self.elements.iter_mut().zip(rhs.elements) {
                     *a /= b;
                 }
             }
@@ -422,7 +422,7 @@ macro_rules! impl_vector_binop_div_assign {
             #[inline]
             fn div_assign(&mut self, rhs: Self) {
                 assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
-                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                for (a, b) in self.elements.iter_mut().zip(rhs.elements) {
                     *a /= b;
                 }
             }
@@ -432,7 +432,7 @@ macro_rules! impl_vector_binop_div_assign {
             #[inline]
             fn div_assign(&mut self, rhs: Self) {
                 assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
-                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                for (a, b) in self.elements.iter_mut().zip(rhs.elements) {
                     *a /= b;
                 }
             }
@@ -442,7 +442,7 @@ macro_rules! impl_vector_binop_div_assign {
             #[inline]
             fn div_assign(&mut self, rhs: Self) {
                 assert_eq!(self.len(), rhs.len(), "Vector length mismatch");
-                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                for (a, b) in self.elements.iter_mut().zip(rhs.elements) {
                     *a /= b;
                 }
             }
@@ -454,7 +454,7 @@ macro_rules! impl_vector_binop_div_assign {
         impl<O> std::ops::DivAssign for $VectorType<f32, O> {
             #[inline]
             fn div_assign(&mut self, rhs: Self) {
-                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                for (a, b) in self.elements.iter_mut().zip(rhs.elements) {
                     *a /= b;
                 }
             }
@@ -463,7 +463,7 @@ macro_rules! impl_vector_binop_div_assign {
         impl<O> std::ops::DivAssign for $VectorType<f64, O> {
             #[inline]
             fn div_assign(&mut self, rhs: Self) {
-                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                for (a, b) in self.elements.iter_mut().zip(rhs.elements) {
                     *a /= b;
                 }
             }
@@ -472,7 +472,7 @@ macro_rules! impl_vector_binop_div_assign {
         impl<O> std::ops::DivAssign for $VectorType<num::Complex<f32>, O> {
             #[inline]
             fn div_assign(&mut self, rhs: Self) {
-                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                for (a, b) in self.elements.iter_mut().zip(rhs.elements) {
                     *a /= b;
                 }
             }
@@ -481,7 +481,7 @@ macro_rules! impl_vector_binop_div_assign {
         impl<O> std::ops::DivAssign for $VectorType<num::Complex<f64>, O> {
             #[inline]
             fn div_assign(&mut self, rhs: Self) {
-                for (a, b) in self.components.iter_mut().zip(rhs.components) {
+                for (a, b) in self.elements.iter_mut().zip(rhs.elements) {
                     *a /= b;
                 }
             }
@@ -500,8 +500,8 @@ macro_rules! impl_vector_scalar_op {
             type Output = Self;
             #[inline]
             fn $method(self, rhs: T) -> Self {
-                let components = self.components.into_iter().map(|a| a $op rhs.clone()).collect();
-                Self { components, _orientation: PhantomData }
+                let elements = self.elements.into_iter().map(|a| a $op rhs.clone()).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
     };
@@ -517,7 +517,7 @@ macro_rules! impl_vector_scalar_op_assign {
         {
             #[inline]
             fn $method(&mut self, rhs: T) {
-                for a in &mut self.components {
+                for a in &mut self.elements {
                     *a = a.clone() $op rhs.clone();
                 }
             }
@@ -534,8 +534,8 @@ macro_rules! impl_vector_scalar_div_op {
             type Output = Self;
             #[inline]
             fn div(self, rhs: f32) -> Self {
-                let components = self.components.into_iter().map(|a| a / rhs).collect();
-                Self { components, _orientation: PhantomData }
+                let elements = self.elements.into_iter().map(|a| a / rhs).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
         // For f64
@@ -543,8 +543,8 @@ macro_rules! impl_vector_scalar_div_op {
             type Output = Self;
             #[inline]
             fn div(self, rhs: f64) -> Self {
-                let components = self.components.into_iter().map(|a| a / rhs).collect();
-                Self { components, _orientation: PhantomData }
+                let elements = self.elements.into_iter().map(|a| a / rhs).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
         // For Complex<f32> / f32
@@ -552,8 +552,8 @@ macro_rules! impl_vector_scalar_div_op {
             type Output = Self;
             #[inline]
             fn div(self, rhs: f32) -> Self {
-                let components = self.components.into_iter().map(|a| a / rhs).collect();
-                Self { components, _orientation: PhantomData }
+                let elements = self.elements.into_iter().map(|a| a / rhs).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
         // For Complex<f64> / f64
@@ -561,8 +561,8 @@ macro_rules! impl_vector_scalar_div_op {
             type Output = Self;
             #[inline]
             fn div(self, rhs: f64) -> Self {
-                let components = self.components.into_iter().map(|a| a / rhs).collect();
-                Self { components, _orientation: PhantomData }
+                let elements = self.elements.into_iter().map(|a| a / rhs).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
         // For Complex<f32> / Complex<f32>
@@ -570,8 +570,8 @@ macro_rules! impl_vector_scalar_div_op {
             type Output = Self;
             #[inline]
             fn div(self, rhs: num::Complex<f32>) -> Self {
-                let components = self.components.into_iter().map(|a| a / rhs).collect();
-                Self { components, _orientation: PhantomData }
+                let elements = self.elements.into_iter().map(|a| a / rhs).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
         // For Complex<f64> / Complex<f64>
@@ -579,8 +579,8 @@ macro_rules! impl_vector_scalar_div_op {
             type Output = Self;
             #[inline]
             fn div(self, rhs: num::Complex<f64>) -> Self {
-                let components = self.components.into_iter().map(|a| a / rhs).collect();
-                Self { components, _orientation: PhantomData }
+                let elements = self.elements.into_iter().map(|a| a / rhs).collect();
+                Self { elements, _orientation: PhantomData }
             }
         }
     };
@@ -594,7 +594,7 @@ macro_rules! impl_vector_scalar_div_op_assign {
         impl<O> std::ops::DivAssign<f32> for $VectorType<f32, O> {
             #[inline]
             fn div_assign(&mut self, rhs: f32) {
-                for a in &mut self.components {
+                for a in &mut self.elements {
                     *a = *a / rhs;
                 }
             }
@@ -603,7 +603,7 @@ macro_rules! impl_vector_scalar_div_op_assign {
         impl<O> std::ops::DivAssign<f64> for $VectorType<f64, O> {
             #[inline]
             fn div_assign(&mut self, rhs: f64) {
-                for a in &mut self.components {
+                for a in &mut self.elements {
                     *a = *a / rhs;
                 }
             }
@@ -612,7 +612,7 @@ macro_rules! impl_vector_scalar_div_op_assign {
         impl<O> std::ops::DivAssign<f32> for $VectorType<num::Complex<f32>, O> {
             #[inline]
             fn div_assign(&mut self, rhs: f32) {
-                for a in &mut self.components {
+                for a in &mut self.elements {
                     *a = *a / rhs;
                 }
             }
@@ -621,7 +621,7 @@ macro_rules! impl_vector_scalar_div_op_assign {
         impl<O> std::ops::DivAssign<f64> for $VectorType<num::Complex<f64>, O> {
             #[inline]
             fn div_assign(&mut self, rhs: f64) {
-                for a in &mut self.components {
+                for a in &mut self.elements {
                     *a = *a / rhs;
                 }
             }
@@ -630,7 +630,7 @@ macro_rules! impl_vector_scalar_div_op_assign {
         impl<O> std::ops::DivAssign<num::Complex<f32>> for $VectorType<num::Complex<f32>, O> {
             #[inline]
             fn div_assign(&mut self, rhs: num::Complex<f32>) {
-                for a in &mut self.components {
+                for a in &mut self.elements {
                     *a = *a / rhs;
                 }
             }
@@ -639,7 +639,7 @@ macro_rules! impl_vector_scalar_div_op_assign {
         impl<O> std::ops::DivAssign<num::Complex<f64>> for $VectorType<num::Complex<f64>, O> {
             #[inline]
             fn div_assign(&mut self, rhs: num::Complex<f64>) {
-                for a in &mut self.components {
+                for a in &mut self.elements {
                     *a = *a / rhs;
                 }
             }

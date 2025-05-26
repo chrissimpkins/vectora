@@ -15,7 +15,7 @@ use std::marker::PhantomData;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VectorSlice<'a, T, O = Column> {
     /// ...
-    pub slice: &'a [T],
+    pub elements: &'a [T],
     _orientation: PhantomData<O>,
 }
 
@@ -29,7 +29,7 @@ impl<'a, T, O> VectorSlice<'a, T, O> {
     /// ...
     #[inline]
     pub fn new(slice: &'a [T]) -> Self {
-        VectorSlice { slice, _orientation: PhantomData }
+        VectorSlice { elements: slice, _orientation: PhantomData }
     }
 
     /// ...
@@ -48,13 +48,13 @@ impl<'a, T, O> VectorSlice<'a, T, O> {
 impl<'a, T, O> std::ops::Deref for VectorSlice<'a, T, O> {
     type Target = [T];
     fn deref(&self) -> &Self::Target {
-        self.slice
+        self.elements
     }
 }
 
 impl<'a, T, O> AsRef<[T]> for VectorSlice<'a, T, O> {
     fn as_ref(&self) -> &[T] {
-        self.slice
+        self.elements
     }
 }
 
@@ -63,7 +63,7 @@ impl<'a, T, O> IntoIterator for VectorSlice<'a, T, O> {
     type IntoIter = std::slice::Iter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.slice.iter()
+        self.elements.iter()
     }
 }
 
@@ -72,7 +72,7 @@ impl<'a, T, O> IntoIterator for &'a VectorSlice<'a, T, O> {
     type IntoIter = std::slice::Iter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.slice.iter()
+        self.elements.iter()
     }
 }
 
@@ -88,7 +88,7 @@ impl<'a, T, O> IntoIterator for &'a VectorSlice<'a, T, O> {
 #[derive(Debug)]
 pub struct VectorSliceMut<'a, T, O = Column> {
     /// ...
-    pub slice: &'a mut [T],
+    pub elements: &'a mut [T],
     _orientation: PhantomData<O>,
 }
 
@@ -102,7 +102,7 @@ impl<'a, T, O> VectorSliceMut<'a, T, O> {
     /// ...
     #[inline]
     pub fn new(slice: &'a mut [T]) -> Self {
-        VectorSliceMut { slice, _orientation: PhantomData }
+        VectorSliceMut { elements: slice, _orientation: PhantomData }
     }
 
     /// Creates a mutable VectorSliceMut from a parent mutable slice and a range.
@@ -121,19 +121,19 @@ impl<'a, T, O> VectorSliceMut<'a, T, O> {
 impl<'a, T, O> std::ops::Deref for VectorSliceMut<'a, T, O> {
     type Target = [T];
     fn deref(&self) -> &Self::Target {
-        self.slice
+        self.elements
     }
 }
 
 impl<'a, T, O> std::ops::DerefMut for VectorSliceMut<'a, T, O> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.slice
+        self.elements
     }
 }
 
 impl<'a, T, O> AsMut<[T]> for VectorSliceMut<'a, T, O> {
     fn as_mut(&mut self) -> &mut [T] {
-        self.slice
+        self.elements
     }
 }
 
@@ -142,7 +142,7 @@ impl<'a, T, O> IntoIterator for VectorSliceMut<'a, T, O> {
     type IntoIter = std::slice::IterMut<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.slice.into_iter()
+        self.elements.into_iter()
     }
 }
 
@@ -151,7 +151,7 @@ impl<'a, T, O> IntoIterator for &'a mut VectorSliceMut<'a, T, O> {
     type IntoIter = std::slice::IterMut<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.slice.iter_mut()
+        self.elements.iter_mut()
     }
 }
 
@@ -175,7 +175,7 @@ mod tests {
     fn test_vector_slice_new() {
         let data = [1, 2, 3, 4, 5];
         let vslice: VectorSlice<'_, i32, Column> = VectorSlice::new(&data);
-        assert_eq!(vslice.slice, &[1, 2, 3, 4, 5]);
+        assert_eq!(vslice.elements, &[1, 2, 3, 4, 5]);
     }
 
     #[test]
@@ -183,7 +183,7 @@ mod tests {
         let data = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)];
         let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::new(&data);
         assert_eq!(
-            vslice.slice,
+            vslice.elements,
             &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0), Complex::new(5.0, 6.0),]
         );
     }
@@ -193,21 +193,21 @@ mod tests {
     fn test_vector_slice_from_range_middle() {
         let data = [10, 20, 30, 40, 50];
         let vslice: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&data, 1..4);
-        assert_eq!(vslice.slice, &[20, 30, 40]);
+        assert_eq!(vslice.elements, &[20, 30, 40]);
     }
 
     #[test]
     fn test_vector_slice_from_range_full() {
         let data = [7, 8, 9];
         let vslice: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..3);
-        assert_eq!(vslice.slice, &[7, 8, 9]);
+        assert_eq!(vslice.elements, &[7, 8, 9]);
     }
 
     #[test]
     fn test_vector_slice_from_range_empty() {
         let data = [1, 2, 3];
         let vslice: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&data, 1..1);
-        assert_eq!(vslice.slice, &[]);
+        assert_eq!(vslice.elements, &[]);
     }
 
     #[test]
@@ -221,7 +221,7 @@ mod tests {
         ];
         let vslice: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&data, 1..4);
         assert_eq!(
-            vslice.slice,
+            vslice.elements,
             &[Complex::new(20.0, 2.0), Complex::new(30.0, 3.0), Complex::new(40.0, 4.0),]
         );
     }
@@ -231,7 +231,7 @@ mod tests {
         let data = [Complex::new(7.0, 0.0), Complex::new(8.0, 1.0), Complex::new(9.0, 2.0)];
         let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&data, 0..3);
         assert_eq!(
-            vslice.slice,
+            vslice.elements,
             &[Complex::new(7.0, 0.0), Complex::new(8.0, 1.0), Complex::new(9.0, 2.0),]
         );
     }
@@ -240,7 +240,7 @@ mod tests {
     fn test_vector_slice_from_range_empty_complex() {
         let data = [Complex::new(1.0, 1.0), Complex::new(2.0, 2.0), Complex::new(3.0, 3.0)];
         let vslice: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&data, 1..1);
-        assert_eq!(vslice.slice, &[]);
+        assert_eq!(vslice.elements, &[]);
     }
 
     // -- Deref trait --
@@ -341,10 +341,10 @@ mod tests {
     fn test_vector_slice_mut_new() {
         let mut data = [1, 2, 3, 4, 5];
         let vslice: VectorSliceMut<'_, i32, Column> = VectorSliceMut::new(&mut data);
-        assert_eq!(vslice.slice, &mut [1, 2, 3, 4, 5]);
+        assert_eq!(vslice.elements, &mut [1, 2, 3, 4, 5]);
         // Mutate through the slice
-        vslice.slice[0] = 10;
-        assert_eq!(vslice.slice[0], 10);
+        vslice.elements[0] = 10;
+        assert_eq!(vslice.elements[0], 10);
         assert_eq!(data[0], 10);
     }
 
@@ -353,12 +353,12 @@ mod tests {
         let mut data = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)];
         let vslice: VectorSliceMut<'_, Complex<f64>, Column> = VectorSliceMut::new(&mut data);
         assert_eq!(
-            vslice.slice,
+            vslice.elements,
             &mut [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0), Complex::new(5.0, 6.0),]
         );
         // Mutate through the slice
-        vslice.slice[0] = Complex::new(7.0, 8.0);
-        assert_eq!(vslice.slice[0], Complex::new(7.0, 8.0));
+        vslice.elements[0] = Complex::new(7.0, 8.0);
+        assert_eq!(vslice.elements[0], Complex::new(7.0, 8.0));
     }
 
     // -- from_range --
@@ -367,8 +367,8 @@ mod tests {
         let mut data = [10, 20, 30, 40, 50];
         {
             let vslice: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut data, 1..4);
-            assert_eq!(vslice.slice, &mut [20, 30, 40]);
-            vslice.slice[1] = 99;
+            assert_eq!(vslice.elements, &mut [20, 30, 40]);
+            vslice.elements[1] = 99;
         }
         assert_eq!(data, [10, 20, 99, 40, 50]);
     }
@@ -379,8 +379,8 @@ mod tests {
         {
             let vslice: VectorSliceMut<'_, i32, Column> =
                 VectorSliceMut::from_range(&mut data, 0..3);
-            assert_eq!(vslice.slice, &mut [7, 8, 9]);
-            vslice.slice[2] = 42;
+            assert_eq!(vslice.elements, &mut [7, 8, 9]);
+            vslice.elements[2] = 42;
         }
         assert_eq!(data, [7, 8, 42]);
     }
@@ -389,7 +389,7 @@ mod tests {
     fn test_vector_slice_mut_from_range_empty() {
         let mut data = [1, 2, 3];
         let vslice: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut data, 1..1);
-        assert_eq!(vslice.slice, &mut []);
+        assert_eq!(vslice.elements, &mut []);
     }
 
     #[test]
@@ -405,10 +405,10 @@ mod tests {
             let vslice: VectorSliceMut<'_, Complex<f64>, Row> =
                 VectorSliceMut::from_range(&mut data, 1..4);
             assert_eq!(
-                vslice.slice,
+                vslice.elements,
                 &mut [Complex::new(20.0, 2.0), Complex::new(30.0, 3.0), Complex::new(40.0, 4.0),]
             );
-            vslice.slice[2] = Complex::new(99.0, 99.0);
+            vslice.elements[2] = Complex::new(99.0, 99.0);
         }
         assert_eq!(
             data,
@@ -429,10 +429,10 @@ mod tests {
             let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
                 VectorSliceMut::from_range(&mut data, 0..3);
             assert_eq!(
-                vslice.slice,
+                vslice.elements,
                 &mut [Complex::new(7.0, 0.0), Complex::new(8.0, 1.0), Complex::new(9.0, 2.0),]
             );
-            vslice.slice[1] = Complex::new(42.0, 24.0);
+            vslice.elements[1] = Complex::new(42.0, 24.0);
         }
         assert_eq!(
             data,
@@ -445,7 +445,7 @@ mod tests {
         let mut data = [Complex::new(1.0, 1.0), Complex::new(2.0, 2.0), Complex::new(3.0, 3.0)];
         let vslice: VectorSliceMut<'_, Complex<f64>, Row> =
             VectorSliceMut::from_range(&mut data, 1..1);
-        assert_eq!(vslice.slice, &mut []);
+        assert_eq!(vslice.elements, &mut []);
     }
 
     // -- Deref trait for VectorSliceMut --

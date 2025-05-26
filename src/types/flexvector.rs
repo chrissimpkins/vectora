@@ -40,7 +40,7 @@ use num::{Complex, Zero};
 #[derive(Clone)]
 pub struct FlexVector<T, O = Column> {
     /// ...
-    pub components: Vec<T>,
+    pub elements: Vec<T>,
     _orientation: PhantomData<O>,
 }
 
@@ -60,13 +60,13 @@ impl<T, O> FlexVector<T, O> {
     /// Creates a new, empty FlexVector.
     #[inline]
     pub fn new() -> Self {
-        Self { components: Vec::new(), _orientation: PhantomData }
+        Self { elements: Vec::new(), _orientation: PhantomData }
     }
 
     /// Creates a new FlexVector with a pre-allocated capacity.
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
-        Self { components: Vec::with_capacity(capacity), _orientation: PhantomData }
+        Self { elements: Vec::with_capacity(capacity), _orientation: PhantomData }
     }
 
     /// Returns a new FlexVector of the given length, filled with zeros.
@@ -75,7 +75,7 @@ impl<T, O> FlexVector<T, O> {
     where
         T: num::Zero + Clone,
     {
-        Self { components: vec![T::zero(); len], _orientation: PhantomData }
+        Self { elements: vec![T::zero(); len], _orientation: PhantomData }
     }
 
     /// Returns a new FlexVector of the given length, filled with ones.
@@ -84,7 +84,7 @@ impl<T, O> FlexVector<T, O> {
     where
         T: num::One + Clone,
     {
-        Self { components: vec![T::one(); len], _orientation: PhantomData }
+        Self { elements: vec![T::one(); len], _orientation: PhantomData }
     }
 
     /// Returns a new FlexVector of the given length, filled with the given value.
@@ -93,7 +93,7 @@ impl<T, O> FlexVector<T, O> {
     where
         T: Clone,
     {
-        Self { components: vec![value; len], _orientation: PhantomData }
+        Self { elements: vec![value; len], _orientation: PhantomData }
     }
 
     /// Creates a new FlexVector from a slice.
@@ -102,13 +102,13 @@ impl<T, O> FlexVector<T, O> {
     where
         T: Clone,
     {
-        Self { components: slice.to_vec(), _orientation: PhantomData }
+        Self { elements: slice.to_vec(), _orientation: PhantomData }
     }
 
     /// Creates a FlexVector from a Vec.
     #[inline]
     pub fn from_vec(vec: Vec<T>) -> Self {
-        Self { components: vec, _orientation: PhantomData }
+        Self { elements: vec, _orientation: PhantomData }
     }
 
     /// Creates a FlexVector from a Cow<T>.
@@ -126,8 +126,8 @@ impl<T, O> FlexVector<T, O> {
     where
         I: IntoIterator<Item = Result<T, E>>,
     {
-        let components: Result<Vec<T>, E> = iter.into_iter().collect();
-        components.map(|vec| FlexVector { components: vec, _orientation: PhantomData })
+        let elements: Result<Vec<T>, E> = iter.into_iter().collect();
+        elements.map(|vec| FlexVector { elements: vec, _orientation: PhantomData })
     }
 
     /// Creates a new [`FlexVector`] by calling the provided function or closure for each index.
@@ -144,8 +144,8 @@ impl<T, O> FlexVector<T, O> {
     where
         F: FnMut(usize) -> T,
     {
-        let components = (0..len).map(f).collect();
-        FlexVector { components, _orientation: PhantomData }
+        let elements = (0..len).map(f).collect();
+        FlexVector { elements, _orientation: PhantomData }
     }
 
     /// Fallibly creates a new [`FlexVector`] by calling the provided function or closure for each index.
@@ -164,11 +164,11 @@ impl<T, O> FlexVector<T, O> {
     where
         F: FnMut(usize) -> Result<T, E>,
     {
-        let mut components = Vec::with_capacity(len);
+        let mut elements = Vec::with_capacity(len);
         for i in 0..len {
-            components.push(f(i)?);
+            elements.push(f(i)?);
         }
-        Ok(FlexVector { components, _orientation: PhantomData })
+        Ok(FlexVector { elements, _orientation: PhantomData })
     }
 
     /// Returns a new FlexVector by repeating the pattern until length `len` is reached.
@@ -183,8 +183,8 @@ impl<T, O> FlexVector<T, O> {
                 "pattern must not be empty if len > 0".to_string(),
             ));
         }
-        let components = pattern.iter().cloned().cycle().take(len).collect();
-        Ok(FlexVector { components, _orientation: PhantomData })
+        let elements = pattern.iter().cloned().cycle().take(len).collect();
+        Ok(FlexVector { elements, _orientation: PhantomData })
     }
 }
 
@@ -211,7 +211,7 @@ where
     O: VectorOrientationName + 'static,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} FlexVector {:?}", O::orientation_name(), self.components)
+        write!(f, "{} FlexVector {:?}", O::orientation_name(), self.elements)
     }
 }
 
@@ -228,7 +228,7 @@ where
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FlexVector")
             .field("orientation", &O::orientation_name())
-            .field("components", &self.components)
+            .field("elements", &self.elements)
             .finish()
     }
 }
@@ -241,7 +241,7 @@ where
 impl<T, O> FromIterator<T> for FlexVector<T, O> {
     #[inline]
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        FlexVector { components: iter.into_iter().collect(), _orientation: PhantomData }
+        FlexVector { elements: iter.into_iter().collect(), _orientation: PhantomData }
     }
 }
 
@@ -254,14 +254,14 @@ impl<T, O> Deref for FlexVector<T, O> {
     type Target = [T];
     #[inline]
     fn deref(&self) -> &Self::Target {
-        &self.components
+        &self.elements
     }
 }
 
 impl<T, O> DerefMut for FlexVector<T, O> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.components
+        &mut self.elements
     }
 }
 
@@ -273,13 +273,13 @@ impl<T, O> DerefMut for FlexVector<T, O> {
 impl<T, O> AsRef<[T]> for FlexVector<T, O> {
     #[inline]
     fn as_ref(&self) -> &[T] {
-        &self.components
+        &self.elements
     }
 }
 impl<T, O> AsMut<[T]> for FlexVector<T, O> {
     #[inline]
     fn as_mut(&mut self) -> &mut [T] {
-        &mut self.components
+        &mut self.elements
     }
 }
 
@@ -291,13 +291,13 @@ impl<T, O> AsMut<[T]> for FlexVector<T, O> {
 impl<T, O> Borrow<[T]> for FlexVector<T, O> {
     #[inline]
     fn borrow(&self) -> &[T] {
-        &self.components
+        &self.elements
     }
 }
 impl<T, O> BorrowMut<[T]> for FlexVector<T, O> {
     #[inline]
     fn borrow_mut(&mut self) -> &mut [T] {
-        &mut self.components
+        &mut self.elements
     }
 }
 
@@ -312,7 +312,7 @@ impl<T, O> IntoIterator for FlexVector<T, O> {
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        self.components.into_iter()
+        self.elements.into_iter()
     }
 }
 impl<'a, T, O> IntoIterator for &'a FlexVector<T, O> {
@@ -321,7 +321,7 @@ impl<'a, T, O> IntoIterator for &'a FlexVector<T, O> {
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        self.components.iter()
+        self.elements.iter()
     }
 }
 impl<'a, T, O> IntoIterator for &'a mut FlexVector<T, O> {
@@ -330,7 +330,7 @@ impl<'a, T, O> IntoIterator for &'a mut FlexVector<T, O> {
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        self.components.iter_mut()
+        self.elements.iter_mut()
     }
 }
 
@@ -345,7 +345,7 @@ where
 {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.components == other.components
+        self.elements == other.elements
     }
 }
 impl<T, O> Eq for FlexVector<T, O> where T: Eq {}
@@ -361,7 +361,7 @@ where
 {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.components.partial_cmp(&other.components)
+        self.elements.partial_cmp(&other.elements)
     }
 }
 impl<T, O> Ord for FlexVector<T, O>
@@ -370,7 +370,7 @@ where
 {
     #[inline]
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.components.cmp(&other.components)
+        self.elements.cmp(&other.elements)
     }
 }
 
@@ -385,7 +385,7 @@ where
 {
     #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.components.hash(state)
+        self.elements.hash(state)
     }
 }
 
@@ -400,7 +400,7 @@ where
 {
     #[inline]
     fn from(vec: Vec<T>) -> Self {
-        FlexVector { components: vec, _orientation: PhantomData }
+        FlexVector { elements: vec, _orientation: PhantomData }
     }
 }
 
@@ -410,7 +410,7 @@ where
 {
     #[inline]
     fn from(slice: &[T]) -> Self {
-        FlexVector { components: slice.to_vec(), _orientation: PhantomData }
+        FlexVector { elements: slice.to_vec(), _orientation: PhantomData }
     }
 }
 
@@ -506,13 +506,13 @@ where
 impl<T> From<FlexVector<T, Column>> for FlexVector<T, Row> {
     #[inline]
     fn from(v: FlexVector<T, Column>) -> Self {
-        FlexVector { components: v.components, _orientation: PhantomData }
+        FlexVector { elements: v.elements, _orientation: PhantomData }
     }
 }
 impl<T> From<FlexVector<T, Row>> for FlexVector<T, Column> {
     #[inline]
     fn from(v: FlexVector<T, Row>) -> Self {
-        FlexVector { components: v.components, _orientation: PhantomData }
+        FlexVector { elements: v.elements, _orientation: PhantomData }
     }
 }
 
@@ -526,7 +526,7 @@ impl<T, O> Index<usize> for FlexVector<T, O> {
 
     #[inline]
     fn index(&self, idx: usize) -> &Self::Output {
-        &self.components[idx]
+        &self.elements[idx]
     }
 }
 
@@ -535,7 +535,7 @@ impl<T, O> Index<Range<usize>> for FlexVector<T, O> {
 
     #[inline]
     fn index(&self, range: Range<usize>) -> &Self::Output {
-        &self.components[range]
+        &self.elements[range]
     }
 }
 
@@ -544,7 +544,7 @@ impl<T, O> Index<RangeFrom<usize>> for FlexVector<T, O> {
 
     #[inline]
     fn index(&self, range: RangeFrom<usize>) -> &Self::Output {
-        &self.components[range]
+        &self.elements[range]
     }
 }
 
@@ -553,7 +553,7 @@ impl<T, O> Index<RangeTo<usize>> for FlexVector<T, O> {
 
     #[inline]
     fn index(&self, range: RangeTo<usize>) -> &Self::Output {
-        &self.components[range]
+        &self.elements[range]
     }
 }
 
@@ -562,7 +562,7 @@ impl<T, O> Index<RangeFull> for FlexVector<T, O> {
 
     #[inline]
     fn index(&self, range: RangeFull) -> &Self::Output {
-        &self.components[range]
+        &self.elements[range]
     }
 }
 
@@ -571,7 +571,7 @@ impl<T, O> Index<RangeInclusive<usize>> for FlexVector<T, O> {
 
     #[inline]
     fn index(&self, range: RangeInclusive<usize>) -> &Self::Output {
-        &self.components[range]
+        &self.elements[range]
     }
 }
 
@@ -580,7 +580,7 @@ impl<T, O> Index<RangeToInclusive<usize>> for FlexVector<T, O> {
 
     #[inline]
     fn index(&self, range: RangeToInclusive<usize>) -> &Self::Output {
-        &self.components[range]
+        &self.elements[range]
     }
 }
 
@@ -592,49 +592,49 @@ impl<T, O> Index<RangeToInclusive<usize>> for FlexVector<T, O> {
 impl<T, O> IndexMut<usize> for FlexVector<T, O> {
     #[inline]
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
-        &mut self.components[idx]
+        &mut self.elements[idx]
     }
 }
 
 impl<T, O> IndexMut<Range<usize>> for FlexVector<T, O> {
     #[inline]
     fn index_mut(&mut self, range: Range<usize>) -> &mut Self::Output {
-        &mut self.components[range]
+        &mut self.elements[range]
     }
 }
 
 impl<T, O> IndexMut<RangeFrom<usize>> for FlexVector<T, O> {
     #[inline]
     fn index_mut(&mut self, range: RangeFrom<usize>) -> &mut Self::Output {
-        &mut self.components[range]
+        &mut self.elements[range]
     }
 }
 
 impl<T, O> IndexMut<RangeTo<usize>> for FlexVector<T, O> {
     #[inline]
     fn index_mut(&mut self, range: RangeTo<usize>) -> &mut Self::Output {
-        &mut self.components[range]
+        &mut self.elements[range]
     }
 }
 
 impl<T, O> IndexMut<RangeFull> for FlexVector<T, O> {
     #[inline]
     fn index_mut(&mut self, range: RangeFull) -> &mut Self::Output {
-        &mut self.components[range]
+        &mut self.elements[range]
     }
 }
 
 impl<T, O> IndexMut<RangeInclusive<usize>> for FlexVector<T, O> {
     #[inline]
     fn index_mut(&mut self, range: RangeInclusive<usize>) -> &mut Self::Output {
-        &mut self.components[range]
+        &mut self.elements[range]
     }
 }
 
 impl<T, O> IndexMut<RangeToInclusive<usize>> for FlexVector<T, O> {
     #[inline]
     fn index_mut(&mut self, range: RangeToInclusive<usize>) -> &mut Self::Output {
-        &mut self.components[range]
+        &mut self.elements[range]
     }
 }
 
@@ -646,7 +646,7 @@ impl<T, O> IndexMut<RangeToInclusive<usize>> for FlexVector<T, O> {
 impl<T, O> Extend<T> for FlexVector<T, O> {
     #[inline]
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
-        self.components.extend(iter)
+        self.elements.extend(iter)
     }
 }
 
@@ -656,16 +656,16 @@ impl<T, O> Extend<T> for FlexVector<T, O> {
 //
 // ================================
 impl<T, O> VectorBase<T> for FlexVector<T, O> {
-    /// Returns an immutable slice of the FlexVector's components.
+    /// Returns an immutable slice of the FlexVector's elements.
     #[inline]
     fn as_slice(&self) -> &[T] {
-        &self.components
+        &self.elements
     }
 
-    /// Returns a mutable slice of the FlexVector's components.
+    /// Returns a mutable slice of the FlexVector's elements.
     #[inline]
     fn as_mut_slice(&mut self) -> &mut [T] {
-        &mut self.components[..]
+        &mut self.elements[..]
     }
 }
 
@@ -680,7 +680,7 @@ impl<T> Transposable for FlexVector<T, Row> {
 
     #[inline]
     fn transpose(self) -> Self::Transposed {
-        FlexVector { components: self.components, _orientation: PhantomData }
+        FlexVector { elements: self.elements, _orientation: PhantomData }
     }
 }
 
@@ -689,7 +689,7 @@ impl<T> Transposable for FlexVector<T, Column> {
 
     #[inline]
     fn transpose(self) -> Self::Transposed {
-        FlexVector { components: self.components, _orientation: PhantomData }
+        FlexVector { elements: self.elements, _orientation: PhantomData }
     }
 }
 
@@ -806,13 +806,13 @@ where
         T: PartialOrd + Clone,
     {
         self.check_same_length_and_raise(other)?;
-        let components = self
+        let elements = self
             .as_slice()
             .iter()
             .zip(other.as_slice())
             .map(|(a, b)| if a < b { a.clone() } else { b.clone() })
             .collect();
-        Ok(FlexVector { components, _orientation: PhantomData })
+        Ok(FlexVector { elements, _orientation: PhantomData })
     }
 
     /// Element-wise max
@@ -822,13 +822,13 @@ where
         T: PartialOrd + Clone,
     {
         self.check_same_length_and_raise(other)?;
-        let components = self
+        let elements = self
             .as_slice()
             .iter()
             .zip(other.as_slice())
             .map(|(a, b)| if a > b { a.clone() } else { b.clone() })
             .collect();
-        Ok(FlexVector { components, _orientation: PhantomData })
+        Ok(FlexVector { elements, _orientation: PhantomData })
     }
 }
 
@@ -1244,7 +1244,7 @@ impl<T, O> FlexVector<T, O> {
     where
         T: Clone,
     {
-        FlexVector { components: self.components.clone(), _orientation: PhantomData }
+        FlexVector { elements: self.elements.clone(), _orientation: PhantomData }
     }
 
     /// ...
@@ -1253,43 +1253,43 @@ impl<T, O> FlexVector<T, O> {
     where
         T: Clone,
     {
-        FlexVector { components: self.components.clone(), _orientation: PhantomData }
+        FlexVector { elements: self.elements.clone(), _orientation: PhantomData }
     }
 
     /// Consumes self and returns a Row-oriented FlexVector.
     #[inline]
     pub fn into_row(self) -> FlexVector<T, crate::types::orientation::Row> {
-        FlexVector { components: self.components, _orientation: std::marker::PhantomData }
+        FlexVector { elements: self.elements, _orientation: std::marker::PhantomData }
     }
 
     /// Consumes self and returns a Column-oriented FlexVector.
     #[inline]
     pub fn into_column(self) -> FlexVector<T, crate::types::orientation::Column> {
-        FlexVector { components: self.components, _orientation: std::marker::PhantomData }
+        FlexVector { elements: self.elements, _orientation: std::marker::PhantomData }
     }
 
     /// Adds an element to the end of the vector.
     #[inline]
     pub fn push(&mut self, value: T) {
-        self.components.push(value);
+        self.elements.push(value);
     }
 
     /// Removes the last element and returns it, or None if empty.
     #[inline]
     pub fn pop(&mut self) -> Option<T> {
-        self.components.pop()
+        self.elements.pop()
     }
 
     /// Inserts an element at position index, shifting all elements after it.
     #[inline]
     pub fn insert(&mut self, index: usize, value: T) {
-        self.components.insert(index, value);
+        self.elements.insert(index, value);
     }
 
     /// Removes and returns the element at position index.
     #[inline]
     pub fn remove(&mut self, index: usize) -> T {
-        self.components.remove(index)
+        self.elements.remove(index)
     }
 
     /// Resizes the vector in-place.
@@ -1298,13 +1298,13 @@ impl<T, O> FlexVector<T, O> {
     where
         T: Clone,
     {
-        self.components.resize(new_len, value);
+        self.elements.resize(new_len, value);
     }
 
     /// Clears the vector, removing all values.
     #[inline]
     pub fn clear(&mut self) {
-        self.components.clear();
+        self.elements.clear();
     }
 
     /// Returns a mutable reference to a FlexVector index value or range,
@@ -1314,13 +1314,13 @@ impl<T, O> FlexVector<T, O> {
     where
         I: std::slice::SliceIndex<[T]>,
     {
-        self.components.get_mut(index)
+        self.elements.get_mut(index)
     }
 
     /// Returns an iterator over mutable references to the elements.
     #[inline]
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T> {
-        self.components.iter_mut()
+        self.elements.iter_mut()
     }
 
     /// Returns a new FlexVector with each element mapped to a new value using the provided closure or function.
@@ -1330,8 +1330,8 @@ impl<T, O> FlexVector<T, O> {
         F: FnMut(T) -> U,
         T: Clone,
     {
-        let components = self.components.iter().cloned().map(&mut f).collect();
-        FlexVector { components, _orientation: PhantomData }
+        let elements = self.elements.iter().cloned().map(&mut f).collect();
+        FlexVector { elements, _orientation: PhantomData }
     }
 
     /// Applies a closure or function to each element, modifying them in place.
@@ -1341,7 +1341,7 @@ impl<T, O> FlexVector<T, O> {
         F: FnMut(T) -> T,
         T: Clone,
     {
-        for x in self.components.iter_mut() {
+        for x in self.elements.iter_mut() {
             *x = f(x.clone());
         }
     }
@@ -1353,8 +1353,8 @@ impl<T, O> FlexVector<T, O> {
         F: FnMut(T) -> I,
         I: IntoIterator<Item = U>,
     {
-        let components = self.components.into_iter().flat_map(&mut f).collect();
-        FlexVector { components, _orientation: PhantomData }
+        let elements = self.elements.into_iter().flat_map(&mut f).collect();
+        FlexVector { elements, _orientation: PhantomData }
     }
 
     /// Returns a new FlexVector containing only the elements that satisfy the predicate.
@@ -1364,8 +1364,8 @@ impl<T, O> FlexVector<T, O> {
         F: FnMut(&T) -> bool,
         T: Clone,
     {
-        let components = self.components.iter().filter(|&x| predicate(x)).cloned().collect();
-        FlexVector { components, _orientation: PhantomData }
+        let elements = self.elements.iter().filter(|&x| predicate(x)).cloned().collect();
+        FlexVector { elements, _orientation: PhantomData }
     }
 
     /// Reduces the elements to a single value using the provided closure, or returns None if empty.
@@ -1375,7 +1375,7 @@ impl<T, O> FlexVector<T, O> {
         F: FnMut(T, T) -> T,
         T: Clone,
     {
-        let mut iter = self.components.iter().cloned();
+        let mut iter = self.elements.iter().cloned();
         let first = iter.next()?;
         Some(iter.fold(first, &mut f))
     }
@@ -1386,15 +1386,15 @@ impl<T, O> FlexVector<T, O> {
     where
         F: FnMut(B, &T) -> B,
     {
-        self.components.iter().fold(init, &mut f)
+        self.elements.iter().fold(init, &mut f)
     }
 
     /// Zips two FlexVectors into a FlexVector of pairs.
     #[inline]
     pub fn zip<U>(self, other: FlexVector<U>) -> FlexVector<(T, U), O> {
         let len = self.len().min(other.len());
-        let components = self.components.into_iter().zip(other.components).take(len).collect();
-        FlexVector { components, _orientation: PhantomData }
+        let elements = self.elements.into_iter().zip(other.elements).take(len).collect();
+        FlexVector { elements, _orientation: PhantomData }
     }
 
     /// Zips two FlexVectors with a function, producing a FlexVector of the function's output.
@@ -1404,14 +1404,9 @@ impl<T, O> FlexVector<T, O> {
         F: FnMut(T, U) -> R,
     {
         let len = self.len().min(other.len());
-        let components = self
-            .components
-            .into_iter()
-            .zip(other.components)
-            .map(|(a, b)| f(a, b))
-            .take(len)
-            .collect();
-        FlexVector { components, _orientation: PhantomData }
+        let elements =
+            self.elements.into_iter().zip(other.elements).map(|(a, b)| f(a, b)).take(len).collect();
+        FlexVector { elements, _orientation: PhantomData }
     }
 
     /// Returns a new FlexVector containing every `step`th element, starting from the first.
@@ -1424,8 +1419,8 @@ impl<T, O> FlexVector<T, O> {
         if step == 0 {
             return Err(VectorError::ValueError("step must be non-zero".to_string()));
         }
-        let components = self.components.iter().step_by(step).cloned().collect();
-        Ok(FlexVector { components, _orientation: PhantomData })
+        let elements = self.elements.iter().step_by(step).cloned().collect();
+        Ok(FlexVector { elements, _orientation: PhantomData })
     }
 
     /// Returns a boolean vector mask where each element is the result of applying the predicate to the corresponding element.
@@ -1434,7 +1429,7 @@ impl<T, O> FlexVector<T, O> {
     where
         F: FnMut(&T) -> bool,
     {
-        self.components.iter().map(predicate).collect()
+        self.elements.iter().map(predicate).collect()
     }
 
     /// Returns a new FlexVector containing elements where the corresponding mask value is true.
@@ -1448,50 +1443,50 @@ impl<T, O> FlexVector<T, O> {
                 "Mask length must match vector length".to_string(),
             ));
         }
-        let components = self
-            .components
+        let elements = self
+            .elements
             .iter()
             .zip(mask)
             .filter_map(|(x, &m)| if m { Some(x.clone()) } else { None })
             .collect();
-        Ok(FlexVector { components, _orientation: PhantomData })
+        Ok(FlexVector { elements, _orientation: PhantomData })
     }
 
     /// Consumes the FlexVector and returns a Vec<T>.
     #[inline]
     pub fn into_vec(self) -> Vec<T> {
-        self.components
+        self.elements
     }
 
     /// Consumes the FlexVector and returns a Box<T>.
     #[inline]
     pub fn into_boxed_slice(self) -> Box<[T]> {
-        self.components.into_boxed_slice()
+        self.elements.into_boxed_slice()
     }
 
     /// Consumes the FlexVector and returns an Arc<T>.
     #[cfg(target_has_atomic = "ptr")]
     #[inline]
     pub fn into_arc_slice(self) -> std::sync::Arc<[T]> {
-        std::sync::Arc::from(self.components)
+        std::sync::Arc::from(self.elements)
     }
 
     /// Consumes the FlexVector and returns a Rc<T>.
     #[inline]
     pub fn into_rc_slice(self) -> std::rc::Rc<[T]> {
-        std::rc::Rc::from(self.components)
+        std::rc::Rc::from(self.elements)
     }
 
     /// Create a VectorSlice from a FlexVector.
     #[inline]
     pub fn as_vslice(&self, range: std::ops::Range<usize>) -> VectorSlice<'_, T, O> {
-        VectorSlice::new(&self.components[range])
+        VectorSlice::new(&self.elements[range])
     }
 
     /// Create a mutable VectorSliceMut from a FlexVector.
     #[inline]
     pub fn as_mut_vslice(&mut self, range: std::ops::Range<usize>) -> VectorSliceMut<'_, T, O> {
-        VectorSliceMut::new(&mut self.components[range])
+        VectorSliceMut::new(&mut self.elements[range])
     }
 
     // ================================
@@ -1519,7 +1514,7 @@ where
     /// Returns a FlexVector of owned values by cloning each referenced element.
     #[inline]
     pub fn cloned(&self) -> FlexVector<T, O> {
-        FlexVector::from_vec(self.components.iter().map(|&x| x.clone()).collect())
+        FlexVector::from_vec(self.elements.iter().map(|&x| x.clone()).collect())
     }
 }
 
@@ -1530,8 +1525,8 @@ where
     /// Flattens a FlexVector of iterables into a single FlexVector by concatenating all elements.
     #[inline]
     pub fn flatten(self) -> FlexVector<T, O> {
-        let components = self.components.into_iter().flatten().collect();
-        FlexVector { components, _orientation: PhantomData }
+        let elements = self.elements.into_iter().flatten().collect();
+        FlexVector { elements, _orientation: PhantomData }
     }
 }
 
@@ -1543,8 +1538,8 @@ where
     /// Flattens a FlexVector of iterables into a single FlexVector by concatenating all elements as cloned elements.
     #[inline]
     pub fn flatten_cloned(self) -> FlexVector<T, O> {
-        let components = self.components.into_iter().flat_map(|v| v.into_iter().cloned()).collect();
-        FlexVector { components, _orientation: PhantomData }
+        let elements = self.elements.into_iter().flat_map(|v| v.into_iter().cloned()).collect();
+        FlexVector { elements, _orientation: PhantomData }
     }
 }
 
@@ -1627,14 +1622,14 @@ mod tests {
     fn test_with_capacity() {
         let v = FlexVector::<i32>::with_capacity(10);
         assert_eq!(v.len(), 0);
-        assert!(v.components.capacity() >= 10);
+        assert!(v.elements.capacity() >= 10);
     }
 
     #[test]
     fn test_with_capacity_large() {
         let v = FlexVector::<i32>::with_capacity(1000);
         assert_eq!(v.len(), 0);
-        assert!(v.components.capacity() >= 1000);
+        assert!(v.elements.capacity() >= 1000);
     }
 
     #[test]
@@ -2271,14 +2266,14 @@ mod tests {
         assert!(debug_col.contains("FlexVector"));
         assert!(debug_col.contains("orientation"));
         assert!(debug_col.contains("Column"));
-        assert!(debug_col.contains("components"));
+        assert!(debug_col.contains("elements"));
         assert!(debug_col.contains("1"));
         assert!(debug_col.contains("2"));
         assert!(debug_col.contains("3"));
         assert!(debug_row.contains("FlexVector"));
         assert!(debug_row.contains("orientation"));
         assert!(debug_row.contains("Row"));
-        assert!(debug_row.contains("components"));
+        assert!(debug_row.contains("elements"));
         assert!(debug_row.contains("4"));
         assert!(debug_row.contains("5"));
         assert!(debug_row.contains("6"));
@@ -2293,13 +2288,13 @@ mod tests {
         assert!(debug_col.contains("FlexVector"));
         assert!(debug_col.contains("orientation"));
         assert!(debug_col.contains("Column"));
-        assert!(debug_col.contains("components"));
+        assert!(debug_col.contains("elements"));
         assert!(debug_col.contains("1.1"));
         assert!(debug_col.contains("2.2"));
         assert!(debug_row.contains("FlexVector"));
         assert!(debug_row.contains("orientation"));
         assert!(debug_row.contains("Row"));
-        assert!(debug_row.contains("components"));
+        assert!(debug_row.contains("elements"));
         assert!(debug_row.contains("3.3"));
         assert!(debug_row.contains("4.4"));
     }
@@ -2319,13 +2314,13 @@ mod tests {
         assert!(debug_col.contains("FlexVector"));
         assert!(debug_col.contains("orientation"));
         assert!(debug_col.contains("Column"));
-        assert!(debug_col.contains("components"));
+        assert!(debug_col.contains("elements"));
         assert!(debug_col.contains("1.0"));
         assert!(debug_col.contains("2.0"));
         assert!(debug_row.contains("FlexVector"));
         assert!(debug_row.contains("orientation"));
         assert!(debug_row.contains("Row"));
-        assert!(debug_row.contains("components"));
+        assert!(debug_row.contains("elements"));
         assert!(debug_row.contains("5.0"));
         assert!(debug_row.contains("6.0"));
     }
@@ -2337,7 +2332,7 @@ mod tests {
         assert!(debug.contains("FlexVector"));
         assert!(debug.contains("orientation"));
         assert!(debug.contains("Column")); // Default orientation is Column
-        assert!(debug.contains("components"));
+        assert!(debug.contains("elements"));
         assert!(debug.contains("[]"));
     }
 
@@ -6345,7 +6340,7 @@ mod tests {
         let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
         let midpoint = v1.midpoint(&v2).unwrap();
-        // Should be the average of each component
+        // Should be the average of each element
         assert!((midpoint.as_slice()[0] - 2.5).abs() < 1e-12);
         assert!((midpoint.as_slice()[1] - 3.5).abs() < 1e-12);
         assert!((midpoint.as_slice()[2] - 4.5).abs() < 1e-12);
