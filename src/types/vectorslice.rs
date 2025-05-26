@@ -1,6 +1,8 @@
 //! VectorSlice types.
 
 use crate::types::orientation::Column;
+use crate::types::traits::VectorOrientationName;
+use std::fmt;
 use std::marker::PhantomData;
 
 // /////////////////////////////////
@@ -12,7 +14,7 @@ use std::marker::PhantomData;
 // /////////////////////////////////
 
 /// ...
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct VectorSlice<'a, T, O = Column> {
     /// ...
     pub elements: &'a [T],
@@ -76,6 +78,29 @@ impl<'a, T, O> IntoIterator for &'a VectorSlice<'a, T, O> {
     }
 }
 
+impl<'a, T, O> fmt::Display for VectorSlice<'a, T, O>
+where
+    T: fmt::Debug,
+    O: VectorOrientationName + 'static,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} VectorSlice {:?}", O::orientation_name(), self.elements)
+    }
+}
+
+impl<'a, T, O> std::fmt::Debug for VectorSlice<'a, T, O>
+where
+    T: std::fmt::Debug,
+    O: VectorOrientationName + 'static,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("VectorSlice")
+            .field("orientation", &O::orientation_name())
+            .field("elements", &self.elements)
+            .finish()
+    }
+}
+
 // /////////////////////////////////
 // ================================
 //
@@ -85,7 +110,6 @@ impl<'a, T, O> IntoIterator for &'a VectorSlice<'a, T, O> {
 // /////////////////////////////////
 
 /// ...
-#[derive(Debug)]
 pub struct VectorSliceMut<'a, T, O = Column> {
     /// ...
     pub elements: &'a mut [T],
@@ -152,6 +176,29 @@ impl<'a, T, O> IntoIterator for &'a mut VectorSliceMut<'a, T, O> {
 
     fn into_iter(self) -> Self::IntoIter {
         self.elements.iter_mut()
+    }
+}
+
+impl<'a, T, O> fmt::Display for VectorSliceMut<'a, T, O>
+where
+    T: fmt::Debug,
+    O: VectorOrientationName + 'static,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} VectorSliceMut {:?}", O::orientation_name(), self.elements)
+    }
+}
+
+impl<'a, T, O> std::fmt::Debug for VectorSliceMut<'a, T, O>
+where
+    T: std::fmt::Debug,
+    O: VectorOrientationName + 'static,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("VectorSliceMut")
+            .field("orientation", &O::orientation_name())
+            .field("elements", &self.elements)
+            .finish()
     }
 }
 
@@ -243,7 +290,7 @@ mod tests {
         assert_eq!(vslice.elements, &[]);
     }
 
-    // -- Deref trait --
+    // -- Deref trait for VectorSlice --
     #[test]
     fn test_vector_slice_deref_access() {
         let data = [1, 2, 3, 4, 5];
@@ -270,7 +317,7 @@ mod tests {
         assert!(vslice.contains(&Complex::new(3.0, 4.0)));
     }
 
-    // -- AsRef trait --
+    // -- AsRef trait for VectorSlice --
 
     #[test]
     fn test_vector_slice_as_ref_basic() {
@@ -326,6 +373,55 @@ mod tests {
             collected,
             vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]
         );
+    }
+
+    // -- Display trait for VectorSlice --
+
+    #[test]
+    fn test_vector_slice_display() {
+        let data = [1, 2, 3];
+        let vslice: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..3);
+        let display = format!("{}", vslice);
+        // The exact string depends on your orientation name implementation
+        assert!(display.contains("Column VectorSlice"));
+        assert!(display.contains("[1, 2, 3]"));
+    }
+
+    #[test]
+    fn test_vector_slice_display_complex() {
+        let data = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&data, 0..2);
+        let display = format!("{}", vslice);
+        assert!(display.contains("Row VectorSlice"));
+        assert!(display.contains("Complex { re: 1.0, im: 2.0 }"));
+        assert!(display.contains("Complex { re: 3.0, im: 4.0 }"));
+    }
+
+    // -- Debug trait for VectorSlice --
+
+    #[test]
+    fn test_vector_slice_debug() {
+        let data = [1, 2, 3];
+        let vslice: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..3);
+        let debug = format!("{:?}", vslice);
+        assert!(debug.contains("VectorSlice"));
+        assert!(debug.contains("orientation"));
+        assert!(debug.contains("elements"));
+        assert!(debug.contains("1"));
+        assert!(debug.contains("2"));
+        assert!(debug.contains("3"));
+    }
+
+    #[test]
+    fn test_vector_slice_debug_complex() {
+        let data = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&data, 0..2);
+        let debug = format!("{:?}", vslice);
+        assert!(debug.contains("VectorSlice"));
+        assert!(debug.contains("orientation"));
+        assert!(debug.contains("elements"));
+        assert!(debug.contains("Complex { re: 1.0, im: 2.0 }"));
+        assert!(debug.contains("Complex { re: 3.0, im: 4.0 }"));
     }
 
     // /////////////////////////////////
@@ -569,5 +665,55 @@ mod tests {
             x.im += 1.0;
         }
         assert_eq!(data, [Complex::new(1.0, 3.0), Complex::new(3.0, 5.0), Complex::new(5.0, 7.0)]);
+    }
+
+    // -- Display trait for VectorSliceMut --
+
+    #[test]
+    fn test_vector_slice_mut_display() {
+        let mut data = [10, 20, 30];
+        let vslice: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data, 0..3);
+        let display = format!("{}", vslice);
+        assert!(display.contains("Column VectorSliceMut"));
+        assert!(display.contains("[10, 20, 30]"));
+    }
+
+    #[test]
+    fn test_vector_slice_mut_display_complex() {
+        let mut data = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut data, 0..2);
+        let display = format!("{}", vslice);
+        assert!(display.contains("Row VectorSliceMut"));
+        assert!(display.contains("Complex { re: 5.0, im: 6.0 }"));
+        assert!(display.contains("Complex { re: 7.0, im: 8.0 }"));
+    }
+
+    // -- Debug trait for VectorSliceMut --
+
+    #[test]
+    fn test_vector_slice_mut_debug() {
+        let mut data = [10, 20, 30];
+        let vslice: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data, 0..3);
+        let debug = format!("{:?}", vslice);
+        assert!(debug.contains("VectorSliceMut"));
+        assert!(debug.contains("orientation"));
+        assert!(debug.contains("elements"));
+        assert!(debug.contains("10"));
+        assert!(debug.contains("20"));
+        assert!(debug.contains("30"));
+    }
+
+    #[test]
+    fn test_vector_slice_mut_debug_complex() {
+        let mut data = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut data, 0..2);
+        let debug = format!("{:?}", vslice);
+        assert!(debug.contains("VectorSliceMut"));
+        assert!(debug.contains("orientation"));
+        assert!(debug.contains("elements"));
+        assert!(debug.contains("Complex { re: 5.0, im: 6.0 }"));
+        assert!(debug.contains("Complex { re: 7.0, im: 8.0 }"));
     }
 }
