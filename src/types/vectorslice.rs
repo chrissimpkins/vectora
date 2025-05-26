@@ -101,6 +101,35 @@ where
     }
 }
 
+impl<'a, T, O> std::hash::Hash for VectorSlice<'a, T, O>
+where
+    T: std::hash::Hash,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.elements.hash(state);
+    }
+}
+
+impl<'a, T, O> Ord for VectorSlice<'a, T, O>
+where
+    T: Ord,
+    O: Eq,
+{
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.elements.cmp(other.elements)
+    }
+}
+
+impl<'a, T, O> PartialOrd for VectorSlice<'a, T, O>
+where
+    T: PartialOrd,
+    O: PartialEq,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.elements.partial_cmp(other.elements)
+    }
+}
+
 // /////////////////////////////////
 // ================================
 //
@@ -208,6 +237,8 @@ mod tests {
     use crate::prelude::{FlexVector, VectorBase};
     use crate::types::orientation::{Column, Row};
     use num::Complex;
+    use std::collections::hash_map::DefaultHasher;
+    use std::hash::{Hash, Hasher};
 
     // /////////////////////////////////
     // ================================
@@ -422,6 +453,91 @@ mod tests {
         assert!(debug.contains("elements"));
         assert!(debug.contains("Complex { re: 1.0, im: 2.0 }"));
         assert!(debug.contains("Complex { re: 3.0, im: 4.0 }"));
+    }
+
+    // -- Hash trait for VectorSlice --
+
+    #[test]
+    fn test_vector_slice_hash_basic() {
+        let data = [1, 2, 3, 4];
+        let vslice1: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 1..4);
+        let vslice2: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 1..4);
+
+        let mut hasher1 = DefaultHasher::new();
+        vslice1.hash(&mut hasher1);
+        let hash1 = hasher1.finish();
+
+        let mut hasher2 = DefaultHasher::new();
+        vslice2.hash(&mut hasher2);
+        let hash2 = hasher2.finish();
+
+        assert_eq!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_vector_slice_hash_different() {
+        let data = [1, 2, 3, 4];
+        let vslice1: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..3);
+        let vslice2: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 1..4);
+
+        let mut hasher1 = DefaultHasher::new();
+        vslice1.hash(&mut hasher1);
+        let hash1 = hasher1.finish();
+
+        let mut hasher2 = DefaultHasher::new();
+        vslice2.hash(&mut hasher2);
+        let hash2 = hasher2.finish();
+
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_vector_slice_hash_complex() {
+        let data = [Complex::new(1, 2), Complex::new(3, 4), Complex::new(5, 6)];
+        let vslice1: VectorSlice<'_, Complex<i32>, Row> = VectorSlice::from_range(&data, 0..2);
+        let vslice2: VectorSlice<'_, Complex<i32>, Row> = VectorSlice::from_range(&data, 0..2);
+
+        let mut hasher1 = DefaultHasher::new();
+        vslice1.hash(&mut hasher1);
+        let hash1 = hasher1.finish();
+
+        let mut hasher2 = DefaultHasher::new();
+        vslice2.hash(&mut hasher2);
+        let hash2 = hasher2.finish();
+
+        assert_eq!(hash1, hash2);
+    }
+
+    // -- Ord / PartialOrd traits for VectorSlice --
+
+    #[test]
+    fn test_vector_slice_ord_basic() {
+        let data = [1, 2, 3, 4, 5];
+        let vslice1: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 1..4); // [2, 3, 4]
+        let vslice2: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 2..5); // [3, 4, 5]
+        assert!(vslice1 < vslice2);
+        assert!(vslice2 > vslice1);
+        assert_eq!(vslice1, VectorSlice::from_range(&data, 1..4));
+    }
+
+    #[test]
+    fn test_vector_slice_ord_equal() {
+        let data = [10, 20, 30];
+        let vslice1: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&data, 0..3);
+        let vslice2: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&data, 0..3);
+        assert_eq!(vslice1, vslice2);
+        assert!(vslice1 <= vslice2);
+        assert!(vslice1 >= vslice2);
+    }
+
+    #[test]
+    fn test_vector_slice_partial_ord_f64() {
+        let data = [1.0, 2.0, 3.0, 4.0];
+        let vslice1: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&data, 0..3); // [1.0, 2.0, 3.0]
+        let vslice2: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&data, 1..4); // [2.0, 3.0, 4.0]
+        assert!(vslice1 < vslice2);
+        assert!(vslice2 > vslice1);
+        assert_eq!(vslice1.partial_cmp(&vslice1), Some(std::cmp::Ordering::Equal));
     }
 
     // /////////////////////////////////
