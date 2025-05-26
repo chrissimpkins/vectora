@@ -16,7 +16,8 @@ use crate::{
     types::orientation::Column, types::orientation::Row, types::orientation::VectorOrientation,
     types::traits::Transposable, types::traits::VectorBase, types::traits::VectorHasOrientation,
     types::traits::VectorOps, types::traits::VectorOpsComplex, types::traits::VectorOpsFloat,
-    types::traits::VectorOrientationName,
+    types::traits::VectorOrientationName, types::vectorslice::VectorSlice,
+    types::vectorslice::VectorSliceMut,
 };
 
 use crate::types::utils::{
@@ -402,6 +403,7 @@ where
         FlexVector { components: vec, _orientation: PhantomData }
     }
 }
+
 impl<T, O> From<&[T]> for FlexVector<T, O>
 where
     T: Clone,
@@ -1478,6 +1480,18 @@ impl<T, O> FlexVector<T, O> {
     #[inline]
     pub fn into_rc_slice(self) -> std::rc::Rc<[T]> {
         std::rc::Rc::from(self.components)
+    }
+
+    /// Create a VectorSlice from a FlexVector.
+    #[inline]
+    pub fn as_vslice(&self, range: std::ops::Range<usize>) -> VectorSlice<'_, T, O> {
+        VectorSlice::new(&self.components[range])
+    }
+
+    /// Create a mutable VectorSliceMut from a FlexVector.
+    #[inline]
+    pub fn as_mut_vslice(&mut self, range: std::ops::Range<usize>) -> VectorSliceMut<'_, T, O> {
+        VectorSliceMut::new(&mut self.components[range])
     }
 
     // ================================

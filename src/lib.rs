@@ -914,6 +914,7 @@ pub mod prelude {
     pub use crate::types::flexvector::FlexVector;
     pub use crate::types::orientation::{Column, Row, VectorOrientation};
     pub use crate::types::vector::Vector;
+    pub use crate::types::vectorslice::{VectorSlice, VectorSliceMut};
     // Macros
     pub use crate::{fv, fv_from, fv_iter, try_fv_iter, try_vector, vector};
 }
