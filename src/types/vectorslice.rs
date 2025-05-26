@@ -142,7 +142,7 @@ impl<'a, T, O> IntoIterator for VectorSliceMut<'a, T, O> {
     type IntoIter = std::slice::IterMut<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.elements.into_iter()
+        self.elements.iter_mut()
     }
 }
 
