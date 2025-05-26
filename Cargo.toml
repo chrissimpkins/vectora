@@ -34,3 +34,6 @@ harness = false
 [package.metadata.docs.rs]
 # Whether to pass `--all-features` to Cargo (default: false)
 all-features = true
+
+[profile.release]
+lto = true
