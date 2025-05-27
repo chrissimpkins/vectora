@@ -1047,7 +1047,7 @@ where
 // VectorOpsComplex trait impl
 //
 // ================================
-// TODO: add tests
+
 impl<N, O> VectorOpsComplex<N> for FlexVector<Complex<N>, O>
 where
     N: num::Float + Clone + std::iter::Sum<N>,
@@ -1197,7 +1197,6 @@ where
     }
 }
 
-// TODO: add tests
 impl<N, O> VectorOpsComplexMut<N> for FlexVector<Complex<N>, O>
 where
     N: num::Float + Clone + std::iter::Sum<N>,
@@ -5519,6 +5518,77 @@ mod tests {
         assert_eq!(&*rc, &[7, 8, 9]);
     }
 
+    // -- as_vslice --
+
+    #[test]
+    fn test_as_vslice_basic() {
+        let v: FlexVector<i32, Column> = FlexVector::from_vec(vec![10, 20, 30, 40, 50]);
+        let vslice = v.as_vslice(1..4);
+        assert_eq!(vslice.as_slice(), &[20, 30, 40]);
+    }
+
+    #[test]
+    fn test_as_vslice_full_range() {
+        let v: FlexVector<i32, Row> = FlexVector::from_vec(vec![1, 2, 3]);
+        let vslice = v.as_vslice(0..v.len());
+        assert_eq!(vslice.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_as_vslice_empty_range() {
+        let v: FlexVector<i32, Column> = FlexVector::from_vec(vec![1, 2, 3]);
+        let vslice = v.as_vslice(1..1);
+        assert_eq!(vslice.as_slice(), &[]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_as_vslice_out_of_bounds() {
+        let v: FlexVector<i32, Row> = FlexVector::from_vec(vec![1, 2, 3]);
+        // This should panic because the range is out of bounds
+        let _ = v.as_vslice(2..5);
+    }
+
+    // -- as_mut_vslice --
+
+    #[test]
+    fn test_as_mut_vslice_basic() {
+        let mut v: FlexVector<i32, Column> = FlexVector::from_vec(vec![10, 20, 30, 40, 50]);
+        {
+            let mut vslice = v.as_mut_vslice(1..4);
+            vslice.as_mut_slice()[0] = 21;
+            vslice.as_mut_slice()[2] = 41;
+        }
+        assert_eq!(v.as_slice(), &[10, 21, 30, 41, 50]);
+    }
+
+    #[test]
+    fn test_as_mut_vslice_full_range() {
+        let mut v: FlexVector<i32, Row> = FlexVector::from_vec(vec![1, 2, 3]);
+        {
+            let mut vslice = v.as_mut_vslice(0..v.len());
+            for x in vslice.as_mut_slice() {
+                *x *= 2;
+            }
+        }
+        assert_eq!(v.as_slice(), &[2, 4, 6]);
+    }
+
+    #[test]
+    fn test_as_mut_vslice_empty_range() {
+        let mut v: FlexVector<i32, Column> = FlexVector::from_vec(vec![1, 2, 3]);
+        let mut vslice = v.as_mut_vslice(1..1);
+        assert_eq!(vslice.as_mut_slice(), &mut []);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_as_mut_vslice_out_of_bounds() {
+        let mut v: FlexVector<i32, Row> = FlexVector::from_vec(vec![1, 2, 3]);
+        // This should panic because the range is out of bounds
+        let _ = v.as_mut_vslice(2..5);
+    }
+
     // ================================
     //
     // VectorOps trait tests
@@ -6861,7 +6931,698 @@ mod tests {
         assert!(normalized.is_err());
     }
 
-    //TODO: continue tests for all methods in VectorOpsComplex trait
+    // -- normalize_to --
+
+    #[test]
+    fn test_normalize_to_complex_f64_basic() {
+        use num::Complex;
+        let v: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(3.0, 4.0)]);
+        let normalized = v.normalize_to(10.0).unwrap();
+        // The original norm is 5.0, so the normalized vector should be [6.0 + 8.0i]
+        assert!((normalized.as_slice()[0].re - 6.0).abs() < 1e-12);
+        assert!((normalized.as_slice()[0].im - 8.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_to_complex_f64_multiple_elements() {
+        use num::Complex;
+        let v: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let norm = ((1.0 * 1.0 + 2.0 * 2.0) + (3.0 * 3.0 + 4.0 * 4.0)).sqrt();
+        let normalized = v.normalize_to(2.0).unwrap();
+        assert!((normalized.as_slice()[0].re - 1.0 / norm * 2.0).abs() < 1e-12);
+        assert!((normalized.as_slice()[0].im - 2.0 / norm * 2.0).abs() < 1e-12);
+        assert!((normalized.as_slice()[1].re - 3.0 / norm * 2.0).abs() < 1e-12);
+        assert!((normalized.as_slice()[1].im - 4.0 / norm * 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_to_complex_f64_zero_vector() {
+        use num::Complex;
+        let v: FlexVector<Complex<f64>, Row> = FlexVector::from_vec(vec![Complex::new(0.0, 0.0)]);
+        let result = v.normalize_to(1.0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_normalize_to_complex_f64_empty() {
+        use num::Complex;
+        let v: FlexVector<Complex<f64>> = FlexVector::new();
+        let normalized = v.normalize_to(1.0);
+        assert!(normalized.is_err());
+    }
+
+    // -- dot --
+
+    #[test]
+    fn test_dot_complex_f64_basic() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        // Hermitian dot product: conj(v1[0])*v2[0] + conj(v1[1])*v2[1]
+        let expected =
+            v1.as_slice()[0].conj() * v2.as_slice()[0] + v1.as_slice()[1].conj() * v2.as_slice()[1];
+        let dot = VectorOpsComplex::dot(&v1, &v2).unwrap();
+        assert!((dot - expected).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_dot_complex_f64_negative_values() {
+        let v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(-1.0, -2.0), Complex::new(-3.0, -4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(2.0, 1.0), Complex::new(4.0, 3.0)]);
+        let expected =
+            v1.as_slice()[0].conj() * v2.as_slice()[0] + v1.as_slice()[1].conj() * v2.as_slice()[1];
+        let dot = VectorOpsComplex::dot(&v1, &v2).unwrap();
+        assert!((dot - expected).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_dot_complex_f64_zero_vector() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let dot = VectorOpsComplex::dot(&v1, &v2).unwrap();
+        assert!((dot - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_dot_complex_f64_empty() {
+        let v1: FlexVector<Complex<f64>> = FlexVector::new();
+        let v2: FlexVector<Complex<f64>> = FlexVector::new();
+        let dot = VectorOpsComplex::dot(&v1, &v2).unwrap();
+        assert!((dot - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_dot_complex_f64_mismatched_length() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
+        let result = VectorOpsComplex::dot(&v1, &v2);
+        assert!(result.is_err());
+    }
+
+    // -- lerp --
+
+    #[test]
+    fn test_lerp_complex_f64_weight_zero() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let result = v1.lerp(&v2, 0.0).unwrap();
+        // Should be equal to v1
+        assert!((result.as_slice()[0] - Complex::new(1.0, 2.0)).norm() < 1e-12);
+        assert!((result.as_slice()[1] - Complex::new(3.0, 4.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_lerp_complex_f64_weight_one() {
+        let v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let result = v1.lerp(&v2, 1.0).unwrap();
+        // Should be equal to v2
+        assert!((result.as_slice()[0] - Complex::new(5.0, 6.0)).norm() < 1e-12);
+        assert!((result.as_slice()[1] - Complex::new(7.0, 8.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_lerp_complex_f64_weight_half() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(2.0, 4.0), Complex::new(6.0, 8.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(4.0, 6.0), Complex::new(8.0, 10.0)]);
+        let result = v1.lerp(&v2, 0.5).unwrap();
+        // Should be the midpoint
+        assert!((result.as_slice()[0] - Complex::new(3.0, 5.0)).norm() < 1e-12);
+        assert!((result.as_slice()[1] - Complex::new(7.0, 9.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_lerp_complex_f64_weight_out_of_bounds() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0)]);
+        let result_low = v1.lerp(&v2, -0.1);
+        let result_high = v1.lerp(&v2, 1.1);
+        assert!(result_low.is_err());
+        assert!(result_high.is_err());
+    }
+
+    #[test]
+    fn test_lerp_complex_f64_mismatched_length() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
+        let result = v1.lerp(&v2, 0.5);
+        assert!(result.is_err());
+    }
+
+    // -- midpoint --
+
+    #[test]
+    fn test_midpoint_complex_f64_basic() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let midpoint = v1.midpoint(&v2).unwrap();
+        assert!((midpoint.as_slice()[0] - Complex::new(3.0, 4.0)).norm() < 1e-12);
+        assert!((midpoint.as_slice()[1] - Complex::new(5.0, 6.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_midpoint_complex_f64_negative_values() {
+        let v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(-1.0, -2.0), Complex::new(-3.0, -4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let midpoint = v1.midpoint(&v2).unwrap();
+        assert!((midpoint.as_slice()[0] - Complex::new(0.0, 0.0)).norm() < 1e-12);
+        assert!((midpoint.as_slice()[1] - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_midpoint_complex_f64_identical() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(2.0, 3.0), Complex::new(4.0, 5.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(2.0, 3.0), Complex::new(4.0, 5.0)]);
+        let midpoint = v1.midpoint(&v2).unwrap();
+        assert!((midpoint.as_slice()[0] - Complex::new(2.0, 3.0)).norm() < 1e-12);
+        assert!((midpoint.as_slice()[1] - Complex::new(4.0, 5.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_midpoint_complex_f64_mismatched_length() {
+        let v1: FlexVector<Complex<f64>, Row> = FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
+        let result = v1.midpoint(&v2);
+        assert!(result.is_err());
+    }
+
+    // -- distance --
+
+    #[test]
+    fn test_distance_complex_f64_basic() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        // Euclidean distance: sqrt(sum_i |v1[i] - v2[i]|^2)
+        let d0 = (v1.as_slice()[0] - v2.as_slice()[0]).norm_sqr();
+        let d1 = (v1.as_slice()[1] - v2.as_slice()[1]).norm_sqr();
+        let expected = (d0 + d1).sqrt();
+        let dist = v1.distance(&v2).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_distance_complex_f64_zero() {
+        let v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)]);
+        let dist = v1.distance(&v2).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_distance_complex_f64_identical() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(2.0, 3.0), Complex::new(4.0, 5.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(2.0, 3.0), Complex::new(4.0, 5.0)]);
+        let dist = v1.distance(&v2).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_distance_complex_f64_negative_values() {
+        let v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(-1.0, -2.0), Complex::new(-3.0, -4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let d0 = (v1.as_slice()[0] - v2.as_slice()[0]).norm_sqr();
+        let d1 = (v1.as_slice()[1] - v2.as_slice()[1]).norm_sqr();
+        let expected = (d0 + d1).sqrt();
+        let dist = v1.distance(&v2).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_distance_complex_f64_mismatched_length() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
+        let result = v1.distance(&v2);
+        assert!(result.is_err());
+    }
+
+    // -- manhattan_distance --
+
+    #[test]
+    fn test_manhattan_distance_complex_f64_basic() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        // Manhattan distance: sum_i |v1[i] - v2[i]|
+        let d0 = (v1.as_slice()[0] - v2.as_slice()[0]).norm();
+        let d1 = (v1.as_slice()[1] - v2.as_slice()[1]).norm();
+        let expected = d0 + d1;
+        let dist = v1.manhattan_distance(&v2).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_manhattan_distance_complex_f64_zero() {
+        let v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)]);
+        let dist = v1.manhattan_distance(&v2).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_manhattan_distance_complex_f64_identical() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(2.0, 3.0), Complex::new(4.0, 5.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(2.0, 3.0), Complex::new(4.0, 5.0)]);
+        let dist = v1.manhattan_distance(&v2).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_manhattan_distance_complex_f64_negative_values() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(-1.0, -2.0), Complex::new(-3.0, -4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let d0 = (v1.as_slice()[0] - v2.as_slice()[0]).norm();
+        let d1 = (v1.as_slice()[1] - v2.as_slice()[1]).norm();
+        let expected = d0 + d1;
+        let dist = v1.manhattan_distance(&v2).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_manhattan_distance_complex_f64_mismatched_length() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
+        let result = v1.manhattan_distance(&v2);
+        assert!(result.is_err());
+    }
+
+    // -- chebyshev_distance --
+
+    #[test]
+    fn test_chebyshev_distance_complex_f64_basic() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        // Chebyshev distance: max_i |v1[i] - v2[i]|
+        let d0 = (v1.as_slice()[0] - v2.as_slice()[0]).norm();
+        let d1 = (v1.as_slice()[1] - v2.as_slice()[1]).norm();
+        let expected = d0.max(d1);
+        let dist = v1.chebyshev_distance(&v2).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_chebyshev_distance_complex_f64_zero() {
+        let v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)]);
+        let dist = v1.chebyshev_distance(&v2).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_chebyshev_distance_complex_f64_identical() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(2.0, 3.0), Complex::new(4.0, 5.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(2.0, 3.0), Complex::new(4.0, 5.0)]);
+        let dist = v1.chebyshev_distance(&v2).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_chebyshev_distance_complex_f64_negative_values() {
+        let v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(-1.0, -2.0), Complex::new(-3.0, -4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let d0 = (v1.as_slice()[0] - v2.as_slice()[0]).norm();
+        let d1 = (v1.as_slice()[1] - v2.as_slice()[1]).norm();
+        let expected = d0.max(d1);
+        let dist = v1.chebyshev_distance(&v2).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_chebyshev_distance_complex_f64_mismatched_length() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
+        let result = v1.chebyshev_distance(&v2);
+        assert!(result.is_err());
+    }
+
+    // -- minkowski_distance --
+
+    #[test]
+    fn test_minkowski_distance_complex_f64_basic() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        // For p = 3.0: ((|v1[0]-v2[0]|^3 + |v1[1]-v2[1]|^3))^(1/3)
+        let p = 3.0;
+        let d0 = (v1.as_slice()[0] - v2.as_slice()[0]).norm().powf(p);
+        let d1 = (v1.as_slice()[1] - v2.as_slice()[1]).norm().powf(p);
+        let expected = (d0 + d1).powf(1.0 / p);
+        let dist = v1.minkowski_distance(&v2, p).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_minkowski_distance_complex_f64_p1() {
+        let v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        // Should match manhattan distance
+        let p = 1.0;
+        let d0 = (v1.as_slice()[0] - v2.as_slice()[0]).norm();
+        let d1 = (v1.as_slice()[1] - v2.as_slice()[1]).norm();
+        let expected = d0 + d1;
+        let dist = v1.minkowski_distance(&v2, p).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_minkowski_distance_complex_f64_p2() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        // Should match euclidean distance
+        let p = 2.0;
+        let d0 = (v1.as_slice()[0] - v2.as_slice()[0]).norm_sqr();
+        let d1 = (v1.as_slice()[1] - v2.as_slice()[1]).norm_sqr();
+        let expected = (d0 + d1).sqrt();
+        let dist = v1.minkowski_distance(&v2, p).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_minkowski_distance_complex_f64_empty() {
+        let v1: FlexVector<Complex<f64>> = FlexVector::new();
+        let v2: FlexVector<Complex<f64>> = FlexVector::new();
+        let dist = v1.minkowski_distance(&v2, 2.0).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_minkowski_distance_complex_f64_identical() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.23, 4.56), Complex::new(7.89, 0.12)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.23, 4.56), Complex::new(7.89, 0.12)]);
+        let dist = v1.minkowski_distance(&v2, 2.0).unwrap();
+        assert_eq!(dist, 0.0);
+    }
+
+    #[test]
+    fn test_minkowski_distance_complex_f64_partial() {
+        let v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0)]);
+        let result = v1.minkowski_distance(&v2, 2.0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_minkowski_distance_complex_f64_invalid_p() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let result = v1.minkowski_distance(&v2, 0.5);
+        assert!(result.is_err());
+    }
+
+    // -- project_onto --
+
+    #[test]
+    fn test_project_onto_complex_f64_basic() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)]);
+        // Project v1 onto v2: should be [3.0 - 4.0i, 0.0]
+        let proj = v1.project_onto(&v2).unwrap();
+        assert!((proj.as_slice()[0] - Complex::new(3.0, -4.0)).norm() < 1e-12);
+        assert!((proj.as_slice()[1] - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_complex_f64_parallel() {
+        let v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(2.0, 2.0), Complex::new(4.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0, 1.0), Complex::new(2.0, 2.0)]);
+        // v1 is parallel to v2, so projection should be v1 itself
+        let proj = v1.project_onto(&v2).unwrap();
+        assert!((proj.as_slice()[0] - Complex::new(2.0, 2.0)).norm() < 1e-12);
+        assert!((proj.as_slice()[1] - Complex::new(4.0, 4.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_complex_f64_orthogonal() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(0.0, 1.0), Complex::new(0.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)]);
+        // Hermitian projection: should be [0.0 - 1.0i, 0.0]
+        let proj = v1.project_onto(&v2).unwrap();
+        assert!((proj.as_slice()[0] - Complex::new(0.0, -1.0)).norm() < 1e-12);
+        assert!((proj.as_slice()[1] - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_complex_f64_identical() {
+        let v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(5.0, 5.0), Complex::new(5.0, 5.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 5.0), Complex::new(5.0, 5.0)]);
+        let proj = v1.project_onto(&v2).unwrap();
+        assert!((proj.as_slice()[0] - Complex::new(5.0, 5.0)).norm() < 1e-12);
+        assert!((proj.as_slice()[1] - Complex::new(5.0, 5.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_complex_f64_zero_vector() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)]);
+        let result = v1.project_onto(&v2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_project_onto_complex_f64_mismatched_length() {
+        let v1: FlexVector<Complex<f64>, Row> = FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
+        let result = v1.project_onto(&v2);
+        assert!(result.is_err());
+    }
+
+    // -- cosine_similarity --
+
+    #[test]
+    fn test_cosine_similarity_complex_f64_parallel() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(2.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(2.0, 4.0), Complex::new(4.0, 8.0)]);
+        // v2 is a scalar multiple of v1, so cosine similarity should be 1+0i
+        let cos_sim = v1.cosine_similarity(&v2).unwrap();
+        assert!((cos_sim - Complex::new(1.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_cosine_similarity_complex_f64_orthogonal() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)]);
+        let cos_sim = v1.cosine_similarity(&v2).unwrap();
+        assert!((cos_sim - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_cosine_similarity_complex_f64_opposite() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(-1.0, 0.0)]);
+        // Opposite vectors: cosine similarity should be -1+0i
+        let cos_sim = v1.cosine_similarity(&v2).unwrap();
+        assert!((cos_sim + Complex::new(1.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_cosine_similarity_complex_f64_identical() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0)]);
+        // Identical vectors: cosine similarity should be 1+0i
+        let cos_sim = v1.cosine_similarity(&v2).unwrap();
+        assert!((cos_sim - Complex::new(1.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_cosine_similarity_complex_f64_arbitrary() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(2.0, 1.0)]);
+        let cos_sim = v1.cosine_similarity(&v2).unwrap();
+        // Should be a complex number with norm <= 1
+        assert!(cos_sim.norm() <= 1.0 + 1e-12);
+    }
+
+    #[test]
+    fn test_cosine_similarity_complex_f64_zero_vector() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(0.0, 0.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let result = v1.cosine_similarity(&v2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cosine_similarity_complex_f64_mismatched_length() {
+        let v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
+        let result = v1.cosine_similarity(&v2);
+        assert!(result.is_err());
+    }
+
+    // -- mut_normalize --
+
+    #[test]
+    fn test_mut_normalize_complex_f64_basic() {
+        let mut v: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(3.0, 4.0)]);
+        v.mut_normalize().unwrap();
+        // The norm is 5.0, so the normalized vector should be [0.6 + 0.8i]
+        assert!((v.as_slice()[0].re - 0.6).abs() < 1e-12);
+        assert!((v.as_slice()[0].im - 0.8).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_mut_normalize_complex_f64_multiple_elements() {
+        let mut v: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let norm = ((1.0 * 1.0 + 2.0 * 2.0) + (3.0 * 3.0 + 4.0 * 4.0)).sqrt();
+        v.mut_normalize().unwrap();
+        assert!((v.as_slice()[0].re - 1.0 / norm).abs() < 1e-12);
+        assert!((v.as_slice()[0].im - 2.0 / norm).abs() < 1e-12);
+        assert!((v.as_slice()[1].re - 3.0 / norm).abs() < 1e-12);
+        assert!((v.as_slice()[1].im - 4.0 / norm).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_mut_normalize_complex_f64_zero_vector() {
+        let mut v: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(0.0, 0.0)]);
+        let result = v.mut_normalize();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mut_normalize_complex_f64_empty() {
+        let mut v: FlexVector<Complex<f64>> = FlexVector::new();
+        let result = v.mut_normalize();
+        assert!(result.is_err());
+    }
+
+    // -- mut_normalize_to --
+
+    #[test]
+    fn test_mut_normalize_to_complex_f64_basic() {
+        let mut v: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(3.0, 4.0)]);
+        v.mut_normalize_to(10.0).unwrap();
+        // The original norm is 5.0, so the normalized vector should be [6.0 + 8.0i]
+        assert!((v.as_slice()[0].re - 6.0).abs() < 1e-12);
+        assert!((v.as_slice()[0].im - 8.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_mut_normalize_to_complex_f64_multiple_elements() {
+        let mut v: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let norm = ((1.0 * 1.0 + 2.0 * 2.0) + (3.0 * 3.0 + 4.0 * 4.0)).sqrt();
+        v.mut_normalize_to(2.0).unwrap();
+        assert!((v.as_slice()[0].re - 1.0 / norm * 2.0).abs() < 1e-12);
+        assert!((v.as_slice()[0].im - 2.0 / norm * 2.0).abs() < 1e-12);
+        assert!((v.as_slice()[1].re - 3.0 / norm * 2.0).abs() < 1e-12);
+        assert!((v.as_slice()[1].im - 4.0 / norm * 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_mut_normalize_to_complex_f64_zero_vector() {
+        let mut v: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(0.0, 0.0)]);
+        let result = v.mut_normalize_to(1.0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_mut_normalize_to_complex_f64_empty() {
+        let mut v: FlexVector<Complex<f64>> = FlexVector::new();
+        let result = v.mut_normalize_to(1.0);
+        assert!(result.is_err());
+    }
+
+    // -- mut_lerp --
+
+    #[test]
+    fn test_mut_lerp_complex_f64_weight_zero() {
+        let mut v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        v1.mut_lerp(&v2, 0.0).unwrap();
+        // Should be equal to original v1
+        assert!((v1.as_slice()[0] - Complex::new(1.0, 2.0)).norm() < 1e-12);
+        assert!((v1.as_slice()[1] - Complex::new(3.0, 4.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_mut_lerp_complex_f64_weight_one() {
+        let mut v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        v1.mut_lerp(&v2, 1.0).unwrap();
+        // Should be equal to v2
+        assert!((v1.as_slice()[0] - Complex::new(5.0, 6.0)).norm() < 1e-12);
+        assert!((v1.as_slice()[1] - Complex::new(7.0, 8.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_mut_lerp_complex_f64_weight_half() {
+        let mut v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(2.0, 4.0), Complex::new(6.0, 8.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(4.0, 6.0), Complex::new(8.0, 10.0)]);
+        v1.mut_lerp(&v2, 0.5).unwrap();
+        // Should be the midpoint
+        assert!((v1.as_slice()[0] - Complex::new(3.0, 5.0)).norm() < 1e-12);
+        assert!((v1.as_slice()[1] - Complex::new(7.0, 9.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_mut_lerp_complex_f64_weight_out_of_bounds() {
+        let mut v1: FlexVector<Complex<f64>, Row> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0)]);
+        let result_low = v1.mut_lerp(&v2, -0.1);
+        let result_high = v1.mut_lerp(&v2, 1.1);
+        assert!(result_low.is_err());
+        assert!(result_high.is_err());
+    }
+
+    #[test]
+    fn test_mut_lerp_complex_f64_mismatched_length() {
+        let mut v1: FlexVector<Complex<f64>, Column> =
+            FlexVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
+        let result = v1.mut_lerp(&v2, 0.5);
+        assert!(result.is_err());
+    }
 
     // ================================
     //
