@@ -39,7 +39,7 @@ pub(crate) fn hermitian_dot_impl<N>(a: &[Complex<N>], b: &[Complex<N>]) -> Compl
 where
     N: num::Num + Copy + std::iter::Sum<N> + std::ops::Neg<Output = N>,
 {
-    a.iter().zip(b.iter()).map(|(x, y)| *x * y.conj()).sum()
+    a.iter().zip(b.iter()).map(|(x, y)| x.conj() * *y).sum()
 }
 
 #[inline]
@@ -381,21 +381,21 @@ mod tests {
     fn test_hermitian_dot_impl_basic() {
         let a = [Complex::new(1.0_f64, 2.0), Complex::new(3.0, 4.0)];
         let b = [Complex::new(5.0, -1.0), Complex::new(-2.0, 2.0)];
-        // Hermitian dot: sum_i a_i * conj(b_i)
-        // conj(b_0) = 5.0 + 1.0i, conj(b_1) = -2.0 - 2.0i
-        // a_0 * conj(b_0) = (1+2i)*(5+1i) = 1*5 + 1*1i + 2i*5 + 2i*1i = 5 + 1i + 10i + 2i^2 = 5 + 11i - 2 = 3 + 11i
-        // a_1 * conj(b_1) = (3+4i)*(-2-2i) = 3*-2 + 3*-2i + 4i*-2 + 4i*-2i = -6 -6i -8i -8i^2 = -6 -14i +8 = 2 -14i
-        // sum = (3+11i) + (2-14i) = 5 -3i
-        let result = super::hermitian_dot_impl(&a, &b);
-        assert!((result.re - 5.0).abs() < 1e-12);
-        assert!((result.im + 3.0).abs() < 1e-12);
+        // Hermitian dot: sum_i conj(a_i) * b_i
+        // conj(a_0) = 1.0 - 2.0i, conj(a_1) = 3.0 - 4.0i
+        // conj(a_0) * b_0 = (1-2i)*(5-1i) = 1*5 + 1*-1i -2i*5 -2i*-1i = 5 -1i -10i +2i^2 = 5 -11i +2*(-1) = 5 -11i -2 = 3 -11i
+        // conj(a_1) * b_1 = (3-4i)*(-2+2i) = 3*-2 + 3*2i -4i*-2 -4i*2i = -6 +6i +8i -8i^2 = -6 +14i +8 = 2 +14i
+        // sum = (3-11i) + (2+14i) = 5 + 3i
+        let result = hermitian_dot_impl(&a, &b);
+        assert!((result.re - 5.0).abs() < 1e-12, "real part: got {}, expected 5.0", result.re);
+        assert!((result.im - 3.0).abs() < 1e-12, "imag part: got {}, expected 3.0", result.im);
     }
 
     #[test]
     fn test_hermitian_dot_impl_empty() {
         let a: [Complex<f64>; 0] = [];
         let b: [Complex<f64>; 0] = [];
-        let result = super::hermitian_dot_impl(&a, &b);
+        let result = hermitian_dot_impl(&a, &b);
         assert_eq!(result, Complex::new(0.0, 0.0));
     }
 
@@ -403,19 +403,18 @@ mod tests {
     fn test_hermitian_dot_impl_partial() {
         let a = [Complex::new(1.0_f64, 2.0), Complex::new(3.0, 4.0)];
         let b = [Complex::new(5.0, -1.0)];
-        // Only the first element is used
-        let result = super::hermitian_dot_impl(&a, &b);
-        // a_0 * conj(b_0) = (1+2i)*(5+1i) = 3 + 11i (see above)
-        assert!((result.re - 3.0).abs() < 1e-12);
-        assert!((result.im - 11.0).abs() < 1e-12);
+        // Only the first element is used: conj(a_0) * b_0 = (1-2i)*(5-1i) = 3 - 11i
+        let result = hermitian_dot_impl(&a, &b);
+        assert!((result.re - 3.0).abs() < 1e-12, "real part: got {}, expected 3.0", result.re);
+        assert!((result.im + 11.0).abs() < 1e-12, "imag part: got {}, expected -11.0", result.im);
     }
 
     #[test]
     fn test_hermitian_dot_impl_identical() {
         let a = [Complex::new(2.0_f64, -3.0), Complex::new(-1.0, 4.0)];
         let b = [Complex::new(2.0, -3.0), Complex::new(-1.0, 4.0)];
-        // Hermitian dot with self: sum_i a_i * conj(a_i) = sum_i |a_i|^2 (real, >= 0)
-        let result = super::hermitian_dot_impl(&a, &b);
+        // Hermitian dot with self: sum_i conj(a_i) * a_i = sum_i |a_i|^2 (real, >= 0)
+        let result = hermitian_dot_impl(&a, &b);
         let expected =
             Complex::new((2.0 * 2.0 + (-3.0) * (-3.0)) + ((-1.0) * (-1.0) + 4.0 * 4.0), 0.0);
         assert!((result.re - expected.re).abs() < 1e-12);
