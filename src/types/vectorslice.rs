@@ -1,7 +1,7 @@
 //! VectorSlice types.
 
 use crate::types::orientation::Column;
-use crate::types::traits::VectorOrientationName;
+use crate::types::traits::{VectorBase, VectorBaseMut, VectorOrientationName};
 use std::fmt;
 use std::marker::PhantomData;
 
@@ -130,6 +130,19 @@ where
     }
 }
 
+// ================================
+//
+// Crate trait impls
+//
+// ================================
+
+impl<'a, T, O> VectorBase<T> for VectorSlice<'a, T, O> {
+    #[inline]
+    fn as_slice(&self) -> &[T] {
+        self.elements
+    }
+}
+
 // /////////////////////////////////
 // ================================
 //
@@ -228,6 +241,26 @@ where
             .field("orientation", &O::orientation_name())
             .field("elements", &self.elements)
             .finish()
+    }
+}
+
+// ================================
+//
+// Crate trait impls
+//
+// ================================
+
+impl<'a, T, O> VectorBase<T> for VectorSliceMut<'a, T, O> {
+    #[inline]
+    fn as_slice(&self) -> &[T] {
+        self.elements
+    }
+}
+
+impl<'a, T, O> VectorBaseMut<T> for VectorSliceMut<'a, T, O> {
+    #[inline]
+    fn as_mut_slice(&mut self) -> &mut [T] {
+        self.elements
     }
 }
 
@@ -540,6 +573,70 @@ mod tests {
         assert_eq!(vslice1.partial_cmp(&vslice1), Some(std::cmp::Ordering::Equal));
     }
 
+    // -- VectorBase trait for VectorSlice --
+
+    #[test]
+    fn test_vector_slice_as_slice_basic() {
+        let data = [1, 2, 3, 4];
+        let vslice: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 1..3);
+        assert_eq!(vslice.as_slice(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_vector_slice_as_slice_full_range() {
+        let data = [10, 20, 30];
+        let vslice: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&data, 0..data.len());
+        assert_eq!(vslice.as_slice(), &[10, 20, 30]);
+    }
+
+    #[test]
+    fn test_vector_slice_as_slice_empty() {
+        let data = [1, 2, 3];
+        let vslice: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 1..1);
+        assert_eq!(vslice.as_slice(), &[]);
+    }
+
+    #[test]
+    fn test_vector_slice_as_slice_complex() {
+        let data = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let vslice: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&data, 0..2);
+        assert_eq!(vslice.as_slice(), &data);
+    }
+
+    #[test]
+    fn test_vector_slice_len_and_is_empty() {
+        let data = [1, 2, 3];
+        let vslice: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..2);
+        assert_eq!(vslice.len(), 2);
+        assert!(!vslice.is_empty());
+        let empty: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 1..1);
+        assert_eq!(empty.len(), 0);
+        assert!(empty.is_empty());
+    }
+
+    #[test]
+    fn test_vector_slice_get_and_first_last() {
+        let data = [1, 2, 3];
+        let vslice: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..3);
+        assert_eq!(vslice.get(1), Some(&2));
+        assert_eq!(vslice.first(), Some(&1));
+        assert_eq!(vslice.last(), Some(&3));
+        let empty: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 1..1);
+        assert_eq!(empty.get(1), None);
+        assert_eq!(empty.first(), None);
+        assert_eq!(empty.last(), None);
+    }
+
+    #[test]
+    fn test_vector_slice_iter_and_to_vec() {
+        let data = [1, 2, 3];
+        let vslice: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..3);
+        let collected: Vec<i32> = vslice.iter().copied().collect();
+        assert_eq!(collected, vec![1, 2, 3]);
+        assert_eq!(vslice.to_vec(), vec![1, 2, 3]);
+    }
+
     // /////////////////////////////////
     // ================================
     //
@@ -831,5 +928,97 @@ mod tests {
         assert!(debug.contains("elements"));
         assert!(debug.contains("Complex { re: 5.0, im: 6.0 }"));
         assert!(debug.contains("Complex { re: 7.0, im: 8.0 }"));
+    }
+
+    // -- VectorBase trait for VectorSliceMut --
+
+    #[test]
+    fn test_vector_slice_mut_as_slice_basic() {
+        let mut data = [1, 2, 3, 4];
+        let vslice: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data, 1..3);
+        assert_eq!(vslice.as_slice(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_as_slice_full_range() {
+        let mut data = [10, 20, 30];
+        let length = data.len();
+        let vslice: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut data, 0..length);
+        assert_eq!(vslice.as_slice(), &[10, 20, 30]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_as_slice_empty() {
+        let mut data = [1, 2, 3];
+        let vslice: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data, 1..1);
+        assert_eq!(vslice.as_slice(), &[]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_as_slice_complex() {
+        let mut data = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let vslice: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut data, 0..2);
+        assert_eq!(vslice.as_slice(), &[num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_len_and_is_empty() {
+        let mut data = [1, 2, 3];
+        let vslice: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data, 0..2);
+        assert_eq!(vslice.len(), 2);
+        assert!(!vslice.is_empty());
+        let empty: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data, 1..1);
+        assert_eq!(empty.len(), 0);
+        assert!(empty.is_empty());
+    }
+
+    // -- VectorBaseMut trait for VectorSliceMut --
+
+    #[test]
+    fn test_vector_slice_mut_as_mut_slice_basic() {
+        let mut data = [1, 2, 3, 4];
+        let mut vslice: VectorSliceMut<'_, i32, Column> =
+            VectorSliceMut::from_range(&mut data, 1..3);
+        assert_eq!(vslice.as_mut_slice(), &mut [2, 3]);
+        // Mutate through as_mut_slice
+        vslice.as_mut_slice()[0] = 20;
+        vslice.as_mut_slice()[1] = 30;
+        assert_eq!(vslice.as_mut_slice(), &mut [20, 30]);
+        // Changes are reflected in the original data
+        assert_eq!(data, [1, 20, 30, 4]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_as_mut_slice_full_range() {
+        let mut data = [10, 20, 30];
+        let length = data.len();
+        let mut vslice: VectorSliceMut<'_, i32, Row> =
+            VectorSliceMut::from_range(&mut data, 0..length);
+        assert_eq!(vslice.as_mut_slice(), &mut [10, 20, 30]);
+        vslice.as_mut_slice()[2] = 99;
+        assert_eq!(data, [10, 20, 99]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_as_mut_slice_empty() {
+        let mut data = [1, 2, 3];
+        let mut vslice: VectorSliceMut<'_, i32, Column> =
+            VectorSliceMut::from_range(&mut data, 1..1);
+        assert_eq!(vslice.as_mut_slice(), &mut []);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_as_mut_slice_complex() {
+        let mut data = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let mut vslice: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut data, 0..2);
+        assert_eq!(
+            vslice.as_mut_slice(),
+            &mut [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)]
+        );
+        // Mutate through as_mut_slice
+        vslice.as_mut_slice()[1] = num::Complex::new(9.0, 9.0);
+        assert_eq!(data, [num::Complex::new(1.0, 2.0), num::Complex::new(9.0, 9.0)]);
     }
 }
