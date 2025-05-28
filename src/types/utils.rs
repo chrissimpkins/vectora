@@ -13,9 +13,9 @@ pub(crate) fn mut_translate_impl<T: num::Num + Copy>(out: &mut [T], b: &[T]) {
 
 #[inline]
 pub(crate) fn translate_impl<T: num::Num + Copy>(a: &[T], b: &[T], out: &mut [T]) {
-    // Copy a into out, then add b in-place
-    out.copy_from_slice(a);
-    mut_translate_impl(out, b);
+    for ((out_elem, &a_elem), &b_elem) in out.iter_mut().zip(a).zip(b) {
+        *out_elem = a_elem + b_elem;
+    }
 }
 
 #[inline]
@@ -313,7 +313,7 @@ mod tests {
         let mut out = [0; 3];
         translate_impl(&a, &b, &mut out);
         // Only the first two elements are updated
-        assert_eq!(out, [11, 22, 3]);
+        assert_eq!(out, [11, 22, 0]);
     }
 
     // -- dot_impl --
