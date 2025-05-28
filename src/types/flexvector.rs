@@ -740,24 +740,6 @@ where
     }
 
     #[inline]
-    fn scale(&self, scalar: T) -> Self::Output
-    where
-        T: num::Num + Clone,
-        Self::Output: std::iter::FromIterator<T>,
-    {
-        self.as_slice().iter().map(|a| a.clone() * scalar.clone()).collect()
-    }
-
-    #[inline]
-    fn negate(&self) -> Self::Output
-    where
-        T: std::ops::Neg<Output = T> + Clone,
-        Self::Output: std::iter::FromIterator<T>,
-    {
-        self.as_slice().iter().map(|a| -(a.clone())).collect()
-    }
-
-    #[inline]
     fn dot(&self, other: &Self) -> Result<T, VectorError>
     where
         T: num::Num + Copy + std::iter::Sum<T>,

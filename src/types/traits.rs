@@ -254,16 +254,24 @@ pub trait VectorOps<T>: VectorBase<T> {
         T: num::Num + Copy;
 
     /// Returns a new vector scaled by the given scalar.
+    #[inline]
     fn scale(&self, scalar: T) -> Self::Output
     where
-        T: num::Num + Copy,
-        Self::Output: std::iter::FromIterator<T>;
+        T: num::Num + Clone,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        self.as_slice().iter().map(|a| a.clone() * scalar.clone()).collect()
+    }
 
     /// Returns a new vector with all elements negated.
+    #[inline]
     fn negate(&self) -> Self::Output
     where
         T: std::ops::Neg<Output = T> + Clone,
-        Self::Output: std::iter::FromIterator<T>;
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        self.as_slice().iter().map(|a| -(a.clone())).collect()
+    }
 
     /// ...
     fn dot(&self, other: &Self) -> Result<T, VectorError>
