@@ -1,7 +1,15 @@
 //! VectorSlice types.
 
+use crate::errors::VectorError;
+use crate::types::flexvector::FlexVector;
 use crate::types::orientation::Column;
-use crate::types::traits::{VectorBase, VectorBaseMut, VectorOrientationName};
+use crate::types::traits::{
+    VectorBase, VectorBaseMut, VectorOps, VectorOpsMut, VectorOrientationName,
+};
+use crate::types::utils::{
+    cross_impl, dot_impl, dot_to_f64_impl, mut_translate_impl, translate_impl,
+};
+
 use std::fmt;
 use std::marker::PhantomData;
 
@@ -143,6 +151,114 @@ impl<'a, T, O> VectorBase<T> for VectorSlice<'a, T, O> {
     }
 }
 
+impl<'a, T, O> VectorOps<T> for VectorSlice<'a, T, O>
+where
+    T: Clone,
+{
+    type Output = FlexVector<T, O>;
+
+    #[inline]
+    fn translate(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Num + Copy,
+    {
+        self.check_same_length_and_raise(other)?;
+        let mut out = FlexVector::zero(self.len());
+        translate_impl(self.as_slice(), other.as_slice(), out.as_mut_slice());
+        Ok(out)
+    }
+
+    #[inline]
+    fn dot(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Num + Copy + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(dot_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn dot_to_f64(&self, other: &Self) -> Result<f64, VectorError>
+    where
+        T: num::ToPrimitive,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(dot_to_f64_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn cross(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Num + Copy,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        if self.len() != 3 || other.len() != 3 {
+            return Err(VectorError::OutOfRangeError(
+                "Cross product is only defined for 3D vectors".to_string(),
+            ));
+        }
+        let a = self.as_slice();
+        let b = other.as_slice();
+        let result = cross_impl(a, b);
+        Ok(result.into_iter().collect())
+    }
+
+    #[inline]
+    fn elementwise_min(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        self.check_same_length_and_raise(other)?;
+        let elements: Vec<T> = self
+            .as_slice()
+            .iter()
+            .zip(other.as_slice())
+            .map(|(a, b)| if a < b { a.clone() } else { b.clone() })
+            .collect();
+        Ok(FlexVector::from_vec(elements))
+    }
+
+    #[inline]
+    fn elementwise_max(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        self.check_same_length_and_raise(other)?;
+        let elements: Vec<T> = self
+            .as_slice()
+            .iter()
+            .zip(other.as_slice())
+            .map(|(a, b)| if a > b { a.clone() } else { b.clone() })
+            .collect();
+        Ok(FlexVector::from_vec(elements))
+    }
+}
+
+// ================================
+//
+// Methods
+//
+// ================================
+
+impl<'a, T, O> VectorSlice<'a, T, O> {
+    // ================================
+    //
+    // Private methods
+    //
+    // ================================
+
+    /// Returns Ok(()) if self and other have the same length (i.e. vector dimensionality),
+    /// otherwise returns a VectorError.
+    #[inline]
+    fn check_same_length_and_raise(&self, other: &Self) -> Result<(), VectorError> {
+        if self.len() != other.len() {
+            Err(VectorError::MismatchedLengthError("Vectors must have the same length".to_string()))
+        } else {
+            Ok(())
+        }
+    }
+}
+
 // /////////////////////////////////
 // ================================
 //
@@ -261,6 +377,131 @@ impl<'a, T, O> VectorBaseMut<T> for VectorSliceMut<'a, T, O> {
     #[inline]
     fn as_mut_slice(&mut self) -> &mut [T] {
         self.elements
+    }
+}
+
+impl<'a, T, O> VectorOps<T> for VectorSliceMut<'a, T, O>
+where
+    T: Clone,
+{
+    type Output = FlexVector<T, O>;
+
+    #[inline]
+    fn translate(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Num + Copy,
+    {
+        self.check_same_length_and_raise(other)?;
+        let mut out = FlexVector::zero(self.len());
+        translate_impl(self.as_slice(), other.as_slice(), out.as_mut_slice());
+        Ok(out)
+    }
+
+    #[inline]
+    fn dot(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Num + Copy + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(dot_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn dot_to_f64(&self, other: &Self) -> Result<f64, VectorError>
+    where
+        T: num::ToPrimitive,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(dot_to_f64_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn cross(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Num + Copy,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        if self.len() != 3 || other.len() != 3 {
+            return Err(VectorError::OutOfRangeError(
+                "Cross product is only defined for 3D vectors".to_string(),
+            ));
+        }
+        let a = self.as_slice();
+        let b = other.as_slice();
+        let result = cross_impl(a, b);
+        Ok(result.into_iter().collect())
+    }
+
+    #[inline]
+    fn elementwise_min(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        self.check_same_length_and_raise(other)?;
+        let elements: Vec<T> = self
+            .as_slice()
+            .iter()
+            .zip(other.as_slice())
+            .map(|(a, b)| if a < b { a.clone() } else { b.clone() })
+            .collect();
+        Ok(FlexVector::from_vec(elements))
+    }
+
+    #[inline]
+    fn elementwise_max(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        self.check_same_length_and_raise(other)?;
+        let elements: Vec<T> = self
+            .as_slice()
+            .iter()
+            .zip(other.as_slice())
+            .map(|(a, b)| if a > b { a.clone() } else { b.clone() })
+            .collect();
+        Ok(FlexVector::from_vec(elements))
+    }
+}
+
+impl<'a, T, O> VectorOpsMut<T> for VectorSliceMut<'a, T, O>
+where
+    T: Clone,
+{
+    type Output = Self;
+
+    #[inline]
+    fn mut_translate(&mut self, other: &Self) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy,
+    {
+        self.check_same_length_and_raise(other)?;
+        mut_translate_impl(self.as_mut_slice(), other.as_slice());
+        Ok(())
+    }
+}
+
+// ================================
+//
+// Methods
+//
+// ================================
+
+impl<'a, T, O> VectorSliceMut<'a, T, O> {
+    // ================================
+    //
+    // Private methods
+    //
+    // ================================
+
+    /// Returns Ok(()) if self and other have the same length (i.e. vector dimensionality),
+    /// otherwise returns a VectorError.
+    #[inline]
+    fn check_same_length_and_raise(&self, other: &Self) -> Result<(), VectorError> {
+        if self.len() != other.len() {
+            Err(VectorError::MismatchedLengthError("Vectors must have the same length".to_string()))
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -635,6 +876,128 @@ mod tests {
         let collected: Vec<i32> = vslice.iter().copied().collect();
         assert_eq!(collected, vec![1, 2, 3]);
         assert_eq!(vslice.to_vec(), vec![1, 2, 3]);
+    }
+
+    // -- VectorOps trait for VectorSlice --
+
+    #[test]
+    fn test_vector_slice_translate() {
+        let a = [1, 2, 3];
+        let b = [4, 5, 6];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.translate(&vslice_b).unwrap();
+        assert_eq!(result.as_slice(), &[5, 7, 9]);
+    }
+
+    #[test]
+    fn test_vector_slice_translate_mismatched_length() {
+        let a = [1, 2, 3];
+        let b = [4, 5];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let result = vslice_a.translate(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_dot() {
+        let a = [1, 2, 3];
+        let b = [4, 5, 6];
+        let vslice_a: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.dot(&vslice_b).unwrap();
+        assert_eq!(result, 1 * 4 + 2 * 5 + 3 * 6);
+    }
+
+    #[test]
+    fn test_vector_slice_dot_mismatched_length() {
+        let a = [1, 2, 3];
+        let b = [4, 5];
+        let vslice_a: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let result = vslice_a.dot(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_dot_to_f64() {
+        let a = [1, 2, 3];
+        let b = [4, 5, 6];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.dot_to_f64(&vslice_b).unwrap();
+        assert_eq!(result, 1.0 * 4.0 + 2.0 * 5.0 + 3.0 * 6.0);
+    }
+
+    #[test]
+    fn test_vector_slice_dot_to_f64_mismatched_length() {
+        let a = [1, 2, 3];
+        let b = [4, 5];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let result = vslice_a.dot_to_f64(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_cross() {
+        let a = [1, 2, 3];
+        let b = [4, 5, 6];
+        let vslice_a: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.cross(&vslice_b).unwrap();
+        assert_eq!(result.as_slice(), &[-3, 6, -3]);
+    }
+
+    #[test]
+    fn test_vector_slice_cross_incorrect_length() {
+        let a = [1, 2, 3, 4];
+        let b = [4, 5, 6, 7];
+        let vslice_a: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&a, 0..4);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.cross(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_elementwise_min() {
+        let a = [1, 5, 3];
+        let b = [4, 2, 6];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.elementwise_min(&vslice_b).unwrap();
+        assert_eq!(result.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_vector_slice_elementwise_min_mismatched_length() {
+        let a = [1, 5, 3];
+        let b = [4, 2];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let result = vslice_a.elementwise_min(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_elementwise_max() {
+        let a = [1, 5, 3];
+        let b = [4, 2, 6];
+        let vslice_a: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.elementwise_max(&vslice_b).unwrap();
+        assert_eq!(result.as_slice(), &[4, 5, 6]);
+    }
+
+    #[test]
+    fn test_vector_slice_elementwise_max_mismatched_length() {
+        let a = [1, 5, 3];
+        let b = [4, 2];
+        let vslice_a: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let result = vslice_a.elementwise_max(&vslice_b);
+        assert!(result.is_err());
     }
 
     // /////////////////////////////////
@@ -1020,5 +1383,179 @@ mod tests {
         // Mutate through as_mut_slice
         vslice.as_mut_slice()[1] = num::Complex::new(9.0, 9.0);
         assert_eq!(data, [num::Complex::new(1.0, 2.0), num::Complex::new(9.0, 9.0)]);
+    }
+
+    // -- VectorOps trait for VectorSliceMut --
+
+    #[test]
+    fn test_vector_slice_mut_translate() {
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.translate(&vslice_b).unwrap();
+        assert_eq!(result.as_slice(), &[5, 7, 9]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_translate_mismatched_length() {
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = vslice_a.translate(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_dot() {
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.dot(&vslice_b).unwrap();
+        assert_eq!(result, 1 * 4 + 2 * 5 + 3 * 6);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_dot_mismatched_length() {
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5];
+        let vslice_a: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = vslice_a.dot(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_dot_to_f64() {
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.dot_to_f64(&vslice_b).unwrap();
+        assert_eq!(result, 1.0 * 4.0 + 2.0 * 5.0 + 3.0 * 6.0);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_dot_to_f64_mismatched_length() {
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = vslice_a.dot_to_f64(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_cross() {
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.cross(&vslice_b).unwrap();
+        assert_eq!(result.as_slice(), &[-3, 6, -3]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_cross_incorrect_length() {
+        let mut a = [1, 2, 3, 4];
+        let mut b = [4, 5, 6, 7];
+        let vslice_a: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut a, 0..4);
+        let vslice_b: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.cross(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_elementwise_min() {
+        let mut a = [1, 5, 3];
+        let mut b = [4, 2, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.elementwise_min(&vslice_b).unwrap();
+        assert_eq!(result.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_elementwise_min_mismatched_length() {
+        let mut a = [1, 5, 3];
+        let mut b = [4, 2];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = vslice_a.elementwise_min(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_elementwise_max() {
+        let mut a = [1, 5, 3];
+        let mut b = [4, 2, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.elementwise_max(&vslice_b).unwrap();
+        assert_eq!(result.as_slice(), &[4, 5, 6]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_elementwise_max_mismatched_length() {
+        let mut a = [1, 5, 3];
+        let mut b = [4, 2];
+        let vslice_a: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = vslice_a.elementwise_max(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    // -- VectorOpsMut trait for VectorSliceMut --
+
+    #[test]
+    fn test_vector_slice_mut_mut_translate() {
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5, 6];
+        let mut vslice_a: VectorSliceMut<'_, i32, Column> =
+            VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut b, 0..3);
+        vslice_a.mut_translate(&vslice_b).unwrap();
+        assert_eq!(vslice_a.as_slice(), &[5, 7, 9]);
+        assert_eq!(a, [5, 7, 9]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_mut_translate_mismatched_length() {
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5];
+        let mut vslice_a: VectorSliceMut<'_, i32, Column> =
+            VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = vslice_a.mut_translate(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_mut_scale() {
+        let mut a = [1, 2, 3];
+        let mut vslice: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        vslice.mut_scale(10);
+        assert_eq!(vslice.as_slice(), &[10, 20, 30]);
+        assert_eq!(a, [10, 20, 30]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_mut_negate() {
+        let mut a = [1, -2, 3];
+        let mut vslice: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        vslice.mut_negate();
+        assert_eq!(vslice.as_slice(), &[-1, 2, -3]);
+        assert_eq!(a, [-1, 2, -3]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_mut_zero() {
+        let mut a = [1, -2, 3];
+        let mut vslice: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        vslice.mut_zero();
+        assert_eq!(vslice.as_slice(), [0, 0, 0]);
+        assert_eq!(a, [0, 0, 0]);
     }
 }
