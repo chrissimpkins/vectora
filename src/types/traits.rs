@@ -253,6 +253,11 @@ pub trait VectorOps<T>: VectorBase<T> {
     where
         T: num::Num + Copy;
 
+    /// ...
+    fn translate_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy;
+
     /// Returns a new vector scaled by the given scalar.
     #[inline]
     fn scale(&self, scalar: T) -> Self::Output
@@ -290,6 +295,11 @@ pub trait VectorOps<T>: VectorBase<T> {
         Self::Output: std::iter::FromIterator<T>;
 
     /// ...
+    fn cross_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy;
+
+    /// ...
     #[inline]
     fn sum(&self) -> T
     where
@@ -322,6 +332,11 @@ pub trait VectorOps<T>: VectorBase<T> {
         T: PartialOrd + Clone;
 
     /// ...
+    fn elementwise_min_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: PartialOrd + Clone;
+
+    /// ...
     #[inline]
     fn maximum(&self) -> Option<T>
     where
@@ -332,6 +347,11 @@ pub trait VectorOps<T>: VectorBase<T> {
 
     /// Element-wise maximum
     fn elementwise_max(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: PartialOrd + Clone;
+
+    /// ...
+    fn elementwise_max_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
     where
         T: PartialOrd + Clone;
 
@@ -354,6 +374,29 @@ pub trait VectorOps<T>: VectorBase<T> {
                 }
             })
             .collect()
+    }
+
+    /// ...
+    #[inline]
+    fn elementwise_clamp_into(&self, min: T, max: T, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has the wrong length".to_string(),
+            ));
+        }
+        for (out_elem, x) in out.iter_mut().zip(self.as_slice()) {
+            *out_elem = if *x < min {
+                min.clone()
+            } else if *x > max {
+                max.clone()
+            } else {
+                x.clone()
+            };
+        }
+        Ok(())
     }
 
     /// L1 norm (sum of absolute values).

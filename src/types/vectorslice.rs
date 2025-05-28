@@ -7,7 +7,9 @@ use crate::types::traits::{
     VectorBase, VectorBaseMut, VectorOps, VectorOpsMut, VectorOrientationName,
 };
 use crate::types::utils::{
-    cross_impl, dot_impl, dot_to_f64_impl, mut_translate_impl, translate_impl,
+    cross_impl, cross_into_impl, dot_impl, dot_to_f64_impl, elementwise_max_impl,
+    elementwise_max_into_impl, elementwise_min_impl, elementwise_min_into_impl, mut_translate_impl,
+    translate_impl,
 };
 
 use std::fmt;
@@ -169,6 +171,21 @@ where
     }
 
     #[inline]
+    fn translate_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy,
+    {
+        self.check_same_length_and_raise(other)?;
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has wrong length".to_string(),
+            ));
+        }
+        translate_impl(self, other, out);
+        Ok(())
+    }
+
+    #[inline]
     fn dot(&self, other: &Self) -> Result<T, VectorError>
     where
         T: num::Num + Copy + std::iter::Sum<T>,
@@ -204,18 +221,42 @@ where
     }
 
     #[inline]
+    fn cross_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy,
+    {
+        if self.len() != 3 || other.len() != 3 || out.len() != 3 {
+            return Err(VectorError::OutOfRangeError(
+                "Cross product is only defined for 3D vectors".to_string(),
+            ));
+        }
+        let a = self.as_slice();
+        let b = other.as_slice();
+        cross_into_impl(a, b, out);
+        Ok(())
+    }
+
+    #[inline]
     fn elementwise_min(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
         T: PartialOrd + Clone,
     {
         self.check_same_length_and_raise(other)?;
-        let elements: Vec<T> = self
-            .as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| if a < b { a.clone() } else { b.clone() })
-            .collect();
-        Ok(FlexVector::from_vec(elements))
+        Ok(FlexVector::from_vec(elementwise_min_impl(self.as_slice(), other.as_slice())))
+    }
+
+    #[inline]
+    fn elementwise_min_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        if self.len() != other.len() || out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        elementwise_min_into_impl(self.as_slice(), other.as_slice(), out);
+        Ok(())
     }
 
     #[inline]
@@ -224,13 +265,21 @@ where
         T: PartialOrd + Clone,
     {
         self.check_same_length_and_raise(other)?;
-        let elements: Vec<T> = self
-            .as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| if a > b { a.clone() } else { b.clone() })
-            .collect();
-        Ok(FlexVector::from_vec(elements))
+        Ok(FlexVector::from_vec(elementwise_max_impl(self.as_slice(), other.as_slice())))
+    }
+
+    #[inline]
+    fn elementwise_max_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        if self.len() != other.len() || out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        elementwise_max_into_impl(self.as_slice(), other.as_slice(), out);
+        Ok(())
     }
 }
 
@@ -398,6 +447,21 @@ where
     }
 
     #[inline]
+    fn translate_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy,
+    {
+        self.check_same_length_and_raise(other)?;
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has wrong length".to_string(),
+            ));
+        }
+        translate_impl(self, other, out);
+        Ok(())
+    }
+
+    #[inline]
     fn dot(&self, other: &Self) -> Result<T, VectorError>
     where
         T: num::Num + Copy + std::iter::Sum<T>,
@@ -433,18 +497,42 @@ where
     }
 
     #[inline]
+    fn cross_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy,
+    {
+        if self.len() != 3 || other.len() != 3 || out.len() != 3 {
+            return Err(VectorError::OutOfRangeError(
+                "Cross product is only defined for 3D vectors".to_string(),
+            ));
+        }
+        let a = self.as_slice();
+        let b = other.as_slice();
+        cross_into_impl(a, b, out);
+        Ok(())
+    }
+
+    #[inline]
     fn elementwise_min(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
         T: PartialOrd + Clone,
     {
         self.check_same_length_and_raise(other)?;
-        let elements: Vec<T> = self
-            .as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| if a < b { a.clone() } else { b.clone() })
-            .collect();
-        Ok(FlexVector::from_vec(elements))
+        Ok(FlexVector::from_vec(elementwise_min_impl(self.as_slice(), other.as_slice())))
+    }
+
+    #[inline]
+    fn elementwise_min_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        if self.len() != other.len() || out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        elementwise_min_into_impl(self.as_slice(), other.as_slice(), out);
+        Ok(())
     }
 
     #[inline]
@@ -453,13 +541,21 @@ where
         T: PartialOrd + Clone,
     {
         self.check_same_length_and_raise(other)?;
-        let elements: Vec<T> = self
-            .as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| if a > b { a.clone() } else { b.clone() })
-            .collect();
-        Ok(FlexVector::from_vec(elements))
+        Ok(FlexVector::from_vec(elementwise_max_impl(self.as_slice(), other.as_slice())))
+    }
+
+    #[inline]
+    fn elementwise_max_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        if self.len() != other.len() || out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors must have the same length".to_string(),
+            ));
+        }
+        elementwise_max_into_impl(self.as_slice(), other.as_slice(), out);
+        Ok(())
     }
 }
 
@@ -880,6 +976,8 @@ mod tests {
 
     // -- VectorOps trait for VectorSlice --
 
+    // -- translate --
+
     #[test]
     fn test_vector_slice_translate() {
         let a = [1, 2, 3];
@@ -899,6 +997,51 @@ mod tests {
         let result = vslice_a.translate(&vslice_b);
         assert!(result.is_err());
     }
+
+    // -- translate_into --
+
+    #[test]
+    fn test_vector_slice_translate_into_basic() {
+        let a = [1, 2, 3];
+        let b = [4, 5, 6];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0; 3];
+        vslice_a.translate_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [5, 7, 9]);
+    }
+
+    #[test]
+    fn test_vector_slice_translate_into_empty() {
+        let a: [i32; 0] = [];
+        let b: [i32; 0] = [];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..0);
+        let vslice_b = VectorSlice::from_range(&b, 0..0);
+        let mut out: [i32; 0] = [];
+        vslice_a.translate_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, []);
+    }
+
+    #[test]
+    fn test_vector_slice_translate_into_mismatched_length() {
+        let a = [1, 2, 3];
+        let b = [4, 5];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [0; 3];
+        let result = vslice_a.translate_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+
+        let a = [1, 2, 3];
+        let b = [4, 5, 6];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0; 2];
+        let result = vslice_a.translate_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    // -- dot --
 
     #[test]
     fn test_vector_slice_dot() {
@@ -920,6 +1063,8 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -- dot_to_f64 --
+
     #[test]
     fn test_vector_slice_dot_to_f64() {
         let a = [1, 2, 3];
@@ -939,6 +1084,8 @@ mod tests {
         let result = vslice_a.dot_to_f64(&vslice_b);
         assert!(result.is_err());
     }
+
+    // -- cross --
 
     #[test]
     fn test_vector_slice_cross() {
@@ -960,6 +1107,51 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -- cross_into --
+
+    #[test]
+    fn test_vector_slice_cross_into_basic() {
+        let a = [1, 2, 3];
+        let b = [4, 5, 6];
+        let vslice_a: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0; 3];
+        vslice_a.cross_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [-3, 6, -3]);
+    }
+
+    #[test]
+    fn test_vector_slice_cross_into_incorrect_length() {
+        let a = [1, 2, 3, 4];
+        let b = [4, 5, 6, 7];
+        let vslice_a: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&a, 0..4);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0; 3];
+        let result = vslice_a.cross_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+
+        let a = [1, 2, 3];
+        let b = [4, 5, 6];
+        let vslice_a: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0; 2];
+        let result = vslice_a.cross_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_cross_into_empty() {
+        let a: [i32; 0] = [];
+        let b: [i32; 0] = [];
+        let vslice_a: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&a, 0..0);
+        let vslice_b = VectorSlice::from_range(&b, 0..0);
+        let mut out: [i32; 0] = [];
+        let result = vslice_a.cross_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    // -- elementwise_min --
+
     #[test]
     fn test_vector_slice_elementwise_min() {
         let a = [1, 5, 3];
@@ -980,6 +1172,62 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -- elementwise_min_into --
+
+    #[test]
+    fn test_vector_slice_elementwise_min_into_basic() {
+        let a = [1, 5, 3];
+        let b = [4, 2, 6];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0; 3];
+        vslice_a.elementwise_min_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [1, 2, 3]);
+    }
+
+    #[test]
+    fn test_vector_slice_elementwise_min_into_equal() {
+        let a = [2, 2, 2];
+        let b = [2, 2, 2];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0; 3];
+        vslice_a.elementwise_min_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [2, 2, 2]);
+    }
+
+    #[test]
+    fn test_vector_slice_elementwise_min_into_mismatched_length() {
+        let a = [1, 5, 3];
+        let b = [4, 2];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [0; 3];
+        let result = vslice_a.elementwise_min_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+
+        let a = [1, 5, 3];
+        let b = [4, 2, 6];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0; 2];
+        let result = vslice_a.elementwise_min_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_elementwise_min_into_empty() {
+        let a: [i32; 0] = [];
+        let b: [i32; 0] = [];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..0);
+        let vslice_b = VectorSlice::from_range(&b, 0..0);
+        let mut out: [i32; 0] = [];
+        vslice_a.elementwise_min_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, []);
+    }
+
+    // -- elementwise_max --
+
     #[test]
     fn test_vector_slice_elementwise_max() {
         let a = [1, 5, 3];
@@ -998,6 +1246,60 @@ mod tests {
         let vslice_b = VectorSlice::from_range(&b, 0..2);
         let result = vslice_a.elementwise_max(&vslice_b);
         assert!(result.is_err());
+    }
+
+    // -- elementwise_max_into --
+
+    #[test]
+    fn test_vector_slice_elementwise_max_into_basic() {
+        let a = [1, 5, 3];
+        let b = [4, 2, 6];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0; 3];
+        vslice_a.elementwise_max_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [4, 5, 6]);
+    }
+
+    #[test]
+    fn test_vector_slice_elementwise_max_into_equal() {
+        let a = [2, 2, 2];
+        let b = [2, 2, 2];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0; 3];
+        vslice_a.elementwise_max_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [2, 2, 2]);
+    }
+
+    #[test]
+    fn test_vector_slice_elementwise_max_into_mismatched_length() {
+        let a = [1, 5, 3];
+        let b = [4, 2];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [0; 3];
+        let result = vslice_a.elementwise_max_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+
+        let a = [1, 5, 3];
+        let b = [4, 2, 6];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0; 2];
+        let result = vslice_a.elementwise_max_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_elementwise_max_into_empty() {
+        let a: [i32; 0] = [];
+        let b: [i32; 0] = [];
+        let vslice_a: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&a, 0..0);
+        let vslice_b = VectorSlice::from_range(&b, 0..0);
+        let mut out: [i32; 0] = [];
+        vslice_a.elementwise_max_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, []);
     }
 
     // /////////////////////////////////
@@ -1387,6 +1689,8 @@ mod tests {
 
     // -- VectorOps trait for VectorSliceMut --
 
+    // -- translate --
+
     #[test]
     fn test_vector_slice_mut_translate() {
         let mut a = [1, 2, 3];
@@ -1406,6 +1710,51 @@ mod tests {
         let result = vslice_a.translate(&vslice_b);
         assert!(result.is_err());
     }
+
+    // -- translate_into --
+
+    #[test]
+    fn test_vector_slice_mut_translate_into_basic() {
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0; 3];
+        vslice_a.translate_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [5, 7, 9]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_translate_into_empty() {
+        let mut a: [i32; 0] = [];
+        let mut b: [i32; 0] = [];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..0);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..0);
+        let mut out: [i32; 0] = [];
+        vslice_a.translate_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, []);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_translate_into_mismatched_length() {
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0; 3];
+        let result = vslice_a.translate_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0; 2];
+        let result = vslice_a.translate_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    // -- dot --
 
     #[test]
     fn test_vector_slice_mut_dot() {
@@ -1447,6 +1796,8 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -- cross --
+
     #[test]
     fn test_vector_slice_mut_cross() {
         let mut a = [1, 2, 3];
@@ -1466,6 +1817,51 @@ mod tests {
         let result = vslice_a.cross(&vslice_b);
         assert!(result.is_err());
     }
+
+    // -- cross_into --
+
+    #[test]
+    fn test_vector_slice_mut_cross_into_basic() {
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0; 3];
+        vslice_a.cross_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [-3, 6, -3]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_cross_into_incorrect_length() {
+        let mut a = [1, 2, 3, 4];
+        let mut b = [4, 5, 6, 7];
+        let vslice_a: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut a, 0..4);
+        let vslice_b: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0; 3];
+        let result = vslice_a.cross_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+
+        let mut a = [1, 2, 3];
+        let mut b = [4, 5, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0; 2];
+        let result = vslice_a.cross_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_cross_into_empty() {
+        let mut a: [i32; 0] = [];
+        let mut b: [i32; 0] = [];
+        let vslice_a: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut a, 0..0);
+        let vslice_b: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut b, 0..0);
+        let mut out: [i32; 0] = [];
+        let result = vslice_a.cross_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    // -- elementwise_min --
 
     #[test]
     fn test_vector_slice_mut_elementwise_min() {
@@ -1487,6 +1883,62 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -- elementwise_min_into --
+
+    #[test]
+    fn test_vector_slice_mut_elementwise_min_into_basic() {
+        let mut a = [1, 5, 3];
+        let mut b = [4, 2, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0; 3];
+        vslice_a.elementwise_min_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [1, 2, 3]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_elementwise_min_into_equal() {
+        let mut a = [2, 2, 2];
+        let mut b = [2, 2, 2];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0; 3];
+        vslice_a.elementwise_min_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [2, 2, 2]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_elementwise_min_into_mismatched_length() {
+        let mut a = [1, 5, 3];
+        let mut b = [4, 2];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0; 3];
+        let result = vslice_a.elementwise_min_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+
+        let mut a = [1, 5, 3];
+        let mut b = [4, 2, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0; 2];
+        let result = vslice_a.elementwise_min_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_elementwise_min_into_empty() {
+        let mut a: [i32; 0] = [];
+        let mut b: [i32; 0] = [];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..0);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..0);
+        let mut out: [i32; 0] = [];
+        vslice_a.elementwise_min_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, []);
+    }
+
+    // -- elementwise_max --
+
     #[test]
     fn test_vector_slice_mut_elementwise_max() {
         let mut a = [1, 5, 3];
@@ -1505,6 +1957,60 @@ mod tests {
         let vslice_b: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut b, 0..2);
         let result = vslice_a.elementwise_max(&vslice_b);
         assert!(result.is_err());
+    }
+
+    // -- elementwise_max_into --
+
+    #[test]
+    fn test_vector_slice_mut_elementwise_max_into_basic() {
+        let mut a = [1, 5, 3];
+        let mut b = [4, 2, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0; 3];
+        vslice_a.elementwise_max_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [4, 5, 6]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_elementwise_max_into_equal() {
+        let mut a = [2, 2, 2];
+        let mut b = [2, 2, 2];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0; 3];
+        vslice_a.elementwise_max_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [2, 2, 2]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_elementwise_max_into_mismatched_length() {
+        let mut a = [1, 5, 3];
+        let mut b = [4, 2];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0; 3];
+        let result = vslice_a.elementwise_max_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+
+        let mut a = [1, 5, 3];
+        let mut b = [4, 2, 6];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0; 2];
+        let result = vslice_a.elementwise_max_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_elementwise_max_into_empty() {
+        let mut a: [i32; 0] = [];
+        let mut b: [i32; 0] = [];
+        let vslice_a: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut a, 0..0);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..0);
+        let mut out: [i32; 0] = [];
+        vslice_a.elementwise_max_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, []);
     }
 
     // -- VectorOpsMut trait for VectorSliceMut --

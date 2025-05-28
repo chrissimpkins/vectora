@@ -50,6 +50,52 @@ where
     [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
 }
 
+/// Writes the cross product of two 3D vectors into the provided output buffer.
+/// Assumes all slices are of length 3.
+#[inline]
+pub(crate) fn cross_into_impl<T: num::Num + Copy>(a: &[T], b: &[T], out: &mut [T]) {
+    out[0] = a[1] * b[2] - a[2] * b[1];
+    out[1] = a[2] * b[0] - a[0] * b[2];
+    out[2] = a[0] * b[1] - a[1] * b[0];
+}
+
+/// Returns a Vec containing the elementwise minimum of two slices.
+/// Assumes all slices are the same length.
+pub(crate) fn elementwise_min_impl<T: PartialOrd + Clone>(a: &[T], b: &[T]) -> Vec<T> {
+    a.iter()
+        .zip(b.iter())
+        .map(|(a_elem, b_elem)| if a_elem < b_elem { a_elem.clone() } else { b_elem.clone() })
+        .collect()
+}
+
+/// Writes the elementwise minimum of two slices into the provided output buffer.
+/// Assumes all slices are the same length.
+#[inline]
+pub(crate) fn elementwise_min_into_impl<T: PartialOrd + Clone>(a: &[T], b: &[T], out: &mut [T]) {
+    for ((out_elem, a_elem), b_elem) in out.iter_mut().zip(a.iter()).zip(b.iter()) {
+        *out_elem = if a_elem < b_elem { a_elem.clone() } else { b_elem.clone() };
+    }
+}
+
+/// Returns a Vec containing the elementwise maximum of two slices.
+/// Assumes all slices are the same length.
+#[inline]
+pub(crate) fn elementwise_max_impl<T: PartialOrd + Clone>(a: &[T], b: &[T]) -> Vec<T> {
+    a.iter()
+        .zip(b.iter())
+        .map(|(a_elem, b_elem)| if a_elem > b_elem { a_elem.clone() } else { b_elem.clone() })
+        .collect()
+}
+
+/// Writes the elementwise maximum of two slices into the provided output buffer.
+/// Assumes all slices are the same length.
+#[inline]
+pub(crate) fn elementwise_max_into_impl<T: PartialOrd + Clone>(a: &[T], b: &[T], out: &mut [T]) {
+    for ((out_elem, a_elem), b_elem) in out.iter_mut().zip(a.iter()).zip(b.iter()) {
+        *out_elem = if a_elem > b_elem { a_elem.clone() } else { b_elem.clone() };
+    }
+}
+
 #[inline]
 pub(crate) fn lerp_impl<T>(a: &[T], b: &[T], weight: T, out: &mut [T])
 where
@@ -455,7 +501,233 @@ mod tests {
         assert_eq!(cross, [0, 0, 1]);
     }
 
+    // -- cross_into_impl --
+
+    #[test]
+    fn test_cross_into_impl_basic() {
+        let a = [1, 2, 3];
+        let b = [4, 5, 6];
+        let mut out = [0; 3];
+        cross_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [-3, 6, -3]);
+    }
+
+    #[test]
+    fn test_cross_into_impl_zero_vector() {
+        let a = [0, 0, 0];
+        let b = [1, 2, 3];
+        let mut out = [0; 3];
+        cross_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [0, 0, 0]);
+    }
+
+    #[test]
+    fn test_cross_into_impl_parallel_vectors() {
+        let a = [1, 2, 3];
+        let b = [2, 4, 6];
+        let mut out = [0; 3];
+        cross_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [0, 0, 0]);
+    }
+
+    #[test]
+    fn test_cross_into_impl_orthogonal_vectors() {
+        let a = [1, 0, 0];
+        let b = [0, 1, 0];
+        let mut out = [0; 3];
+        cross_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [0, 0, 1]);
+    }
+
+    #[test]
+    fn test_cross_into_impl_negative_values() {
+        let a = [-1, -2, -3];
+        let b = [4, 5, 6];
+        let mut out = [0; 3];
+        cross_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [3, -6, 3]);
+    }
+
+    // -- elementwise_min_impl --
+
+    #[test]
+    fn test_elementwise_min_impl_basic() {
+        let a = [1, 5, 3];
+        let b = [4, 2, 6];
+        let result = elementwise_min_impl(&a, &b);
+        assert_eq!(result, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn test_elementwise_min_impl_equal() {
+        let a = [2, 2, 2];
+        let b = [2, 2, 2];
+        let result = elementwise_min_impl(&a, &b);
+        assert_eq!(result, vec![2, 2, 2]);
+    }
+
+    #[test]
+    fn test_elementwise_min_impl_negative_values() {
+        let a = [-1, -5, 3];
+        let b = [4, -2, -6];
+        let result = elementwise_min_impl(&a, &b);
+        assert_eq!(result, vec![-1, -5, -6]);
+    }
+
+    #[test]
+    fn test_elementwise_min_impl_empty() {
+        let a: [i32; 0] = [];
+        let b: [i32; 0] = [];
+        let result = elementwise_min_impl(&a, &b);
+        assert_eq!(result, Vec::<i32>::new());
+    }
+
+    #[test]
+    fn test_elementwise_min_impl_f64() {
+        let a = [1.5, -2.0, 3.0];
+        let b = [2.5, -3.0, 2.0];
+        let result = elementwise_min_impl(&a, &b);
+        assert_eq!(result, vec![1.5, -3.0, 2.0]);
+    }
+
+    // -- elementwise_min_into_impl --
+
+    #[test]
+    fn test_elementwise_min_into_impl_basic() {
+        let a = [1, 5, 3];
+        let b = [4, 2, 6];
+        let mut out = [0; 3];
+        elementwise_min_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [1, 2, 3]);
+    }
+
+    #[test]
+    fn test_elementwise_min_into_impl_equal() {
+        let a = [2, 2, 2];
+        let b = [2, 2, 2];
+        let mut out = [0; 3];
+        elementwise_min_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [2, 2, 2]);
+    }
+
+    #[test]
+    fn test_elementwise_min_into_impl_negative_values() {
+        let a = [-1, -5, 3];
+        let b = [4, -2, -6];
+        let mut out = [0; 3];
+        elementwise_min_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [-1, -5, -6]);
+    }
+
+    #[test]
+    fn test_elementwise_min_into_impl_empty() {
+        let a: [i32; 0] = [];
+        let b: [i32; 0] = [];
+        let mut out: [i32; 0] = [];
+        elementwise_min_into_impl(&a, &b, &mut out);
+        assert_eq!(out, []);
+    }
+
+    #[test]
+    fn test_elementwise_min_into_impl_f64() {
+        let a = [1.5, -2.0, 3.0];
+        let b = [2.5, -3.0, 2.0];
+        let mut out = [0.0; 3];
+        elementwise_min_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [1.5, -3.0, 2.0]);
+    }
+
+    // -- elementwise_max_impl --
+
+    #[test]
+    fn test_elementwise_max_impl_basic() {
+        let a = [1, 5, 3];
+        let b = [4, 2, 6];
+        let result = elementwise_max_impl(&a, &b);
+        assert_eq!(result, vec![4, 5, 6]);
+    }
+
+    #[test]
+    fn test_elementwise_max_impl_equal() {
+        let a = [2, 2, 2];
+        let b = [2, 2, 2];
+        let result = elementwise_max_impl(&a, &b);
+        assert_eq!(result, vec![2, 2, 2]);
+    }
+
+    #[test]
+    fn test_elementwise_max_impl_negative_values() {
+        let a = [-1, -5, 3];
+        let b = [4, -2, -6];
+        let result = elementwise_max_impl(&a, &b);
+        assert_eq!(result, vec![4, -2, 3]);
+    }
+
+    #[test]
+    fn test_elementwise_max_impl_empty() {
+        let a: [i32; 0] = [];
+        let b: [i32; 0] = [];
+        let result = elementwise_max_impl(&a, &b);
+        assert_eq!(result, Vec::<i32>::new());
+    }
+
+    #[test]
+    fn test_elementwise_max_impl_f64() {
+        let a = [1.5, -2.0, 3.0];
+        let b = [2.5, -3.0, 2.0];
+        let result = elementwise_max_impl(&a, &b);
+        assert_eq!(result, vec![2.5, -2.0, 3.0]);
+    }
+
+    // -- elementwise_max_into_impl --
+
+    #[test]
+    fn test_elementwise_max_into_impl_basic() {
+        let a = [1, 5, 3];
+        let b = [4, 2, 6];
+        let mut out = [0; 3];
+        elementwise_max_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [4, 5, 6]);
+    }
+
+    #[test]
+    fn test_elementwise_max_into_impl_equal() {
+        let a = [2, 2, 2];
+        let b = [2, 2, 2];
+        let mut out = [0; 3];
+        elementwise_max_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [2, 2, 2]);
+    }
+
+    #[test]
+    fn test_elementwise_max_into_impl_negative_values() {
+        let a = [-1, -5, 3];
+        let b = [4, -2, -6];
+        let mut out = [0; 3];
+        elementwise_max_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [4, -2, 3]);
+    }
+
+    #[test]
+    fn test_elementwise_max_into_impl_empty() {
+        let a: [i32; 0] = [];
+        let b: [i32; 0] = [];
+        let mut out: [i32; 0] = [];
+        elementwise_max_into_impl(&a, &b, &mut out);
+        assert_eq!(out, []);
+    }
+
+    #[test]
+    fn test_elementwise_max_into_impl_f64() {
+        let a = [1.5, -2.0, 3.0];
+        let b = [2.5, -3.0, 2.0];
+        let mut out = [0.0; 3];
+        elementwise_max_into_impl(&a, &b, &mut out);
+        assert_eq!(out, [2.5, -2.0, 3.0]);
+    }
+
     // -- lerp_impl --
+
     #[test]
     fn test_lerp_impl_basic() {
         let a = [1.0f32, 2.0, 3.0];

@@ -24,11 +24,13 @@ use crate::{
 
 use crate::types::utils::{
     angle_with_impl, chebyshev_distance_complex_impl, chebyshev_distance_impl,
-    cosine_similarity_complex_impl, cosine_similarity_impl, cross_impl, distance_complex_impl,
-    distance_impl, dot_impl, dot_to_f64_impl, hermitian_dot_impl, lerp_impl,
-    manhattan_distance_complex_impl, manhattan_distance_impl, minkowski_distance_complex_impl,
-    minkowski_distance_impl, mut_lerp_impl, mut_normalize_impl, mut_normalize_to_impl,
-    mut_translate_impl, normalize_impl, normalize_to_impl, project_onto_impl, translate_impl,
+    cosine_similarity_complex_impl, cosine_similarity_impl, cross_impl, cross_into_impl,
+    distance_complex_impl, distance_impl, dot_impl, dot_to_f64_impl, elementwise_max_impl,
+    elementwise_max_into_impl, elementwise_min_impl, elementwise_min_into_impl, hermitian_dot_impl,
+    lerp_impl, manhattan_distance_complex_impl, manhattan_distance_impl,
+    minkowski_distance_complex_impl, minkowski_distance_impl, mut_lerp_impl, mut_normalize_impl,
+    mut_normalize_to_impl, mut_translate_impl, normalize_impl, normalize_to_impl,
+    project_onto_impl, translate_impl,
 };
 
 use crate::errors::VectorError;
@@ -740,6 +742,21 @@ where
     }
 
     #[inline]
+    fn translate_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy,
+    {
+        self.check_same_length_and_raise(other)?;
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has wrong length".to_string(),
+            ));
+        }
+        translate_impl(self, other, out);
+        Ok(())
+    }
+
+    #[inline]
     fn dot(&self, other: &Self) -> Result<T, VectorError>
     where
         T: num::Num + Copy + std::iter::Sum<T>,
@@ -775,6 +792,23 @@ where
         Ok(result.into_iter().collect())
     }
 
+    /// ...
+    #[inline]
+    fn cross_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy,
+    {
+        if self.len() != 3 || other.len() != 3 || out.len() != 3 {
+            return Err(VectorError::OutOfRangeError(
+                "Cross product is only defined for 3D vectors".to_string(),
+            ));
+        }
+        let a = self.as_slice();
+        let b = other.as_slice();
+        cross_into_impl(a, b, out);
+        Ok(())
+    }
+
     /// Element-wise min
     #[inline]
     fn elementwise_min(&self, other: &Self) -> Result<Self::Output, VectorError>
@@ -782,13 +816,21 @@ where
         T: PartialOrd + Clone,
     {
         self.check_same_length_and_raise(other)?;
-        let elements = self
-            .as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| if a < b { a.clone() } else { b.clone() })
-            .collect();
-        Ok(FlexVector { elements, _orientation: PhantomData })
+        Ok(FlexVector::from_vec(elementwise_min_impl(self.as_slice(), other.as_slice())))
+    }
+
+    #[inline]
+    fn elementwise_min_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        if self.len() != other.len() || out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors and output buffer must have the same length".to_string(),
+            ));
+        }
+        elementwise_min_into_impl(self.as_slice(), other.as_slice(), out);
+        Ok(())
     }
 
     /// Element-wise max
@@ -798,13 +840,21 @@ where
         T: PartialOrd + Clone,
     {
         self.check_same_length_and_raise(other)?;
-        let elements = self
-            .as_slice()
-            .iter()
-            .zip(other.as_slice())
-            .map(|(a, b)| if a > b { a.clone() } else { b.clone() })
-            .collect();
-        Ok(FlexVector { elements, _orientation: PhantomData })
+        Ok(FlexVector::from_vec(elementwise_max_impl(self.as_slice(), other.as_slice())))
+    }
+
+    #[inline]
+    fn elementwise_max_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: PartialOrd + Clone,
+    {
+        if self.len() != other.len() || out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Vectors and output buffer must have the same length".to_string(),
+            ));
+        }
+        elementwise_max_into_impl(self.as_slice(), other.as_slice(), out);
+        Ok(())
     }
 }
 
@@ -5610,6 +5660,48 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -- translate_into --
+
+    #[test]
+    fn test_translate_into_i32() {
+        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let mut out = [0; 3];
+        v1.translate_into(&v2, &mut out).unwrap();
+        assert_eq!(out, [5, 7, 9]);
+        assert_eq!(v1.as_slice(), &[1, 2, 3]);
+    }
+
+    #[test]
+    fn test_translate_into_f64() {
+        let v1 = FVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let v2 = FlexVector::from_vec(vec![0.5, 1.5, 2.5]);
+        let mut out = [0.0; 3];
+        v1.translate_into(&v2, &mut out).unwrap();
+        assert_eq!(out, [2.0, 4.0, 6.0]);
+        assert_eq!(v1.as_slice(), &[1.5, 2.5, 3.5]);
+    }
+
+    #[test]
+    fn test_translate_into_complex_f64() {
+        use num::Complex;
+        let v1 = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        v1.translate_into(&v2, &mut out).unwrap();
+        assert_eq!(out, [Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
+        assert_eq!(v1.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+    }
+
+    #[test]
+    fn test_translate_into_mismatched_length() {
+        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let mut out = [0; 2];
+        let result = v1.translate_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
     // -- mut_translate --
     #[test]
     fn test_mut_translate_i32() {
@@ -5871,6 +5963,47 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -- cross_into --
+
+    #[test]
+    fn test_cross_into_i32() {
+        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let mut out = [0; 3];
+        v1.cross_into(&v2, &mut out).unwrap();
+        assert_eq!(out, [-3, 6, -3]);
+    }
+
+    #[test]
+    fn test_cross_into_f64() {
+        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
+        let mut out = [0.0; 3];
+        v1.cross_into(&v2, &mut out).unwrap();
+        assert_eq!(out, [-3.0, 6.0, -3.0]);
+    }
+
+    #[test]
+    fn test_cross_into_wrong_length() {
+        let v1 = FVector::from_vec(vec![1, 2]);
+        let v2 = FlexVector::from_vec(vec![3, 4, 5]);
+        let mut out = [0; 3];
+        let result = v1.cross_into(&v2, &mut out);
+        assert!(result.is_err());
+
+        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![3, 4]);
+        let mut out = [0; 3];
+        let result = v1.cross_into(&v2, &mut out);
+        assert!(result.is_err());
+
+        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![3, 4, 5]);
+        let mut out = [0; 2];
+        let result = v1.cross_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
     // -- sum --
     #[test]
     fn test_sum_i32() {
@@ -6029,6 +6162,41 @@ mod tests {
         assert!(min[0].is_nan());
     }
 
+    // -- elementwise_min_into --
+
+    #[test]
+    fn test_elementwise_min_into_i32() {
+        let v1 = FVector::from_vec(vec![1, 5, 3, 7]);
+        let v2 = FlexVector::from_vec(vec![2, 4, 6, 0]);
+        let mut out = [0; 4];
+        v1.elementwise_min_into(&v2, &mut out).unwrap();
+        assert_eq!(out, [1, 4, 3, 0]);
+    }
+
+    #[test]
+    fn test_elementwise_min_into_f64() {
+        let v1 = FVector::from_vec(vec![1.5, -2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![2.5, -3.0, 2.0]);
+        let mut out = [0.0; 3];
+        v1.elementwise_min_into(&v2, &mut out).unwrap();
+        assert_eq!(out, [1.5, -3.0, 2.0]);
+    }
+
+    #[test]
+    fn test_elementwise_min_into_mismatched_length() {
+        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5]);
+        let mut out = [0; 3];
+        let result = v1.elementwise_min_into(&v2, &mut out);
+        assert!(result.is_err());
+
+        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let mut out = [0; 2];
+        let result = v1.elementwise_min_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
     // -- maximum --
     #[test]
     fn test_maximum_i32() {
@@ -6126,6 +6294,41 @@ mod tests {
         assert!(max[0].is_nan());
     }
 
+    // -- elementwise_max_into --
+
+    #[test]
+    fn test_elementwise_max_into_i32() {
+        let v1 = FVector::from_vec(vec![1, 5, 3, 7]);
+        let v2 = FlexVector::from_vec(vec![2, 4, 6, 0]);
+        let mut out = [0; 4];
+        v1.elementwise_max_into(&v2, &mut out).unwrap();
+        assert_eq!(out, [2, 5, 6, 7]);
+    }
+
+    #[test]
+    fn test_elementwise_max_into_f64() {
+        let v1 = FVector::from_vec(vec![1.5, -2.0, 3.0]);
+        let v2 = FlexVector::from_vec(vec![2.5, -3.0, 2.0]);
+        let mut out = [0.0; 3];
+        v1.elementwise_max_into(&v2, &mut out).unwrap();
+        assert_eq!(out, [2.5, -2.0, 3.0]);
+    }
+
+    #[test]
+    fn test_elementwise_max_into_mismatched_length() {
+        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5]);
+        let mut out = [0; 3];
+        let result = v1.elementwise_max_into(&v2, &mut out);
+        assert!(result.is_err());
+
+        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v2 = FlexVector::from_vec(vec![4, 5, 6]);
+        let mut out = [0; 2];
+        let result = v1.elementwise_max_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
     // -- elementwise_clamp --
 
     #[test]
@@ -6191,6 +6394,82 @@ mod tests {
         let v: FlexVector<f64> = FlexVector::new();
         let clamped = v.elementwise_clamp(0.0, 10.0);
         assert!(clamped.is_empty());
+    }
+
+    // -- elementwise_clamp_into --
+
+    #[test]
+    fn test_elementwise_clamp_into_i32_basic() {
+        let v = FVector::from_vec(vec![-5, 0, 5, 10, 15]);
+        let mut out = [0; 5];
+        v.elementwise_clamp_into(0, 10, &mut out).unwrap();
+        assert_eq!(out, [0, 0, 5, 10, 10]);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_into_i32_all_below() {
+        let v = FVector::from_vec(vec![-3, -2, -1]);
+        let mut out = [0; 3];
+        v.elementwise_clamp_into(0, 5, &mut out).unwrap();
+        assert_eq!(out, [0, 0, 0]);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_into_i32_all_above() {
+        let v = FVector::from_vec(vec![11, 12, 13]);
+        let mut out = [0; 3];
+        v.elementwise_clamp_into(0, 10, &mut out).unwrap();
+        assert_eq!(out, [10, 10, 10]);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_into_i32_empty() {
+        let v: FlexVector<i32> = FlexVector::new();
+        let mut out = [];
+        v.elementwise_clamp_into(0, 10, &mut out).unwrap();
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    fn test_elementwise_clamp_into_f64_basic() {
+        let v = FVector::from_vec(vec![-2.5, 0.0, 3.5, 7.2, 12.0]);
+        let mut out = [0.0; 5];
+        v.elementwise_clamp_into(0.0, 10.0, &mut out).unwrap();
+        assert_eq!(out, [0.0, 0.0, 3.5, 7.2, 10.0]);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_into_f64_all_below() {
+        let v = FVector::from_vec(vec![-1.1, -2.2]);
+        let mut out = [0.0; 2];
+        v.elementwise_clamp_into(0.0, 5.0, &mut out).unwrap();
+        assert_eq!(out, [0.0, 0.0]);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_into_f64_all_above() {
+        let v = FVector::from_vec(vec![11.1, 12.2]);
+        let mut out = [0.0; 2];
+        v.elementwise_clamp_into(0.0, 10.0, &mut out).unwrap();
+        assert_eq!(out, [10.0, 10.0]);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_into_f64_with_nan() {
+        let v = FVector::from_vec(vec![1.0, f64::NAN, 5.0]);
+        let mut out = [0.0; 3];
+        v.elementwise_clamp_into(0.0, 4.0, &mut out).unwrap();
+        assert_eq!(out[0], 1.0);
+        assert!(out[1].is_nan());
+        assert_eq!(out[2], 4.0);
+    }
+
+    #[test]
+    fn test_elementwise_clamp_into_f64_empty() {
+        let v: FlexVector<f64> = FlexVector::new();
+        let mut out = [];
+        v.elementwise_clamp_into(0.0, 10.0, &mut out).unwrap();
+        assert!(out.is_empty());
     }
 
     // -- l1_norm --
