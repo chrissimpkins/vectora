@@ -4,19 +4,24 @@ use crate::errors::VectorError;
 use crate::types::flexvector::FlexVector;
 use crate::types::orientation::Column;
 use crate::types::traits::{
-    VectorBase, VectorBaseMut, VectorOps, VectorOpsFloat, VectorOpsFloatMut, VectorOpsMut,
-    VectorOrientationName,
+    VectorBase, VectorBaseMut, VectorOps, VectorOpsComplex, VectorOpsFloat, VectorOpsFloatMut,
+    VectorOpsMut, VectorOrientationName,
 };
 use crate::types::utils::{
-    angle_with_impl, chebyshev_distance_impl, cosine_similarity_impl, cross_impl, cross_into_impl,
-    distance_impl, dot_impl, dot_to_f64_impl, elementwise_max_impl, elementwise_max_into_impl,
-    elementwise_min_impl, elementwise_min_into_impl, lerp_impl, manhattan_distance_impl,
-    minkowski_distance_impl, mut_lerp_impl, mut_normalize_impl, mut_normalize_to_impl,
-    mut_translate_impl, normalize_impl, normalize_to_impl, project_onto_impl, translate_impl,
+    angle_with_impl, chebyshev_distance_complex_impl, chebyshev_distance_impl,
+    cosine_similarity_complex_impl, cosine_similarity_impl, cross_impl, cross_into_impl,
+    distance_complex_impl, distance_impl, dot_impl, dot_to_f64_impl, elementwise_max_impl,
+    elementwise_max_into_impl, elementwise_min_impl, elementwise_min_into_impl, hermitian_dot_impl,
+    lerp_impl, manhattan_distance_complex_impl, manhattan_distance_impl,
+    minkowski_distance_complex_impl, minkowski_distance_impl, mut_lerp_impl, mut_normalize_impl,
+    mut_normalize_to_impl, mut_translate_impl, normalize_impl, normalize_to_impl,
+    project_onto_impl, translate_impl,
 };
 
 use std::fmt;
 use std::marker::PhantomData;
+
+use num::{Complex, Zero};
 
 // /////////////////////////////////
 // ================================
@@ -425,6 +430,155 @@ where
             ));
         }
         Ok(cosine_similarity_impl(self.as_slice(), other.as_slice(), norm_self, norm_other))
+    }
+}
+
+impl<'a, N, O> VectorOpsComplex<N> for VectorSlice<'a, Complex<N>, O>
+where
+    N: num::Float + Clone + std::iter::Sum<N>,
+{
+    type Output = FlexVector<Complex<N>, O>;
+
+    #[inline]
+    fn normalize(&self) -> Result<Self::Output, VectorError>
+    where
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
+        Self::Output: std::iter::FromIterator<Complex<N>>,
+    {
+        normalize_impl(self.as_slice(), Complex::new(self.norm(), N::zero()))
+    }
+
+    #[inline]
+    fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
+    where
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>
+            + num::Zero,
+        Self::Output: std::iter::FromIterator<Complex<N>>,
+    {
+        normalize_to_impl(
+            self.as_slice(),
+            Complex::new(self.norm(), N::zero()),
+            Complex::new(magnitude, N::zero()),
+        )
+    }
+
+    #[inline]
+    fn dot(&self, other: &Self) -> Result<Complex<N>, VectorError>
+    where
+        N: num::Num + Copy + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(hermitian_dot_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn lerp(&self, end: &Self, weight: N) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float + Clone + PartialOrd,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One,
+    {
+        self.check_same_length_and_raise(end)?;
+        if weight < N::zero() || weight > N::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        let w = Complex::new(weight, N::zero());
+        let mut out = FlexVector::zero(self.len());
+        lerp_impl(self.as_slice(), end.as_slice(), w, out.as_mut_slice());
+        Ok(out)
+    }
+
+    #[inline]
+    fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float + Clone,
+    {
+        self.check_same_length_and_raise(end)?;
+        self.lerp(end, num::cast(0.5).unwrap())
+    }
+
+    #[inline]
+    fn distance(&self, other: &Self) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(distance_complex_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn manhattan_distance(&self, other: &Self) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(manhattan_distance_complex_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn chebyshev_distance(&self, other: &Self) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + PartialOrd,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(chebyshev_distance_complex_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn minkowski_distance(&self, other: &Self, p: N) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        self.check_same_length_and_raise(other)?;
+        if p < N::one() {
+            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
+        }
+        Ok(minkowski_distance_complex_impl(self.as_slice(), other.as_slice(), p))
+    }
+
+    #[inline]
+    fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+        Complex<N>: Copy
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + num::Zero,
+        Self::Output: std::iter::FromIterator<Complex<N>>,
+    {
+        self.check_same_length_and_raise(other)?;
+        let denom = hermitian_dot_impl(other.as_slice(), other.as_slice());
+        if denom == Complex::<N>::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot project onto zero vector".to_string(),
+            ));
+        }
+        let scalar = hermitian_dot_impl(self.as_slice(), other.as_slice()) / denom;
+        Ok(project_onto_impl(other.as_slice(), scalar))
+    }
+
+    #[inline]
+    fn cosine_similarity(&self, other: &Self) -> Result<num::Complex<N>, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+        Complex<N>: std::ops::Div<Output = Complex<N>>,
+    {
+        self.check_same_length_and_raise(other)?;
+        let norm_self = self.norm();
+        let norm_other = other.norm();
+        if norm_self == N::zero() || norm_other == N::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot compute cosine similarity with zero vector".to_string(),
+            ));
+        }
+        Ok(cosine_similarity_complex_impl(self.as_slice(), other.as_slice(), norm_self, norm_other))
     }
 }
 
@@ -902,6 +1056,155 @@ where
         }
         mut_lerp_impl(self.as_mut_slice(), end.as_slice(), weight);
         Ok(())
+    }
+}
+
+impl<'a, N, O> VectorOpsComplex<N> for VectorSliceMut<'a, Complex<N>, O>
+where
+    N: num::Float + Clone + std::iter::Sum<N>,
+{
+    type Output = FlexVector<Complex<N>, O>;
+
+    #[inline]
+    fn normalize(&self) -> Result<Self::Output, VectorError>
+    where
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
+        Self::Output: std::iter::FromIterator<Complex<N>>,
+    {
+        normalize_impl(self.as_slice(), Complex::new(self.norm(), N::zero()))
+    }
+
+    #[inline]
+    fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
+    where
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>
+            + num::Zero,
+        Self::Output: std::iter::FromIterator<Complex<N>>,
+    {
+        normalize_to_impl(
+            self.as_slice(),
+            Complex::new(self.norm(), N::zero()),
+            Complex::new(magnitude, N::zero()),
+        )
+    }
+
+    #[inline]
+    fn dot(&self, other: &Self) -> Result<Complex<N>, VectorError>
+    where
+        N: num::Num + Copy + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(hermitian_dot_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn lerp(&self, end: &Self, weight: N) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float + Clone + PartialOrd,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One,
+    {
+        self.check_same_length_and_raise(end)?;
+        if weight < N::zero() || weight > N::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        let w = Complex::new(weight, N::zero());
+        let mut out = FlexVector::zero(self.len());
+        lerp_impl(self.as_slice(), end.as_slice(), w, out.as_mut_slice());
+        Ok(out)
+    }
+
+    #[inline]
+    fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float + Clone,
+    {
+        self.check_same_length_and_raise(end)?;
+        self.lerp(end, num::cast(0.5).unwrap())
+    }
+
+    #[inline]
+    fn distance(&self, other: &Self) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(distance_complex_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn manhattan_distance(&self, other: &Self) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(manhattan_distance_complex_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn chebyshev_distance(&self, other: &Self) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + PartialOrd,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(chebyshev_distance_complex_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn minkowski_distance(&self, other: &Self, p: N) -> Result<N, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N>,
+    {
+        self.check_same_length_and_raise(other)?;
+        if p < N::one() {
+            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
+        }
+        Ok(minkowski_distance_complex_impl(self.as_slice(), other.as_slice(), p))
+    }
+
+    #[inline]
+    fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+        Complex<N>: Copy
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + num::Zero,
+        Self::Output: std::iter::FromIterator<Complex<N>>,
+    {
+        self.check_same_length_and_raise(other)?;
+        let denom = hermitian_dot_impl(other.as_slice(), other.as_slice());
+        if denom == Complex::<N>::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot project onto zero vector".to_string(),
+            ));
+        }
+        let scalar = hermitian_dot_impl(self.as_slice(), other.as_slice()) / denom;
+        Ok(project_onto_impl(other.as_slice(), scalar))
+    }
+
+    #[inline]
+    fn cosine_similarity(&self, other: &Self) -> Result<num::Complex<N>, VectorError>
+    where
+        N: num::Float + Clone + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+        Complex<N>: std::ops::Div<Output = Complex<N>>,
+    {
+        self.check_same_length_and_raise(other)?;
+        let norm_self = self.norm();
+        let norm_other = other.norm();
+        if norm_self == N::zero() || norm_other == N::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot compute cosine similarity with zero vector".to_string(),
+            ));
+        }
+        Ok(cosine_similarity_complex_impl(self.as_slice(), other.as_slice(), norm_self, norm_other))
     }
 }
 
@@ -1764,6 +2067,373 @@ mod tests {
         let vslice_b = VectorSlice::from_range(&b, 0..2);
         let result = vslice_a.cosine_similarity(&vslice_b).unwrap();
         assert!((result - 0.0).abs() < 1e-8);
+    }
+
+    // -- VectorOpsComplex for VectorSlice --
+
+    // -- normalize --
+
+    #[test]
+    fn test_vector_slice_complex_normalize() {
+        use num::Complex;
+        let a = [Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        // The norm is sqrt(|3+4i|^2 + |0|^2) = sqrt(25) = 5
+        let result = vslice.normalize().unwrap();
+        let expected = [Complex::new(3.0 / 5.0, 4.0 / 5.0), Complex::new(0.0, 0.0)];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x.re - y.re).abs() < 1e-8);
+            assert!((x.im - y.im).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_complex_normalize_zero_vector() {
+        use num::Complex;
+        let a = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        let result = vslice.normalize();
+        assert!(result.is_err());
+    }
+
+    // -- normalize_to --
+
+    #[test]
+    fn test_vector_slice_complex_normalize_to() {
+        use num::Complex;
+        let a = [Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        // The norm is 5, so scaling to magnitude 10 multiplies by 2
+        let result = vslice.normalize_to(10.0).unwrap();
+        let expected = [Complex::new(6.0, 8.0), Complex::new(0.0, 0.0)];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x.re - y.re).abs() < 1e-8);
+            assert!((x.im - y.im).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_complex_normalize_to_zero_vector() {
+        use num::Complex;
+        let a = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        let result = vslice.normalize_to(10.0);
+        assert!(result.is_err());
+    }
+
+    // -- dot --
+
+    #[test]
+    fn test_vector_slice_complex_dot_basic() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        // Hermitian dot: conj(a0)*b0 + conj(a1)*b1
+        let expected = a[0].conj() * b[0] + a[1].conj() * b[1];
+        let result = VectorOpsComplex::dot(&vslice_a, &vslice_b).unwrap();
+        assert!((result.re - expected.re).abs() < 1e-12);
+        assert!((result.im - expected.im).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_dot_negative_values() {
+        use num::Complex;
+        let a = [Complex::new(-1.0, -2.0), Complex::new(-3.0, -4.0)];
+        let b = [Complex::new(2.0, 1.0), Complex::new(4.0, 3.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let expected = a[0].conj() * b[0] + a[1].conj() * b[1];
+        let result = VectorOpsComplex::dot(&vslice_a, &vslice_b).unwrap();
+        assert!((result.re - expected.re).abs() < 1e-12);
+        assert!((result.im - expected.im).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_dot_zero_vector() {
+        use num::Complex;
+        let a = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
+        let b = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let result = VectorOpsComplex::dot(&vslice_a, &vslice_b).unwrap();
+        assert!((result.re).abs() < 1e-12);
+        assert!((result.im).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_dot_empty() {
+        use num::Complex;
+        let a: [Complex<f64>; 0] = [];
+        let b: [Complex<f64>; 0] = [];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..0);
+        let vslice_b = VectorSlice::from_range(&b, 0..0);
+        let result = VectorOpsComplex::dot(&vslice_a, &vslice_b).unwrap();
+        assert!((result.re).abs() < 1e-12);
+        assert!((result.im).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_dot_mismatched_length() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 2.0)];
+        let b = [Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let result = VectorOpsComplex::dot(&vslice_a, &vslice_b);
+        assert!(result.is_err());
+    }
+
+    // -- lerp --
+
+    #[test]
+    fn test_vector_slice_complex_lerp() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        // Lerp with weight 0.25
+        let result = vslice_a.lerp(&vslice_b, 0.25).unwrap();
+        let expected = [
+            Complex::new(1.0 + 0.25 * (5.0 - 1.0), 2.0 + 0.25 * (6.0 - 2.0)),
+            Complex::new(3.0 + 0.25 * (7.0 - 3.0), 4.0 + 0.25 * (8.0 - 4.0)),
+        ];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x.re - y.re).abs() < 1e-8);
+            assert!((x.im - y.im).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_complex_lerp_weight_out_of_bounds() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 2.0)];
+        let b = [Complex::new(3.0, 4.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
+        let vslice_b = VectorSlice::from_range(&b, 0..1);
+        assert!(vslice_a.lerp(&vslice_b, -0.1).is_err());
+        assert!(vslice_a.lerp(&vslice_b, 1.1).is_err());
+    }
+
+    // -- midpoint --
+
+    #[test]
+    fn test_vector_slice_complex_midpoint() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let result = vslice_a.midpoint(&vslice_b).unwrap();
+        let expected = [
+            Complex::new((1.0 + 5.0) / 2.0, (2.0 + 6.0) / 2.0),
+            Complex::new((3.0 + 7.0) / 2.0, (4.0 + 8.0) / 2.0),
+        ];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x.re - y.re).abs() < 1e-8);
+            assert!((x.im - y.im).abs() < 1e-8);
+        }
+    }
+
+    // -- distance --
+
+    #[test]
+    fn test_vector_slice_complex_distance() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        // Euclidean distance: sqrt(sum_i |a[i] - b[i]|^2)
+        let d0 = (a[0] - b[0]).norm_sqr();
+        let d1 = (a[1] - b[1]).norm_sqr();
+        let expected = (d0 + d1).sqrt();
+        let dist = vslice_a.distance(&vslice_b).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    // -- manhattan_distance --
+
+    #[test]
+    fn test_vector_slice_complex_manhattan_distance() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        // Manhattan distance: sum_i |a[i] - b[i]|
+        let d0 = (a[0] - b[0]).norm();
+        let d1 = (a[1] - b[1]).norm();
+        let expected = d0 + d1;
+        let dist = vslice_a.manhattan_distance(&vslice_b).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    // -- chebyshev_distance --
+
+    #[test]
+    fn test_vector_slice_complex_chebyshev_distance() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        // Chebyshev distance: max_i |a[i] - b[i]|
+        let d0 = (a[0] - b[0]).norm();
+        let d1 = (a[1] - b[1]).norm();
+        let expected = d0.max(d1);
+        let dist = vslice_a.chebyshev_distance(&vslice_b).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    // -- minkowski_distance --
+
+    #[test]
+    fn test_vector_slice_complex_minkowski_distance() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let p = 3.0;
+        // Minkowski distance: (|a[0]-b[0]|^p + |a[1]-b[1]|^p)^(1/p)
+        let d0 = (a[0] - b[0]).norm().powf(p);
+        let d1 = (a[1] - b[1]).norm().powf(p);
+        let expected = (d0 + d1).powf(1.0 / p);
+        let dist = vslice_a.minkowski_distance(&vslice_b, p).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    // -- project_onto --
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_basic() {
+        use num::Complex;
+        let a = [Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)];
+        let b = [Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        // Project a onto b: should be [3.0 - 4.0i, 0.0]
+        let proj = vslice_a.project_onto(&vslice_b).unwrap();
+        assert!((proj.as_slice()[0] - Complex::new(3.0, -4.0)).norm() < 1e-12);
+        assert!((proj.as_slice()[1] - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_parallel() {
+        use num::Complex;
+        let a = [Complex::new(2.0, 2.0), Complex::new(4.0, 4.0)];
+        let b = [Complex::new(1.0, 1.0), Complex::new(2.0, 2.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let proj = vslice_a.project_onto(&vslice_b).unwrap();
+        assert!((proj.as_slice()[0] - Complex::new(2.0, 2.0)).norm() < 1e-12);
+        assert!((proj.as_slice()[1] - Complex::new(4.0, 4.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_orthogonal() {
+        use num::Complex;
+        let a = [Complex::new(0.0, 1.0), Complex::new(0.0, 0.0)];
+        let b = [Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let proj = vslice_a.project_onto(&vslice_b).unwrap();
+        assert!((proj.as_slice()[0] - Complex::new(0.0, -1.0)).norm() < 1e-12);
+        assert!((proj.as_slice()[1] - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_identical() {
+        use num::Complex;
+        let a = [Complex::new(5.0, 5.0), Complex::new(5.0, 5.0)];
+        let b = [Complex::new(5.0, 5.0), Complex::new(5.0, 5.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let proj = vslice_a.project_onto(&vslice_b).unwrap();
+        assert!((proj.as_slice()[0] - Complex::new(5.0, 5.0)).norm() < 1e-12);
+        assert!((proj.as_slice()[1] - Complex::new(5.0, 5.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_zero_vector() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let b = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let result = vslice_a.project_onto(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    // -- cosine_similarity --
+
+    #[test]
+    fn test_vector_slice_complex_cosine_similarity_parallel() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 2.0), Complex::new(2.0, 4.0)];
+        let b = [Complex::new(2.0, 4.0), Complex::new(4.0, 8.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let cos_sim = vslice_a.cosine_similarity(&vslice_b).unwrap();
+        assert!((cos_sim - Complex::new(1.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_cosine_similarity_orthogonal() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)];
+        let b = [Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let cos_sim = vslice_a.cosine_similarity(&vslice_b).unwrap();
+        assert!((cos_sim - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_cosine_similarity_opposite() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 0.0)];
+        let b = [Complex::new(-1.0, 0.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
+        let vslice_b = VectorSlice::from_range(&b, 0..1);
+        let cos_sim = vslice_a.cosine_similarity(&vslice_b).unwrap();
+        assert!((cos_sim + Complex::new(1.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_cosine_similarity_identical() {
+        use num::Complex;
+        let a = [Complex::new(3.0, 4.0)];
+        let b = [Complex::new(3.0, 4.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
+        let vslice_b = VectorSlice::from_range(&b, 0..1);
+        let cos_sim = vslice_a.cosine_similarity(&vslice_b).unwrap();
+        assert!((cos_sim - Complex::new(1.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_cosine_similarity_arbitrary() {
+        use num::Complex;
+        let a = [Complex::new(1.0, 2.0)];
+        let b = [Complex::new(2.0, 1.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
+        let vslice_b = VectorSlice::from_range(&b, 0..1);
+        let cos_sim = vslice_a.cosine_similarity(&vslice_b).unwrap();
+        assert!(cos_sim.norm() <= 1.0 + 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_cosine_similarity_zero_vector() {
+        use num::Complex;
+        let a = [Complex::new(0.0, 0.0)];
+        let b = [Complex::new(1.0, 2.0)];
+        let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
+        let vslice_b = VectorSlice::from_range(&b, 0..1);
+        let result = vslice_a.cosine_similarity(&vslice_b);
+        assert!(result.is_err());
     }
 
     // /////////////////////////////////
@@ -2716,5 +3386,385 @@ mod tests {
         let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
         assert!(vslice_a.mut_lerp(&vslice_b, -0.1).is_err());
         assert!(vslice_a.mut_lerp(&vslice_b, 1.1).is_err());
+    }
+
+    // -- VectorOpsComplex trait for VectorSliceMut --
+
+    // -- normalize --
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize() {
+        use num::Complex;
+        let mut a = [Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        // The norm is sqrt(|3+4i|^2 + |0|^2) = sqrt(25) = 5
+        let result = vslice.normalize().unwrap();
+        let expected = [Complex::new(3.0 / 5.0, 4.0 / 5.0), Complex::new(0.0, 0.0)];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x.re - y.re).abs() < 1e-8);
+            assert!((x.im - y.im).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_zero_vector() {
+        use num::Complex;
+        let mut a = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let result = vslice.normalize();
+        assert!(result.is_err());
+    }
+
+    // -- normalize_to --
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_to() {
+        use num::Complex;
+        let mut a = [Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        // The norm is 5, so scaling to magnitude 10 multiplies by 2
+        let result = vslice.normalize_to(10.0).unwrap();
+        let expected = [Complex::new(6.0, 8.0), Complex::new(0.0, 0.0)];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x.re - y.re).abs() < 1e-8);
+            assert!((x.im - y.im).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_to_zero_vector() {
+        use num::Complex;
+        let mut a = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let result = vslice.normalize_to(10.0);
+        assert!(result.is_err());
+    }
+
+    // -- dot --
+
+    #[test]
+    fn test_vector_slice_mut_complex_dot_basic() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        // Compute expected before mutable borrow
+        let expected = a[0].conj() * b[0] + a[1].conj() * b[1];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = VectorOpsComplex::dot(&vslice_a, &vslice_b).unwrap();
+        assert!((result.re - expected.re).abs() < 1e-12);
+        assert!((result.im - expected.im).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_dot_mismatched_length() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let mut b = [Complex::new(5.0, 6.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..1);
+        let result = VectorOpsComplex::dot(&vslice_a, &vslice_b);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_dot_zero() {
+        use num::Complex;
+        let mut a = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
+        let mut b = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = VectorOpsComplex::dot(&vslice_a, &vslice_b).unwrap();
+        assert!((result.re).abs() < 1e-12);
+        assert!((result.im).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_dot_empty() {
+        use num::Complex;
+        let mut a: [Complex<f64>; 0] = [];
+        let mut b: [Complex<f64>; 0] = [];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..0);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..0);
+        let result = VectorOpsComplex::dot(&vslice_a, &vslice_b).unwrap();
+        assert!((result.re).abs() < 1e-12);
+        assert!((result.im).abs() < 1e-12);
+    }
+
+    // -- lerp --
+
+    #[test]
+    fn test_vector_slice_mut_complex_lerp() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        // Lerp with weight 0.25
+        let result = vslice_a.lerp(&vslice_b, 0.25).unwrap();
+        let expected = [
+            Complex::new(1.0 + 0.25 * (5.0 - 1.0), 2.0 + 0.25 * (6.0 - 2.0)),
+            Complex::new(3.0 + 0.25 * (7.0 - 3.0), 4.0 + 0.25 * (8.0 - 4.0)),
+        ];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x.re - y.re).abs() < 1e-8);
+            assert!((x.im - y.im).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_lerp_weight_out_of_bounds() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 2.0)];
+        let mut b = [Complex::new(3.0, 4.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..1);
+        assert!(vslice_a.lerp(&vslice_b, -0.1).is_err());
+        assert!(vslice_a.lerp(&vslice_b, 1.1).is_err());
+    }
+
+    // -- midpoint --
+
+    #[test]
+    fn test_vector_slice_mut_complex_midpoint() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = vslice_a.midpoint(&vslice_b).unwrap();
+        let expected = [
+            Complex::new((1.0 + 5.0) / 2.0, (2.0 + 6.0) / 2.0),
+            Complex::new((3.0 + 7.0) / 2.0, (4.0 + 8.0) / 2.0),
+        ];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x.re - y.re).abs() < 1e-8);
+            assert!((x.im - y.im).abs() < 1e-8);
+        }
+    }
+
+    // -- distance --
+
+    #[test]
+    fn test_vector_slice_mut_complex_distance() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0_f64, 2.0), Complex::new(3.0, 4.0)];
+        let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        // Euclidean distance: sqrt(sum_i |a[i] - b[i]|^2)
+        let d0 = (a[0] - b[0]).norm_sqr();
+        let d1 = (a[1] - b[1]).norm_sqr();
+        let expected = (d0 + d1).sqrt();
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let dist = vslice_a.distance(&vslice_b).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    // -- manhattan_distance --
+
+    #[test]
+    fn test_vector_slice_mut_complex_manhattan_distance() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0_f64, 2.0), Complex::new(3.0, 4.0)];
+        let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        // Manhattan distance: sum_i |a[i] - b[i]|
+        let d0 = (a[0] - b[0]).norm();
+        let d1 = (a[1] - b[1]).norm();
+        let expected = d0 + d1;
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let dist = vslice_a.manhattan_distance(&vslice_b).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    // -- chebyshev_distance --
+
+    #[test]
+    fn test_vector_slice_mut_complex_chebyshev_distance() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0_f64, 2.0), Complex::new(3.0, 4.0)];
+        let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        // Chebyshev distance: max_i |a[i] - b[i]|
+        let d0 = (a[0] - b[0]).norm();
+        let d1 = (a[1] - b[1]).norm();
+        let expected = d0.max(d1);
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let dist = vslice_a.chebyshev_distance(&vslice_b).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    // -- minkowski_distance --
+
+    #[test]
+    fn test_vector_slice_mut_complex_minkowski_distance() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0_f64, 2.0), Complex::new(3.0, 4.0)];
+        let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
+        // Minkowski distance: (|a[0]-b[0]|^p + |a[1]-b[1]|^p)^(1/p)
+        let p = 3.0;
+        let d0 = (a[0] - b[0]).norm().powf(p);
+        let d1 = (a[1] - b[1]).norm().powf(p);
+        let expected = (d0 + d1).powf(1.0 / p);
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let dist = vslice_a.minkowski_distance(&vslice_b, p).unwrap();
+        assert!((dist - expected).abs() < 1e-12);
+    }
+
+    // -- project_onto --
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_basic() {
+        use num::Complex;
+        let mut a = [Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)];
+        let mut b = [Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        // Project a onto b: should be [3.0 - 4.0i, 0.0]
+        let proj = vslice_a.project_onto(&vslice_b).unwrap();
+        assert!((proj.as_slice()[0] - Complex::new(3.0, -4.0)).norm() < 1e-12);
+        assert!((proj.as_slice()[1] - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_parallel() {
+        use num::Complex;
+        let mut a = [Complex::new(2.0, 2.0), Complex::new(4.0, 4.0)];
+        let mut b = [Complex::new(1.0, 1.0), Complex::new(2.0, 2.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let proj = vslice_a.project_onto(&vslice_b).unwrap();
+        assert!((proj.as_slice()[0] - Complex::new(2.0, 2.0)).norm() < 1e-12);
+        assert!((proj.as_slice()[1] - Complex::new(4.0, 4.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_orthogonal() {
+        use num::Complex;
+        let mut a = [Complex::new(0.0, 1.0), Complex::new(0.0, 0.0)];
+        let mut b = [Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let proj = vslice_a.project_onto(&vslice_b).unwrap();
+        assert!((proj.as_slice()[0] - Complex::new(0.0, -1.0)).norm() < 1e-12);
+        assert!((proj.as_slice()[1] - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_identical() {
+        use num::Complex;
+        let mut a = [Complex::new(5.0, 5.0), Complex::new(5.0, 5.0)];
+        let mut b = [Complex::new(5.0, 5.0), Complex::new(5.0, 5.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let proj = vslice_a.project_onto(&vslice_b).unwrap();
+        assert!((proj.as_slice()[0] - Complex::new(5.0, 5.0)).norm() < 1e-12);
+        assert!((proj.as_slice()[1] - Complex::new(5.0, 5.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_zero_vector() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let mut b = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = vslice_a.project_onto(&vslice_b);
+        assert!(result.is_err());
+    }
+
+    // -- cosine_similarity --
+
+    #[test]
+    fn test_vector_slice_mut_complex_cosine_similarity_parallel() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 2.0), Complex::new(2.0, 4.0)];
+        let mut b = [Complex::new(2.0, 4.0), Complex::new(4.0, 8.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let cos_sim = vslice_a.cosine_similarity(&vslice_b).unwrap();
+        assert!((cos_sim - Complex::new(1.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_cosine_similarity_orthogonal() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)];
+        let mut b = [Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let cos_sim = vslice_a.cosine_similarity(&vslice_b).unwrap();
+        assert!((cos_sim - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_cosine_similarity_opposite() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 0.0)];
+        let mut b = [Complex::new(-1.0, 0.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..1);
+        let cos_sim = vslice_a.cosine_similarity(&vslice_b).unwrap();
+        assert!((cos_sim + Complex::new(1.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_cosine_similarity_identical() {
+        use num::Complex;
+        let mut a = [Complex::new(3.0, 4.0)];
+        let mut b = [Complex::new(3.0, 4.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..1);
+        let cos_sim = vslice_a.cosine_similarity(&vslice_b).unwrap();
+        assert!((cos_sim - Complex::new(1.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_cosine_similarity_arbitrary() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 2.0)];
+        let mut b = [Complex::new(2.0, 1.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..1);
+        let cos_sim = vslice_a.cosine_similarity(&vslice_b).unwrap();
+        assert!(cos_sim.norm() <= 1.0 + 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_cosine_similarity_zero_vector() {
+        use num::Complex;
+        let mut a = [Complex::new(0.0, 0.0)];
+        let mut b = [Complex::new(1.0, 2.0)];
+        let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..1);
+        let result = vslice_a.cosine_similarity(&vslice_b);
+        assert!(result.is_err());
     }
 }
