@@ -895,6 +895,7 @@ where
     fn normalize(&self) -> Result<Self::Output, VectorError>
     where
         T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+        Self::Output: std::iter::FromIterator<T>,
     {
         normalize_impl(self.as_slice(), self.norm())
     }
@@ -916,7 +917,7 @@ where
     #[inline]
     fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
     where
-        T: num::Float + Copy,
+        T: num::Float + Clone,
     {
         self.check_same_length_and_raise(end)?;
         if weight < T::zero() || weight > T::one() {
