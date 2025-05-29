@@ -11,8 +11,8 @@ use crate::types::utils::{
     angle_with_impl, chebyshev_distance_impl, cosine_similarity_impl, cross_impl, cross_into_impl,
     distance_impl, dot_impl, dot_to_f64_impl, elementwise_max_impl, elementwise_max_into_impl,
     elementwise_min_impl, elementwise_min_into_impl, lerp_impl, manhattan_distance_impl,
-    minkowski_distance_impl, mut_translate_impl, normalize_impl, normalize_to_impl,
-    project_onto_impl, translate_impl,
+    minkowski_distance_impl, mut_lerp_impl, mut_normalize_impl, mut_normalize_to_impl,
+    mut_translate_impl, normalize_impl, normalize_to_impl, project_onto_impl, translate_impl,
 };
 
 use std::fmt;
@@ -860,6 +860,48 @@ where
             ));
         }
         Ok(cosine_similarity_impl(self.as_slice(), other.as_slice(), norm_self, norm_other))
+    }
+}
+
+impl<'a, T, O> VectorOpsFloatMut<T> for VectorSliceMut<'a, T, O>
+where
+    T: num::Float + Clone + std::iter::Sum<T>,
+{
+    type Output = Self;
+
+    #[inline]
+    fn mut_normalize(&mut self) -> Result<(), VectorError>
+    where
+        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+    {
+        let norm = self.norm();
+        mut_normalize_impl(self.as_mut_slice(), norm)
+    }
+
+    #[inline]
+    fn mut_normalize_to(&mut self, magnitude: T) -> Result<(), VectorError>
+    where
+        T: Copy
+            + PartialEq
+            + std::ops::Div<T, Output = T>
+            + std::ops::Mul<T, Output = T>
+            + num::Zero,
+    {
+        let n = self.norm();
+        mut_normalize_to_impl(self.as_mut_slice(), n, magnitude)
+    }
+
+    #[inline]
+    fn mut_lerp(&mut self, end: &Self, weight: T) -> Result<(), VectorError>
+    where
+        T: num::Float + Copy + PartialOrd,
+    {
+        self.check_same_length_and_raise(end)?;
+        if weight < T::zero() || weight > T::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        mut_lerp_impl(self.as_mut_slice(), end.as_slice(), weight);
+        Ok(())
     }
 }
 
@@ -2620,5 +2662,59 @@ mod tests {
         let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
         let result = vslice_a.cosine_similarity(&vslice_b).unwrap();
         assert!((result - 0.0).abs() < 1e-8);
+    }
+
+    // -- VectorOpsFloatMut trait for VectorSliceMut --
+
+    #[test]
+    fn test_vector_slice_mut_mut_normalize() {
+        let mut a = [3.0, 4.0];
+        let mut vslice: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        vslice.mut_normalize().unwrap();
+        let expected = [0.6, 0.8];
+        for (x, y) in vslice.as_slice().iter().zip(expected.iter()) {
+            assert!((x - y).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_mut_mut_normalize_zero_vector() {
+        let mut a = [0.0, 0.0];
+        let mut vslice: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let result = vslice.mut_normalize();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_mut_normalize_to() {
+        let mut a = [3.0, 4.0];
+        let mut vslice: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        vslice.mut_normalize_to(10.0).unwrap();
+        let expected = [6.0, 8.0];
+        for (x, y) in vslice.as_slice().iter().zip(expected.iter()) {
+            assert!((x - y).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_mut_mut_lerp() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 5.0, 6.0];
+        let mut vslice_a: VectorSliceMut<'_, f64, Column> =
+            VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        vslice_a.mut_lerp(&vslice_b, 0.5).unwrap();
+        assert_eq!(vslice_a.as_slice(), &[2.5, 3.5, 4.5]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_mut_lerp_weight_out_of_bounds() {
+        let mut a = [1.0, 2.0];
+        let mut b = [3.0, 4.0];
+        let mut vslice_a: VectorSliceMut<'_, f64, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        assert!(vslice_a.mut_lerp(&vslice_b, -0.1).is_err());
+        assert!(vslice_a.mut_lerp(&vslice_b, 1.1).is_err());
     }
 }
