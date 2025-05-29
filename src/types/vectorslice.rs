@@ -4,12 +4,15 @@ use crate::errors::VectorError;
 use crate::types::flexvector::FlexVector;
 use crate::types::orientation::Column;
 use crate::types::traits::{
-    VectorBase, VectorBaseMut, VectorOps, VectorOpsMut, VectorOrientationName,
+    VectorBase, VectorBaseMut, VectorOps, VectorOpsFloat, VectorOpsFloatMut, VectorOpsMut,
+    VectorOrientationName,
 };
 use crate::types::utils::{
-    cross_impl, cross_into_impl, dot_impl, dot_to_f64_impl, elementwise_max_impl,
-    elementwise_max_into_impl, elementwise_min_impl, elementwise_min_into_impl, mut_translate_impl,
-    translate_impl,
+    angle_with_impl, chebyshev_distance_impl, cosine_similarity_impl, cross_impl, cross_into_impl,
+    distance_impl, dot_impl, dot_to_f64_impl, elementwise_max_impl, elementwise_max_into_impl,
+    elementwise_min_impl, elementwise_min_into_impl, lerp_impl, manhattan_distance_impl,
+    minkowski_distance_impl, mut_translate_impl, normalize_impl, normalize_to_impl,
+    project_onto_impl, translate_impl,
 };
 
 use std::fmt;
@@ -280,6 +283,148 @@ where
         }
         elementwise_max_into_impl(self.as_slice(), other.as_slice(), out);
         Ok(())
+    }
+}
+
+impl<'a, T, O> VectorOpsFloat<T> for VectorSlice<'a, T, O>
+where
+    T: num::Float + Clone + std::iter::Sum<T>,
+{
+    type Output = FlexVector<T, O>;
+
+    #[inline]
+    fn normalize(&self) -> Result<Self::Output, VectorError>
+    where
+        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        normalize_impl(self.as_slice(), self.norm())
+    }
+
+    #[inline]
+    fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
+    where
+        T: Copy
+            + PartialEq
+            + std::ops::Div<T, Output = T>
+            + std::ops::Mul<T, Output = T>
+            + num::Zero,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        normalize_to_impl(self.as_slice(), self.norm(), magnitude)
+    }
+
+    #[inline]
+    fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + Clone,
+    {
+        self.check_same_length_and_raise(end)?;
+        if weight < T::zero() || weight > T::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        let mut out = FlexVector::zero(self.len());
+        lerp_impl(self.as_slice(), end.as_slice(), weight, out.as_mut_slice());
+        Ok(out)
+    }
+
+    #[inline]
+    fn midpoint(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + Clone,
+    {
+        self.check_same_length_and_raise(other)?;
+        let mut out = FlexVector::zero(self.len());
+        lerp_impl(self.as_slice(), other.as_slice(), T::from(0.5).unwrap(), out.as_mut_slice());
+        Ok(out)
+    }
+
+    #[inline]
+    fn distance(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(distance_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn manhattan_distance(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(manhattan_distance_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn chebyshev_distance(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + PartialOrd,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(chebyshev_distance_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn minkowski_distance(&self, other: &Self, p: T) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        if p < T::one() {
+            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
+        }
+        Ok(minkowski_distance_impl(self.as_slice(), other.as_slice(), p))
+    }
+
+    #[inline]
+    fn angle_with(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        let norm_self = self.norm();
+        let norm_other = other.norm();
+        if norm_self == T::zero() || norm_other == T::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot compute angle with zero vector".to_string(),
+            ));
+        }
+        Ok(angle_with_impl(self.as_slice(), other.as_slice(), norm_self, norm_other))
+    }
+
+    #[inline]
+    fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        let denom = dot_impl(other.as_slice(), other.as_slice());
+        if denom == T::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot project onto zero vector".to_string(),
+            ));
+        }
+        let scalar = dot_impl(self.as_slice(), other.as_slice()) / denom;
+        Ok(project_onto_impl(other.as_slice(), scalar))
+    }
+
+    #[inline]
+    fn cosine_similarity(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T> + std::ops::Div<Output = T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        let norm_self = self.norm();
+        let norm_other = other.norm();
+        if norm_self == T::zero() || norm_other == T::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot compute cosine similarity with zero vector".to_string(),
+            ));
+        }
+        Ok(cosine_similarity_impl(self.as_slice(), other.as_slice(), norm_self, norm_other))
     }
 }
 
@@ -573,6 +718,148 @@ where
         self.check_same_length_and_raise(other)?;
         mut_translate_impl(self.as_mut_slice(), other.as_slice());
         Ok(())
+    }
+}
+
+impl<'a, T, O> VectorOpsFloat<T> for VectorSliceMut<'a, T, O>
+where
+    T: num::Float + Clone + std::iter::Sum<T>,
+{
+    type Output = FlexVector<T, O>;
+
+    #[inline]
+    fn normalize(&self) -> Result<Self::Output, VectorError>
+    where
+        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        normalize_impl(self.as_slice(), self.norm())
+    }
+
+    #[inline]
+    fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
+    where
+        T: Copy
+            + PartialEq
+            + std::ops::Div<T, Output = T>
+            + std::ops::Mul<T, Output = T>
+            + num::Zero,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        normalize_to_impl(self.as_slice(), self.norm(), magnitude)
+    }
+
+    #[inline]
+    fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + Clone,
+    {
+        self.check_same_length_and_raise(end)?;
+        if weight < T::zero() || weight > T::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        let mut out = FlexVector::zero(self.len());
+        lerp_impl(self.as_slice(), end.as_slice(), weight, out.as_mut_slice());
+        Ok(out)
+    }
+
+    #[inline]
+    fn midpoint(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + Clone,
+    {
+        self.check_same_length_and_raise(other)?;
+        let mut out = FlexVector::zero(self.len());
+        lerp_impl(self.as_slice(), other.as_slice(), T::from(0.5).unwrap(), out.as_mut_slice());
+        Ok(out)
+    }
+
+    #[inline]
+    fn distance(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(distance_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn manhattan_distance(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(manhattan_distance_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn chebyshev_distance(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + PartialOrd,
+    {
+        self.check_same_length_and_raise(other)?;
+        Ok(chebyshev_distance_impl(self.as_slice(), other.as_slice()))
+    }
+
+    #[inline]
+    fn minkowski_distance(&self, other: &Self, p: T) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        if p < T::one() {
+            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
+        }
+        Ok(minkowski_distance_impl(self.as_slice(), other.as_slice(), p))
+    }
+
+    #[inline]
+    fn angle_with(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        let norm_self = self.norm();
+        let norm_other = other.norm();
+        if norm_self == T::zero() || norm_other == T::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot compute angle with zero vector".to_string(),
+            ));
+        }
+        Ok(angle_with_impl(self.as_slice(), other.as_slice(), norm_self, norm_other))
+    }
+
+    #[inline]
+    fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T>,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        let denom = dot_impl(other.as_slice(), other.as_slice());
+        if denom == T::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot project onto zero vector".to_string(),
+            ));
+        }
+        let scalar = dot_impl(self.as_slice(), other.as_slice()) / denom;
+        Ok(project_onto_impl(other.as_slice(), scalar))
+    }
+
+    #[inline]
+    fn cosine_similarity(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + Clone + std::iter::Sum<T> + std::ops::Div<Output = T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        let norm_self = self.norm();
+        let norm_other = other.norm();
+        if norm_self == T::zero() || norm_other == T::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot compute cosine similarity with zero vector".to_string(),
+            ));
+        }
+        Ok(cosine_similarity_impl(self.as_slice(), other.as_slice(), norm_self, norm_other))
     }
 }
 
@@ -1300,6 +1587,141 @@ mod tests {
         let mut out: [i32; 0] = [];
         vslice_a.elementwise_max_into(&vslice_b, &mut out).unwrap();
         assert_eq!(out, []);
+    }
+
+    // -- VectorOpsFloat trait for VectorSlice --
+
+    #[test]
+    fn test_vector_slice_normalize() {
+        let a = [3.0, 4.0];
+        let vslice: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let result = vslice.normalize().unwrap();
+        let expected = [0.6, 0.8];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x - y).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_normalize_zero_vector() {
+        let a = [0.0, 0.0];
+        let vslice: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let result = vslice.normalize();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_normalize_to() {
+        let a = [3.0, 4.0];
+        let vslice: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let result = vslice.normalize_to(10.0).unwrap();
+        let expected = [6.0, 8.0];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x - y).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_lerp() {
+        let a = [1.0, 2.0, 3.0];
+        let b = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.lerp(&vslice_b, 0.5).unwrap();
+        assert_eq!(result.as_slice(), &[2.5, 3.5, 4.5]);
+    }
+
+    #[test]
+    fn test_vector_slice_lerp_weight_out_of_bounds() {
+        let a = [1.0, 2.0];
+        let b = [3.0, 4.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        assert!(vslice_a.lerp(&vslice_b, -0.1).is_err());
+        assert!(vslice_a.lerp(&vslice_b, 1.1).is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_midpoint() {
+        let a = [1.0, 2.0, 3.0];
+        let b = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.midpoint(&vslice_b).unwrap();
+        assert_eq!(result.as_slice(), &[2.5, 3.5, 4.5]);
+    }
+
+    #[test]
+    fn test_vector_slice_distance() {
+        let a = [1.0, 2.0, 3.0];
+        let b = [4.0, 6.0, 3.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.distance(&vslice_b).unwrap();
+        assert!((result - 5.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_manhattan_distance() {
+        let a = [1.0, 2.0, 3.0];
+        let b = [4.0, 6.0, 3.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.manhattan_distance(&vslice_b).unwrap();
+        assert!((result - 7.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_chebyshev_distance() {
+        let a = [1.0, 2.0, 3.0];
+        let b = [4.0, 6.0, 3.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.chebyshev_distance(&vslice_b).unwrap();
+        assert!((result - 4.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_minkowski_distance() {
+        let a = [1.0, 2.0, 3.0];
+        let b = [4.0, 6.0, 3.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let result = vslice_a.minkowski_distance(&vslice_b, 3.0).unwrap();
+        assert!((result - 4.497941445275415).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_angle_with() {
+        let a = [1.0, 0.0];
+        let b = [0.0, 1.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let result = vslice_a.angle_with(&vslice_b).unwrap();
+        assert!((result - std::f64::consts::FRAC_PI_2).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_project_onto() {
+        let a = [3.0, 4.0];
+        let b = [6.0, 8.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let result = vslice_a.project_onto(&vslice_b).unwrap();
+        let expected = [3.0, 4.0];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x - y).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_cosine_similarity() {
+        let a = [1.0, 0.0];
+        let b = [0.0, 1.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let result = vslice_a.cosine_similarity(&vslice_b).unwrap();
+        assert!((result - 0.0).abs() < 1e-8);
     }
 
     // /////////////////////////////////
@@ -2063,5 +2485,140 @@ mod tests {
         vslice.mut_zero();
         assert_eq!(vslice.as_slice(), [0, 0, 0]);
         assert_eq!(a, [0, 0, 0]);
+    }
+
+    // -- VectorOpsFloat trait for VectorSliceMut --
+
+    #[test]
+    fn test_vector_slice_mut_normalize() {
+        let mut a = [3.0, 4.0];
+        let vslice: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let result = vslice.normalize().unwrap();
+        let expected = [0.6, 0.8];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x - y).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_mut_normalize_zero_vector() {
+        let mut a = [0.0, 0.0];
+        let vslice: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let result = vslice.normalize();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_normalize_to() {
+        let mut a = [3.0, 4.0];
+        let vslice: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let result = vslice.normalize_to(10.0).unwrap();
+        let expected = [6.0, 8.0];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x - y).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_mut_lerp() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.lerp(&vslice_b, 0.5).unwrap();
+        assert_eq!(result.as_slice(), &[2.5, 3.5, 4.5]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_lerp_weight_out_of_bounds() {
+        let mut a = [1.0, 2.0];
+        let mut b = [3.0, 4.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        assert!(vslice_a.lerp(&vslice_b, -0.1).is_err());
+        assert!(vslice_a.lerp(&vslice_b, 1.1).is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_midpoint() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.midpoint(&vslice_b).unwrap();
+        assert_eq!(result.as_slice(), &[2.5, 3.5, 4.5]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_distance() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 6.0, 3.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.distance(&vslice_b).unwrap();
+        assert!((result - 5.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_manhattan_distance() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 6.0, 3.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.manhattan_distance(&vslice_b).unwrap();
+        assert!((result - 7.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_chebyshev_distance() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 6.0, 3.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.chebyshev_distance(&vslice_b).unwrap();
+        assert!((result - 4.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_minkowski_distance() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 6.0, 3.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let result = vslice_a.minkowski_distance(&vslice_b, 3.0).unwrap();
+        assert!((result - 4.497941445275415).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_angle_with() {
+        let mut a = [1.0, 0.0];
+        let mut b = [0.0, 1.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = vslice_a.angle_with(&vslice_b).unwrap();
+        assert!((result - std::f64::consts::FRAC_PI_2).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_project_onto() {
+        let mut a = [3.0, 4.0];
+        let mut b = [6.0, 8.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = vslice_a.project_onto(&vslice_b).unwrap();
+        let expected = [3.0, 4.0];
+        for (x, y) in result.as_slice().iter().zip(expected.iter()) {
+            assert!((x - y).abs() < 1e-8);
+        }
+    }
+
+    #[test]
+    fn test_vector_slice_mut_cosine_similarity() {
+        let mut a = [1.0, 0.0];
+        let mut b = [0.0, 1.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let result = vslice_a.cosine_similarity(&vslice_b).unwrap();
+        assert!((result - 0.0).abs() < 1e-8);
     }
 }
