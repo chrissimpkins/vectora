@@ -226,6 +226,25 @@ where
 }
 
 #[inline]
+pub(crate) fn normalize_into_impl<T>(input: &[T], norm: T, out: &mut [T]) -> Result<(), VectorError>
+where
+    T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+{
+    if input.len() != out.len() {
+        return Err(VectorError::MismatchedLengthError(
+            "Output buffer has wrong length".to_string(),
+        ));
+    }
+    if norm == T::zero() {
+        return Err(VectorError::ZeroVectorError("Cannot normalize zero vector".to_string()));
+    }
+    for (o, &x) in out.iter_mut().zip(input.iter()) {
+        *o = x / norm;
+    }
+    Ok(())
+}
+
+#[inline]
 pub(crate) fn mut_normalize_impl<T>(slice: &mut [T], norm: T) -> Result<(), VectorError>
 where
     T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
@@ -254,6 +273,31 @@ where
     }
     let scale = magnitude / norm;
     Ok(slice.iter().map(|&a| a * scale).collect())
+}
+
+#[inline]
+pub(crate) fn normalize_to_into_impl<T>(
+    input: &[T],
+    norm: T,
+    magnitude: T,
+    out: &mut [T],
+) -> Result<(), VectorError>
+where
+    T: Copy + PartialEq + std::ops::Div<T, Output = T> + std::ops::Mul<T, Output = T> + num::Zero,
+{
+    if input.len() != out.len() {
+        return Err(VectorError::MismatchedLengthError(
+            "Output buffer has wrong length".to_string(),
+        ));
+    }
+    if norm == T::zero() {
+        return Err(VectorError::ZeroVectorError("Cannot normalize zero vector".to_string()));
+    }
+    let scale = magnitude / norm;
+    for (o, &x) in out.iter_mut().zip(input.iter()) {
+        *o = x * scale;
+    }
+    Ok(())
 }
 
 #[inline]
@@ -1416,7 +1460,53 @@ mod tests {
         assert!((result[0].im - expected.im).abs() < 1e-12);
     }
 
+    // -- normalize_to_into_impl --
+
+    #[test]
+    fn test_normalize_to_into_impl_f64_basic() {
+        let v = [3.0f64, 4.0];
+        let norm = (3.0f64 * 3.0 + 4.0 * 4.0).sqrt();
+        let magnitude = 10.0f64;
+        let mut out = [0.0f64; 2];
+        normalize_to_into_impl(&v, norm, magnitude, &mut out).unwrap();
+        // The normalized vector should have the same direction as v and norm 10
+        let expected = [3.0 / 5.0 * 10.0, 4.0 / 5.0 * 10.0];
+        assert!((out[0] - expected[0]).abs() < 1e-12);
+        assert!((out[1] - expected[1]).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_to_into_impl_f64_zero_vector() {
+        let v = [0.0f64, 0.0];
+        let norm = 0.0f64;
+        let magnitude = 10.0f64;
+        let mut out = [0.0f64; 2];
+        let result = normalize_to_into_impl(&v, norm, magnitude, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_normalize_to_into_impl_f64_empty() {
+        let v: [f64; 0] = [];
+        let norm = 1.0f64;
+        let magnitude = 2.0f64;
+        let mut out: [f64; 0] = [];
+        normalize_to_into_impl(&v, norm, magnitude, &mut out).unwrap();
+        assert!(out.is_empty());
+    }
+
+    #[test]
+    fn test_normalize_to_into_impl_f64_wrong_length() {
+        let v = [3.0f64, 4.0];
+        let norm = 5.0f64;
+        let magnitude = 10.0f64;
+        let mut out = [0.0f64; 1];
+        let result = normalize_to_into_impl(&v, norm, magnitude, &mut out);
+        assert!(result.is_err());
+    }
+
     // -- mut_normalize_to_impl --
+
     #[test]
     fn test_mut_normalize_to_impl_f64_basic() {
         let mut v = [3.0f64, 4.0];
@@ -1469,6 +1559,7 @@ mod tests {
     }
 
     // -- cosine_similarity_impl --
+
     #[test]
     fn test_cosine_similarity_impl_basic() {
         let a = [1.0f64, 0.0];

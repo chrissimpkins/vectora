@@ -29,8 +29,8 @@ use crate::types::utils::{
     elementwise_max_into_impl, elementwise_min_impl, elementwise_min_into_impl, hermitian_dot_impl,
     lerp_impl, manhattan_distance_complex_impl, manhattan_distance_impl,
     minkowski_distance_complex_impl, minkowski_distance_impl, mut_lerp_impl, mut_normalize_impl,
-    mut_normalize_to_impl, mut_translate_impl, normalize_impl, normalize_to_impl,
-    project_onto_impl, translate_impl,
+    mut_normalize_to_impl, mut_translate_impl, normalize_impl, normalize_into_impl,
+    normalize_to_impl, normalize_to_into_impl, project_onto_impl, translate_impl,
 };
 
 use crate::errors::VectorError;
@@ -900,6 +900,15 @@ where
         normalize_impl(self.as_slice(), self.norm())
     }
 
+    #[inline]
+    fn normalize_into(&self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+    {
+        let norm = self.norm();
+        normalize_into_impl(self.as_slice(), norm, out)
+    }
+
     /// Returns a new vector with the same direction and the given magnitude.
     #[inline]
     fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
@@ -915,6 +924,19 @@ where
     }
 
     #[inline]
+    fn normalize_to_into(&self, magnitude: T, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: Copy
+            + PartialEq
+            + std::ops::Div<T, Output = T>
+            + std::ops::Mul<T, Output = T>
+            + num::Zero,
+    {
+        let norm = self.norm();
+        normalize_to_into_impl(self.as_slice(), norm, magnitude, out)
+    }
+
+    #[inline]
     fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
     where
         T: num::Float + Clone,
@@ -926,6 +948,24 @@ where
         let mut out = FlexVector::zero(self.len());
         lerp_impl(self.as_slice(), end.as_slice(), weight, out.as_mut_slice());
         Ok(out)
+    }
+
+    #[inline]
+    fn lerp_into(&self, end: &Self, weight: T, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float + Clone,
+    {
+        self.check_same_length_and_raise(end)?;
+        if self.len() != out.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        if weight < T::zero() || weight > T::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        lerp_impl(self.as_slice(), end.as_slice(), weight, out);
+        Ok(())
     }
 
     #[inline]
@@ -6537,6 +6577,36 @@ mod tests {
         assert!((normalized.as_slice()[1] + 0.8).abs() < 1e-12);
     }
 
+    // -- normalize_into --
+
+    #[test]
+    fn test_normalize_into_f64() {
+        let v = FlexVector::<f64>::from_vec(vec![3.0, 4.0]);
+        let mut out = [0.0; 2];
+        v.normalize_into(&mut out).unwrap();
+        // The norm is 5.0, so the normalized vector should be [0.6, 0.8]
+        assert!((out[0] - 0.6).abs() < 1e-12);
+        assert!((out[1] - 0.8).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_into_f64_zero_vector() {
+        let v = FVector::from_vec(vec![0.0, 0.0]);
+        let mut out = [0.0; 2];
+        let result = v.normalize_into(&mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_normalize_into_f64_negative_values() {
+        let v = FVector::from_vec(vec![-3.0, -4.0]);
+        let mut out = [0.0; 2];
+        let _ = v.normalize_into(&mut out).unwrap();
+        // The norm is 5.0, so the normalized vector should be [-0.6, -0.8]
+        assert!((out[0] + 0.6).abs() < 1e-12);
+        assert!((out[1] + 0.8).abs() < 1e-12);
+    }
+
     // -- mut_normalize --
     #[test]
     fn test_mut_normalize_f64() {
@@ -6587,6 +6657,42 @@ mod tests {
         // The original norm is 5.0, so the normalized vector should be [-3.0, -4.0]
         assert!((normalized.as_slice()[0] + 3.0).abs() < 1e-12);
         assert!((normalized.as_slice()[1] + 4.0).abs() < 1e-12);
+    }
+
+    // -- normalize_to_into --
+
+    #[test]
+    fn test_flexvector_normalize_to_into_basic_f64() {
+        let v = FlexVector::<f64>::from_vec(vec![3.0, 4.0]);
+        let mut out = [0.0; 2];
+        v.normalize_to_into(10.0, &mut out).unwrap();
+        // The norm is 5.0, so the normalized vector with magnitude 10.0 should be [6.0, 8.0]
+        assert!((out[0] - 6.0).abs() < 1e-8);
+        assert!((out[1] - 8.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_flexvector_normalize_to_into_zero_vector_f64() {
+        let v = FlexVector::<f64>::from_vec(vec![0.0, 0.0]);
+        let mut out = [0.0; 2];
+        let result = v.normalize_to_into(10.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_normalize_to_into_wrong_length_f64() {
+        let v = FlexVector::<f64>::from_vec(vec![3.0, 4.0]);
+        let mut out = [0.0; 1];
+        let result = v.normalize_to_into(10.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_normalize_to_into_empty_f64() {
+        let v = FlexVector::<f64>::from_vec(vec![]);
+        let mut out: [f64; 0] = [];
+        let result = v.normalize_to_into(10.0, &mut out);
+        assert!(result.is_err());
     }
 
     // -- mut_normalize_to --
@@ -6657,6 +6763,86 @@ mod tests {
         let result_high = v1.lerp(&v2, 1.1);
         assert!(result_low.is_err());
         assert!(result_high.is_err());
+    }
+
+    // -- lerp_into --
+
+    #[test]
+    fn test_flexvector_lerp_into_basic_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![4.0, 5.0, 6.0]);
+        let mut out = [0.0; 3];
+        v1.lerp_into(&v2, 0.5, &mut out).unwrap();
+        assert!((out[0] - 2.5).abs() < 1e-12);
+        assert!((out[1] - 3.5).abs() < 1e-12);
+        assert!((out[2] - 4.5).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_weight_zero_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![4.0, 5.0, 6.0]);
+        let mut out = [0.0; 3];
+        v1.lerp_into(&v2, 0.0, &mut out).unwrap();
+        assert!((out[0] - 1.0).abs() < 1e-12);
+        assert!((out[1] - 2.0).abs() < 1e-12);
+        assert!((out[2] - 3.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_weight_one_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![4.0, 5.0, 6.0]);
+        let mut out = [0.0; 3];
+        v1.lerp_into(&v2, 1.0, &mut out).unwrap();
+        assert!((out[0] - 4.0).abs() < 1e-12);
+        assert!((out[1] - 5.0).abs() < 1e-12);
+        assert!((out[2] - 6.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_mismatched_length_end_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![4.0, 5.0]);
+        let mut out = [0.0; 3];
+        let result = v1.lerp_into(&v2, 0.5, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_mismatched_length_out_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![4.0, 5.0, 6.0]);
+        let mut out = [0.0; 2];
+        let result = v1.lerp_into(&v2, 0.5, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_weight_out_of_bounds_low_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![3.0, 4.0]);
+        let mut out = [0.0; 2];
+        let result = v1.lerp_into(&v2, -0.1, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_weight_out_of_bounds_high_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![3.0, 4.0]);
+        let mut out = [0.0; 2];
+        let result = v1.lerp_into(&v2, 1.1, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_empty_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![]);
+        let v2 = FlexVector::<f64>::from_vec(vec![]);
+        let mut out: [f64; 0] = [];
+        v1.lerp_into(&v2, 0.5, &mut out).unwrap();
+        assert_eq!(out, []);
     }
 
     // -- mut_lerp --

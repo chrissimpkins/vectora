@@ -475,14 +475,33 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
         T: Copy + PartialEq + std::ops::Div<T, Output = T>,
         Self::Output: std::iter::FromIterator<T>;
 
+    /// ...
+    fn normalize_into(&self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero;
+
     /// Returns a new vector with the same direction and the given magnitude.
     fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
     where
         T: Copy + PartialEq + std::ops::Div<T, Output = T> + std::ops::Mul<T, Output = T>,
         Self::Output: std::iter::FromIterator<T>;
 
+    /// ...
+    fn normalize_to_into(&self, magnitude: T, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: Copy
+            + PartialEq
+            + std::ops::Div<T, Output = T>
+            + std::ops::Mul<T, Output = T>
+            + num::Zero;
+
     /// Linear interpolation between self and end by weight in [0, 1].
     fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + Clone + PartialOrd;
+
+    /// ...
+    fn lerp_into(&self, end: &Self, weight: T, out: &mut [T]) -> Result<(), VectorError>
     where
         T: num::Float + Clone + PartialOrd;
 

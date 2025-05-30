@@ -14,8 +14,8 @@ use crate::types::utils::{
     elementwise_max_into_impl, elementwise_min_impl, elementwise_min_into_impl, hermitian_dot_impl,
     lerp_impl, manhattan_distance_complex_impl, manhattan_distance_impl,
     minkowski_distance_complex_impl, minkowski_distance_impl, mut_lerp_impl, mut_normalize_impl,
-    mut_normalize_to_impl, mut_translate_impl, normalize_impl, normalize_to_impl,
-    project_onto_impl, translate_impl,
+    mut_normalize_to_impl, mut_translate_impl, normalize_impl, normalize_into_impl,
+    normalize_to_impl, normalize_to_into_impl, project_onto_impl, translate_impl,
 };
 
 use std::fmt;
@@ -307,6 +307,15 @@ where
     }
 
     #[inline]
+    fn normalize_into(&self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+    {
+        let norm = self.norm();
+        normalize_into_impl(self.as_slice(), norm, out)
+    }
+
+    #[inline]
     fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
     where
         T: Copy
@@ -317,6 +326,19 @@ where
         Self::Output: std::iter::FromIterator<T>,
     {
         normalize_to_impl(self.as_slice(), self.norm(), magnitude)
+    }
+
+    #[inline]
+    fn normalize_to_into(&self, magnitude: T, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: Copy
+            + PartialEq
+            + std::ops::Div<T, Output = T>
+            + std::ops::Mul<T, Output = T>
+            + num::Zero,
+    {
+        let norm = self.norm();
+        normalize_to_into_impl(self.as_slice(), norm, magnitude, out)
     }
 
     #[inline]
@@ -331,6 +353,24 @@ where
         let mut out = FlexVector::zero(self.len());
         lerp_impl(self.as_slice(), end.as_slice(), weight, out.as_mut_slice());
         Ok(out)
+    }
+
+    #[inline]
+    fn lerp_into(&self, end: &Self, weight: T, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float + Clone,
+    {
+        self.check_same_length_and_raise(end)?;
+        if self.len() != out.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        if weight < T::zero() || weight > T::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        lerp_impl(self.as_slice(), end.as_slice(), weight, out);
+        Ok(())
     }
 
     #[inline]
@@ -891,6 +931,15 @@ where
     }
 
     #[inline]
+    fn normalize_into(&self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+    {
+        let norm = self.norm();
+        normalize_into_impl(self.as_slice(), norm, out)
+    }
+
+    #[inline]
     fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
     where
         T: Copy
@@ -901,6 +950,19 @@ where
         Self::Output: std::iter::FromIterator<T>,
     {
         normalize_to_impl(self.as_slice(), self.norm(), magnitude)
+    }
+
+    #[inline]
+    fn normalize_to_into(&self, magnitude: T, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: Copy
+            + PartialEq
+            + std::ops::Div<T, Output = T>
+            + std::ops::Mul<T, Output = T>
+            + num::Zero,
+    {
+        let norm = self.norm();
+        normalize_to_into_impl(self.as_slice(), norm, magnitude, out)
     }
 
     #[inline]
@@ -915,6 +977,24 @@ where
         let mut out = FlexVector::zero(self.len());
         lerp_impl(self.as_slice(), end.as_slice(), weight, out.as_mut_slice());
         Ok(out)
+    }
+
+    #[inline]
+    fn lerp_into(&self, end: &Self, weight: T, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float + Clone,
+    {
+        self.check_same_length_and_raise(end)?;
+        if self.len() != out.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        if weight < T::zero() || weight > T::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        lerp_impl(self.as_slice(), end.as_slice(), weight, out);
+        Ok(())
     }
 
     #[inline]
@@ -1955,6 +2035,20 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -- normalize_into --
+
+    #[test]
+    fn test_vector_slice_normalize_into() {
+        let a = [3.0, 4.0];
+        let vslice: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let mut out = [0.0; 2];
+        vslice.normalize_into(&mut out).unwrap();
+        assert!((out[0] - 0.6).abs() < 1e-8);
+        assert!((out[1] - 0.8).abs() < 1e-8);
+    }
+
+    // -- normalize_to --
+
     #[test]
     fn test_vector_slice_normalize_to() {
         let a = [3.0, 4.0];
@@ -1965,6 +2059,48 @@ mod tests {
             assert!((x - y).abs() < 1e-8);
         }
     }
+
+    // -- normalize_to_into --
+
+    #[test]
+    fn test_vector_slice_normalize_to_into_basic() {
+        let a = [3.0, 4.0];
+        let vslice: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let mut out = [0.0; 2];
+        vslice.normalize_to_into(10.0, &mut out).unwrap();
+        // The norm is 5.0, so the normalized vector with magnitude 10.0 should be [6.0, 8.0]
+        assert!((out[0] - 6.0).abs() < 1e-8);
+        assert!((out[1] - 8.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_normalize_to_into_zero_vector() {
+        let a = [0.0, 0.0];
+        let vslice: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let mut out = [0.0; 2];
+        let result = vslice.normalize_to_into(10.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_normalize_to_into_wrong_length() {
+        let a = [3.0, 4.0];
+        let vslice: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let mut out = [0.0; 1];
+        let result = vslice.normalize_to_into(10.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_normalize_to_into_empty() {
+        let a: [f64; 0] = [];
+        let vslice: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..0);
+        let mut out: [f64; 0] = [];
+        let result = vslice.normalize_to_into(10.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    // -- lerp --
 
     #[test]
     fn test_vector_slice_lerp() {
@@ -1985,6 +2121,98 @@ mod tests {
         assert!(vslice_a.lerp(&vslice_b, -0.1).is_err());
         assert!(vslice_a.lerp(&vslice_b, 1.1).is_err());
     }
+
+    // -- lerp_into --
+
+    #[test]
+    fn test_vector_slice_lerp_into_basic() {
+        let a_data = [1.0, 2.0, 3.0];
+        let b_data = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a_data, 0..3);
+        let vslice_b: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&b_data, 0..3);
+        let mut out = [0.0; 3];
+        vslice_a.lerp_into(&vslice_b, 0.5, &mut out).unwrap();
+        assert_eq!(out, [2.5, 3.5, 4.5]);
+    }
+
+    #[test]
+    fn test_vector_slice_lerp_into_weight_zero() {
+        let a_data = [1.0, 2.0, 3.0];
+        let b_data = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a_data, 0..3);
+        let vslice_b: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&b_data, 0..3);
+        let mut out = [0.0; 3];
+        vslice_a.lerp_into(&vslice_b, 0.0, &mut out).unwrap();
+        assert_eq!(out, [1.0, 2.0, 3.0]); // Should be equal to a_data
+    }
+
+    #[test]
+    fn test_vector_slice_lerp_into_weight_one() {
+        let a_data = [1.0, 2.0, 3.0];
+        let b_data = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a_data, 0..3);
+        let vslice_b: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&b_data, 0..3);
+        let mut out = [0.0; 3];
+        vslice_a.lerp_into(&vslice_b, 1.0, &mut out).unwrap();
+        assert_eq!(out, [4.0, 5.0, 6.0]); // Should be equal to b_data
+    }
+
+    #[test]
+    fn test_vector_slice_lerp_into_mismatched_length_end() {
+        let a_data = [1.0, 2.0, 3.0];
+        let b_data = [4.0, 5.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a_data, 0..3);
+        let vslice_b: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&b_data, 0..2);
+        let mut out = [0.0; 3];
+        let result = vslice_a.lerp_into(&vslice_b, 0.5, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_lerp_into_mismatched_length_out() {
+        let a_data = [1.0, 2.0, 3.0];
+        let b_data = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a_data, 0..3);
+        let vslice_b: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&b_data, 0..3);
+        let mut out = [0.0; 2]; // out buffer is shorter
+        let result = vslice_a.lerp_into(&vslice_b, 0.5, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_lerp_into_weight_out_of_bounds_low() {
+        let a_data = [1.0, 2.0];
+        let b_data = [3.0, 4.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a_data, 0..2);
+        let vslice_b: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&b_data, 0..2);
+        let mut out = [0.0; 2];
+        let result = vslice_a.lerp_into(&vslice_b, -0.1, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_lerp_into_weight_out_of_bounds_high() {
+        let a_data = [1.0, 2.0];
+        let b_data = [3.0, 4.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a_data, 0..2);
+        let vslice_b: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&b_data, 0..2);
+        let mut out = [0.0; 2];
+        let result = vslice_a.lerp_into(&vslice_b, 1.1, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_lerp_into_empty() {
+        let a_data: [f64; 0] = [];
+        let b_data: [f64; 0] = [];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a_data, 0..0);
+        let vslice_b: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&b_data, 0..0);
+        let mut out: [f64; 0] = [];
+        vslice_a.lerp_into(&vslice_b, 0.5, &mut out).unwrap();
+        assert_eq!(out, [] as [f64; 0]);
+    }
+
+    // -- midpoint --
 
     #[test]
     fn test_vector_slice_midpoint() {
@@ -3221,6 +3449,18 @@ mod tests {
     }
 
     #[test]
+    fn test_vector_slice_mut_normalize_into() {
+        let mut a = [3.0, 4.0];
+        let vslice: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let mut out: [f64; 2] = [0.0; 2];
+        let result = vslice.normalize_into(&mut out);
+        assert!(result.is_ok());
+        for (x, y) in out.iter().zip([0.6, 0.8].iter()) {
+            assert!((x - y).abs() < 1e-12);
+        }
+    }
+
+    #[test]
     fn test_vector_slice_mut_normalize_to() {
         let mut a = [3.0, 4.0];
         let vslice: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
@@ -3230,6 +3470,48 @@ mod tests {
             assert!((x - y).abs() < 1e-8);
         }
     }
+
+    // -- normalize_to_into --
+
+    #[test]
+    fn test_vector_slice_mut_normalize_to_into_basic() {
+        let mut a = [3.0, 4.0];
+        let vslice: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let mut out = [0.0; 2];
+        vslice.normalize_to_into(10.0, &mut out).unwrap();
+        // The norm is 5.0, so the normalized vector with magnitude 10.0 should be [6.0, 8.0]
+        assert!((out[0] - 6.0).abs() < 1e-8);
+        assert!((out[1] - 8.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_normalize_to_into_zero_vector() {
+        let mut a = [0.0, 0.0];
+        let vslice: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let mut out = [0.0; 2];
+        let result = vslice.normalize_to_into(10.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_normalize_to_into_wrong_length() {
+        let mut a = [3.0, 4.0];
+        let vslice: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let mut out = [0.0; 1];
+        let result = vslice.normalize_to_into(10.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_normalize_to_into_empty() {
+        let mut a: [f64; 0] = [];
+        let vslice: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..0);
+        let mut out: [f64; 0] = [];
+        let result = vslice.normalize_to_into(10.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    // -- lerp --
 
     #[test]
     fn test_vector_slice_mut_lerp() {
@@ -3250,6 +3532,98 @@ mod tests {
         assert!(vslice_a.lerp(&vslice_b, -0.1).is_err());
         assert!(vslice_a.lerp(&vslice_b, 1.1).is_err());
     }
+
+    // -- lerp_into --
+
+    #[test]
+    fn test_vector_slice_mut_lerp_into_basic() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0.0; 3];
+        vslice_a.lerp_into(&vslice_b, 0.5, &mut out).unwrap();
+        assert_eq!(out, [2.5, 3.5, 4.5]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_lerp_into_weight_zero() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0.0; 3];
+        vslice_a.lerp_into(&vslice_b, 0.0, &mut out).unwrap();
+        assert_eq!(out, [1.0, 2.0, 3.0]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_lerp_into_weight_one() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0.0; 3];
+        vslice_a.lerp_into(&vslice_b, 1.0, &mut out).unwrap();
+        assert_eq!(out, [4.0, 5.0, 6.0]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_lerp_into_mismatched_length_end() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 5.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0.0; 3];
+        let result = vslice_a.lerp_into(&vslice_b, 0.5, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_lerp_into_mismatched_length_out() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0.0; 2];
+        let result = vslice_a.lerp_into(&vslice_b, 0.5, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_lerp_into_weight_out_of_bounds_low() {
+        let mut a = [1.0, 2.0];
+        let mut b = [3.0, 4.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0.0; 2];
+        let result = vslice_a.lerp_into(&vslice_b, -0.1, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_lerp_into_weight_out_of_bounds_high() {
+        let mut a = [1.0, 2.0];
+        let mut b = [3.0, 4.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0.0; 2];
+        let result = vslice_a.lerp_into(&vslice_b, 1.1, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_lerp_into_empty() {
+        let mut a: [f64; 0] = [];
+        let mut b: [f64; 0] = [];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..0);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..0);
+        let mut out: [f64; 0] = [];
+        vslice_a.lerp_into(&vslice_b, 0.5, &mut out).unwrap();
+        assert_eq!(out, []);
+    }
+
+    // -- midpoint --
 
     #[test]
     fn test_vector_slice_mut_midpoint() {
