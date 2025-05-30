@@ -30,7 +30,8 @@ use crate::types::utils::{
     lerp_impl, manhattan_distance_complex_impl, manhattan_distance_impl,
     minkowski_distance_complex_impl, minkowski_distance_impl, mut_lerp_impl, mut_normalize_impl,
     mut_normalize_to_impl, mut_translate_impl, normalize_impl, normalize_into_impl,
-    normalize_to_impl, normalize_to_into_impl, project_onto_impl, translate_impl,
+    normalize_to_impl, normalize_to_into_impl, project_onto_impl, project_onto_into_impl,
+    translate_impl,
 };
 
 use crate::errors::VectorError;
@@ -972,6 +973,21 @@ where
     }
 
     #[inline]
+    fn midpoint_into(&self, end: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float,
+    {
+        self.check_same_length_and_raise(end)?;
+        if self.len() != out.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        lerp_impl(self.as_slice(), end.as_slice(), T::from(0.5).unwrap(), out);
+        Ok(())
+    }
+
+    #[inline]
     fn distance(&self, other: &Self) -> Result<T, VectorError>
     where
         T: num::Float + std::iter::Sum<T>,
@@ -1041,6 +1057,28 @@ where
         }
         let scalar = dot_impl(self.as_slice(), other.as_slice()) / denom;
         Ok(project_onto_impl(other.as_slice(), scalar))
+    }
+
+    #[inline]
+    fn project_onto_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        let denom = dot_impl(other.as_slice(), other.as_slice());
+        if denom == T::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot project onto zero vector".to_string(),
+            ));
+        }
+        let scalar = dot_impl(self.as_slice(), other.as_slice()) / denom;
+        project_onto_into_impl(other.as_slice(), scalar, out);
+        Ok(())
     }
 
     #[inline]
@@ -6911,6 +6949,57 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -- midpoint_into --
+
+    #[test]
+    fn test_flexvector_midpoint_into_basic_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![4.0, 5.0, 6.0]);
+        let mut out = [0.0; 3];
+        v1.midpoint_into(&v2, &mut out).unwrap();
+        assert!((out[0] - 2.5).abs() < 1e-12);
+        assert!((out[1] - 3.5).abs() < 1e-12);
+        assert!((out[2] - 4.5).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_midpoint_into_negative_values_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![-1.0, -2.0, -3.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![1.0, 2.0, 3.0]);
+        let mut out = [0.0; 3];
+        v1.midpoint_into(&v2, &mut out).unwrap();
+        assert!((out[0]).abs() < 1e-12);
+        assert!((out[1]).abs() < 1e-12);
+        assert!((out[2]).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_midpoint_into_mismatched_length_end_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![4.0, 5.0]);
+        let mut out = [0.0; 3];
+        let result = v1.midpoint_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_midpoint_into_mismatched_length_out_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![4.0, 5.0, 6.0]);
+        let mut out = [0.0; 2];
+        let result = v1.midpoint_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_midpoint_into_empty_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![]);
+        let v2 = FlexVector::<f64>::from_vec(vec![]);
+        let mut out: [f64; 0] = [];
+        v1.midpoint_into(&v2, &mut out).unwrap();
+        assert_eq!(out, []);
+    }
+
     // -- distance --
     #[test]
     fn test_distance_f64_basic() {
@@ -7294,6 +7383,84 @@ mod tests {
         let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
         let result = v1.project_onto(&v2);
         assert!(result.is_err());
+    }
+
+    // -- project_onto_into --
+
+    #[test]
+    fn test_flexvector_project_onto_into_basic_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![3.0, 4.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![6.0, 8.0]);
+        let mut out = [0.0; 2];
+        v1.project_onto_into(&v2, &mut out).unwrap();
+        assert!((out[0] - 3.0).abs() < 1e-8);
+        assert!((out[1] - 4.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_parallel_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![2.0, 4.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![1.0, 2.0]);
+        let mut out = [0.0; 2];
+        v1.project_onto_into(&v2, &mut out).unwrap();
+        assert!((out[0] - 2.0).abs() < 1e-8);
+        assert!((out[1] - 4.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_orthogonal_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 0.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![0.0, 1.0]);
+        let mut out = [99.0, 99.0];
+        v1.project_onto_into(&v2, &mut out).unwrap();
+        assert!((out[0]).abs() < 1e-8);
+        assert!((out[1]).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_identical_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![5.0, 5.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![5.0, 5.0]);
+        let mut out = [0.0, 0.0];
+        v1.project_onto_into(&v2, &mut out).unwrap();
+        assert!((out[0] - 5.0).abs() < 1e-8);
+        assert!((out[1] - 5.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_zero_vector_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![0.0, 0.0]);
+        let mut out = [0.0, 0.0];
+        let result = v1.project_onto_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_mismatched_length_other_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![3.0]);
+        let mut out = [0.0, 0.0];
+        let result = v1.project_onto_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_mismatched_length_out_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![1.0, 2.0]);
+        let v2 = FlexVector::<f64>::from_vec(vec![3.0, 4.0]);
+        let mut out = [0.0; 1];
+        let result = v1.project_onto_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_empty_f64() {
+        let v1 = FlexVector::<f64>::from_vec(vec![]);
+        let v2 = FlexVector::<f64>::from_vec(vec![]);
+        let mut out: [f64; 0] = [];
+        let result = v1.project_onto_into(&v2, &mut out);
+        assert!(result.is_err()); // zero vector error
     }
 
     // --- cosine_similarity ---

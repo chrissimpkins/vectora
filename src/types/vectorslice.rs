@@ -15,7 +15,8 @@ use crate::types::utils::{
     lerp_impl, manhattan_distance_complex_impl, manhattan_distance_impl,
     minkowski_distance_complex_impl, minkowski_distance_impl, mut_lerp_impl, mut_normalize_impl,
     mut_normalize_to_impl, mut_translate_impl, normalize_impl, normalize_into_impl,
-    normalize_to_impl, normalize_to_into_impl, project_onto_impl, translate_impl,
+    normalize_to_impl, normalize_to_into_impl, project_onto_impl, project_onto_into_impl,
+    translate_impl,
 };
 
 use std::fmt;
@@ -377,6 +378,21 @@ where
     }
 
     #[inline]
+    fn midpoint_into(&self, end: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float,
+    {
+        self.check_same_length_and_raise(end)?;
+        if self.len() != out.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        lerp_impl(self.as_slice(), end.as_slice(), T::from(0.5).unwrap(), out);
+        Ok(())
+    }
+
+    #[inline]
     fn distance(&self, other: &Self) -> Result<T, VectorError>
     where
         T: num::Float + std::iter::Sum<T>,
@@ -446,6 +462,28 @@ where
         }
         let scalar = dot_impl(self.as_slice(), other.as_slice()) / denom;
         Ok(project_onto_impl(other.as_slice(), scalar))
+    }
+
+    #[inline]
+    fn project_onto_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        let denom = dot_impl(other.as_slice(), other.as_slice());
+        if denom == T::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot project onto zero vector".to_string(),
+            ));
+        }
+        let scalar = dot_impl(self.as_slice(), other.as_slice()) / denom;
+        project_onto_into_impl(other.as_slice(), scalar, out);
+        Ok(())
     }
 
     #[inline]
@@ -995,6 +1033,21 @@ where
     }
 
     #[inline]
+    fn midpoint_into(&self, end: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float,
+    {
+        self.check_same_length_and_raise(end)?;
+        if self.len() != out.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        lerp_impl(self.as_slice(), end.as_slice(), T::from(0.5).unwrap(), out);
+        Ok(())
+    }
+
+    #[inline]
     fn distance(&self, other: &Self) -> Result<T, VectorError>
     where
         T: num::Float + std::iter::Sum<T>,
@@ -1064,6 +1117,28 @@ where
         }
         let scalar = dot_impl(self.as_slice(), other.as_slice()) / denom;
         Ok(project_onto_impl(other.as_slice(), scalar))
+    }
+
+    #[inline]
+    fn project_onto_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float + std::iter::Sum<T>,
+    {
+        self.check_same_length_and_raise(other)?;
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        let denom = dot_impl(other.as_slice(), other.as_slice());
+        if denom == T::zero() {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot project onto zero vector".to_string(),
+            ));
+        }
+        let scalar = dot_impl(self.as_slice(), other.as_slice()) / denom;
+        project_onto_into_impl(other.as_slice(), scalar, out);
+        Ok(())
     }
 
     #[inline]
@@ -2197,6 +2272,67 @@ mod tests {
         assert_eq!(result.as_slice(), &[2.5, 3.5, 4.5]);
     }
 
+    // -- midpoint_into --
+
+    #[test]
+    fn test_vector_slice_midpoint_into_basic() {
+        let a = [1.0, 2.0, 3.0];
+        let b = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0.0; 3];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [2.5, 3.5, 4.5]);
+    }
+
+    #[test]
+    fn test_vector_slice_midpoint_into_weight_matches_midpoint() {
+        let a = [10.0, 20.0];
+        let b = [30.0, 40.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [0.0; 2];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        // Should match midpoint formula
+        assert!((out[0] - 20.0).abs() < 1e-8);
+        assert!((out[1] - 30.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_midpoint_into_mismatched_length_end() {
+        let a = [1.0, 2.0, 3.0];
+        let b = [4.0, 5.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [0.0; 3];
+        let result = vslice_a.midpoint_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_midpoint_into_mismatched_length_out() {
+        let a = [1.0, 2.0, 3.0];
+        let b = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..3);
+        let vslice_b = VectorSlice::from_range(&b, 0..3);
+        let mut out = [0.0; 2];
+        let result = vslice_a.midpoint_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_midpoint_into_empty() {
+        let a: [f64; 0] = [];
+        let b: [f64; 0] = [];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..0);
+        let vslice_b = VectorSlice::from_range(&b, 0..0);
+        let mut out: [f64; 0] = [];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, []);
+    }
+
+    // -- distance --
+
     #[test]
     fn test_vector_slice_distance() {
         let a = [1.0, 2.0, 3.0];
@@ -2268,6 +2404,103 @@ mod tests {
         let vslice_b = VectorSlice::from_range(&b, 0..2);
         let result = vslice_a.cosine_similarity(&vslice_b).unwrap();
         assert!((result - 0.0).abs() < 1e-8);
+    }
+
+    // -- project_onto_into --
+
+    #[test]
+    fn test_vector_slice_project_onto_into_basic() {
+        let a = [3.0, 4.0];
+        let b = [6.0, 8.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [0.0; 2];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        // a is already parallel to b, so projection should be a
+        assert!((out[0] - 3.0).abs() < 1e-8);
+        assert!((out[1] - 4.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_project_onto_into_parallel() {
+        let a = [2.0, 4.0];
+        let b = [1.0, 2.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [0.0; 2];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        // a is parallel to b, so projection should be a
+        assert!((out[0] - 2.0).abs() < 1e-8);
+        assert!((out[1] - 4.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_project_onto_into_orthogonal() {
+        let a = [1.0, 0.0];
+        let b = [0.0, 1.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [99.0, 99.0];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        // a is orthogonal to b, so projection should be [0, 0]
+        assert!((out[0]).abs() < 1e-8);
+        assert!((out[1]).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_project_onto_into_identical() {
+        let a = [5.0, 5.0];
+        let b = [5.0, 5.0];
+        let vslice_a: VectorSlice<'_, f64, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [0.0, 0.0];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        assert!((out[0] - 5.0).abs() < 1e-8);
+        assert!((out[1] - 5.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_project_onto_into_zero_vector() {
+        let a = [1.0, 2.0];
+        let b = [0.0, 0.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [0.0, 0.0];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_project_onto_into_mismatched_length_other() {
+        let a = [1.0, 2.0];
+        let b = [3.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..1);
+        let mut out = [0.0, 0.0];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_project_onto_into_mismatched_length_out() {
+        let a = [1.0, 2.0];
+        let b = [3.0, 4.0];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [0.0; 1];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_project_onto_into_empty() {
+        let a: [f64; 0] = [];
+        let b: [f64; 0] = [];
+        let vslice_a: VectorSlice<'_, f64, Column> = VectorSlice::from_range(&a, 0..0);
+        let vslice_b = VectorSlice::from_range(&b, 0..0);
+        let mut out: [f64; 0] = [];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err()); // zero vector error
     }
 
     // -- VectorOpsComplex for VectorSlice --
@@ -3608,6 +3841,66 @@ mod tests {
         assert_eq!(result.as_slice(), &[2.5, 3.5, 4.5]);
     }
 
+    // -- midpoint_into --
+
+    #[test]
+    fn test_vector_slice_mut_midpoint_into_basic() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0.0; 3];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, [2.5, 3.5, 4.5]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_midpoint_into_weight_matches_midpoint() {
+        let mut a = [10.0, 20.0];
+        let mut b = [30.0, 40.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0.0; 2];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        assert!((out[0] - 20.0).abs() < 1e-8);
+        assert!((out[1] - 30.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_midpoint_into_mismatched_length_end() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 5.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0.0; 3];
+        let result = vslice_a.midpoint_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_midpoint_into_mismatched_length_out() {
+        let mut a = [1.0, 2.0, 3.0];
+        let mut b = [4.0, 5.0, 6.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..3);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..3);
+        let mut out = [0.0; 2];
+        let result = vslice_a.midpoint_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_midpoint_into_empty() {
+        let mut a: [f64; 0] = [];
+        let mut b: [f64; 0] = [];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..0);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..0);
+        let mut out: [f64; 0] = [];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, []);
+    }
+
+    // -- distance --
+
     #[test]
     fn test_vector_slice_mut_distance() {
         let mut a = [1.0, 2.0, 3.0];
@@ -3679,6 +3972,100 @@ mod tests {
         let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
         let result = vslice_a.cosine_similarity(&vslice_b).unwrap();
         assert!((result - 0.0).abs() < 1e-8);
+    }
+
+    // -- project_onto_into --
+
+    #[test]
+    fn test_vector_slice_mut_project_onto_into_basic() {
+        let mut a = [3.0, 4.0];
+        let mut b = [6.0, 8.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0.0; 2];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        assert!((out[0] - 3.0).abs() < 1e-8);
+        assert!((out[1] - 4.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_project_onto_into_parallel() {
+        let mut a = [2.0, 4.0];
+        let mut b = [1.0, 2.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0.0; 2];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        assert!((out[0] - 2.0).abs() < 1e-8);
+        assert!((out[1] - 4.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_project_onto_into_orthogonal() {
+        let mut a = [1.0, 0.0];
+        let mut b = [0.0, 1.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [99.0, 99.0];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        assert!((out[0]).abs() < 1e-8);
+        assert!((out[1]).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_project_onto_into_identical() {
+        let mut a = [5.0, 5.0];
+        let mut b = [5.0, 5.0];
+        let vslice_a: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0.0, 0.0];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        assert!((out[0] - 5.0).abs() < 1e-8);
+        assert!((out[1] - 5.0).abs() < 1e-8);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_project_onto_into_zero_vector() {
+        let mut a = [1.0, 2.0];
+        let mut b = [0.0, 0.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0.0, 0.0];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_project_onto_into_mismatched_length_other() {
+        let mut a = [1.0, 2.0];
+        let mut b = [3.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..1);
+        let mut out = [0.0, 0.0];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_project_onto_into_mismatched_length_out() {
+        let mut a = [1.0, 2.0];
+        let mut b = [3.0, 4.0];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [0.0; 1];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_project_onto_into_empty() {
+        let mut a: [f64; 0] = [];
+        let mut b: [f64; 0] = [];
+        let vslice_a: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut a, 0..0);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..0);
+        let mut out: [f64; 0] = [];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err()); // zero vector error
     }
 
     // -- VectorOpsFloatMut trait for VectorSliceMut --

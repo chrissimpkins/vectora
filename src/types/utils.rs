@@ -214,6 +214,16 @@ where
 }
 
 #[inline]
+pub(crate) fn project_onto_into_impl<T>(other: &[T], scalar: T, out: &mut [T])
+where
+    T: num::Float + Copy,
+{
+    for (o, &x) in out.iter_mut().zip(other.iter()) {
+        *o = x * scalar;
+    }
+}
+
+#[inline]
 pub(crate) fn normalize_impl<T, Out>(slice: &[T], norm: T) -> Result<Out, VectorError>
 where
     T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
@@ -1320,6 +1330,67 @@ mod tests {
         // b is zero vector, so projection is [0,0]
         assert!((proj[0] - 0.0).abs() < 1e-12);
         assert!((proj[1] - 0.0).abs() < 1e-12);
+    }
+
+    // -- project_onto_into_impl --
+
+    #[test]
+    fn test_project_onto_into_impl_basic() {
+        let b = [1.0f64, 0.0];
+        let scalar = 3.0;
+        let mut out = [0.0f64; 2];
+        project_onto_into_impl(&b, scalar, &mut out);
+        assert!((out[0] - 3.0).abs() < 1e-12);
+        assert!((out[1] - 0.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_into_impl_parallel() {
+        let b = [1.0f64, 2.0];
+        let scalar = 2.0;
+        let mut out = [0.0f64; 2];
+        project_onto_into_impl(&b, scalar, &mut out);
+        assert!((out[0] - 2.0).abs() < 1e-12);
+        assert!((out[1] - 4.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_into_impl_orthogonal() {
+        let b = [1.0f64, 0.0];
+        let scalar = 0.0;
+        let mut out = [0.0f64; 2];
+        project_onto_into_impl(&b, scalar, &mut out);
+        assert!((out[0] - 0.0).abs() < 1e-12);
+        assert!((out[1] - 0.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_into_impl_identical() {
+        let b = [5.0f64, 5.0];
+        let scalar = 1.0;
+        let mut out = [0.0f64; 2];
+        project_onto_into_impl(&b, scalar, &mut out);
+        assert!((out[0] - 5.0).abs() < 1e-12);
+        assert!((out[1] - 5.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_into_impl_zero_vector() {
+        let b = [0.0f64, 0.0];
+        let scalar = 42.0;
+        let mut out = [1.0f64, 2.0];
+        project_onto_into_impl(&b, scalar, &mut out);
+        assert!((out[0] - 0.0).abs() < 1e-12);
+        assert!((out[1] - 0.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_project_onto_into_impl_empty() {
+        let b: [f64; 0] = [];
+        let scalar = 1.0;
+        let mut out: [f64; 0] = [];
+        project_onto_into_impl(&b, scalar, &mut out);
+        assert!(out.is_empty());
     }
 
     // -- normalize_impl --

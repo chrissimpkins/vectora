@@ -502,7 +502,12 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
         T: num::Float;
 
     /// Midpoint
-    fn midpoint(&self, other: &Self) -> Result<Self::Output, VectorError>
+    fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float;
+
+    /// ...
+    fn midpoint_into(&self, end: &Self, out: &mut [T]) -> Result<(), VectorError>
     where
         T: num::Float;
 
@@ -569,6 +574,11 @@ pub trait VectorOpsFloat<T>: VectorBase<T> {
         Self::Output: std::iter::FromIterator<T>;
 
     /// ...
+    fn project_onto_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float + std::iter::Sum<T>;
+
+    /// ...
     fn cosine_similarity(&self, other: &Self) -> Result<T, VectorError>
     where
         T: num::Float + std::iter::Sum<T> + std::ops::Div<Output = T>;
@@ -615,6 +625,8 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
             + std::ops::Div<Complex<N>, Output = Complex<N>>
             + std::ops::Mul<Complex<N>, Output = Complex<N>>,
         Self::Output: std::iter::FromIterator<Complex<N>>;
+
+    // TODO: add complex type *_into methods with pre-allocated buffer support
 
     /// Hermitian dot product: for all complex types
     fn dot(&self, other: &Self) -> Result<Complex<N>, VectorError>
