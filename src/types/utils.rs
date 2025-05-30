@@ -61,38 +61,38 @@ pub(crate) fn cross_into_impl<T: num::Num + Copy>(a: &[T], b: &[T], out: &mut [T
 
 /// Returns a Vec containing the elementwise minimum of two slices.
 /// Assumes all slices are the same length.
-pub(crate) fn elementwise_min_impl<T: PartialOrd + Clone>(a: &[T], b: &[T]) -> Vec<T> {
+pub(crate) fn elementwise_min_impl<T: PartialOrd + Copy>(a: &[T], b: &[T]) -> Vec<T> {
     a.iter()
         .zip(b.iter())
-        .map(|(a_elem, b_elem)| if a_elem < b_elem { a_elem.clone() } else { b_elem.clone() })
+        .map(|(a_elem, b_elem)| if a_elem < b_elem { *a_elem } else { *b_elem })
         .collect()
 }
 
 /// Writes the elementwise minimum of two slices into the provided output buffer.
 /// Assumes all slices are the same length.
 #[inline]
-pub(crate) fn elementwise_min_into_impl<T: PartialOrd + Clone>(a: &[T], b: &[T], out: &mut [T]) {
+pub(crate) fn elementwise_min_into_impl<T: PartialOrd + Copy>(a: &[T], b: &[T], out: &mut [T]) {
     for ((out_elem, a_elem), b_elem) in out.iter_mut().zip(a.iter()).zip(b.iter()) {
-        *out_elem = if a_elem < b_elem { a_elem.clone() } else { b_elem.clone() };
+        *out_elem = if a_elem < b_elem { *a_elem } else { *b_elem };
     }
 }
 
 /// Returns a Vec containing the elementwise maximum of two slices.
 /// Assumes all slices are the same length.
 #[inline]
-pub(crate) fn elementwise_max_impl<T: PartialOrd + Clone>(a: &[T], b: &[T]) -> Vec<T> {
+pub(crate) fn elementwise_max_impl<T: PartialOrd + Copy>(a: &[T], b: &[T]) -> Vec<T> {
     a.iter()
         .zip(b.iter())
-        .map(|(a_elem, b_elem)| if a_elem > b_elem { a_elem.clone() } else { b_elem.clone() })
+        .map(|(a_elem, b_elem)| if a_elem > b_elem { *a_elem } else { *b_elem })
         .collect()
 }
 
 /// Writes the elementwise maximum of two slices into the provided output buffer.
 /// Assumes all slices are the same length.
 #[inline]
-pub(crate) fn elementwise_max_into_impl<T: PartialOrd + Clone>(a: &[T], b: &[T], out: &mut [T]) {
+pub(crate) fn elementwise_max_into_impl<T: PartialOrd + Copy>(a: &[T], b: &[T], out: &mut [T]) {
     for ((out_elem, a_elem), b_elem) in out.iter_mut().zip(a.iter()).zip(b.iter()) {
-        *out_elem = if a_elem > b_elem { a_elem.clone() } else { b_elem.clone() };
+        *out_elem = if a_elem > b_elem { *a_elem } else { *b_elem };
     }
 }
 
@@ -129,7 +129,7 @@ where
 #[inline]
 pub(crate) fn distance_impl<T>(a: &[T], b: &[T]) -> T
 where
-    T: num::Float + Clone + std::iter::Sum<T>,
+    T: num::Float + std::iter::Sum<T>,
 {
     a.iter().zip(b.iter()).map(|(a, b)| (*a - *b).powi(2)).sum::<T>().sqrt()
 }
@@ -137,7 +137,7 @@ where
 #[inline]
 pub(crate) fn distance_complex_impl<N>(a: &[num::Complex<N>], b: &[num::Complex<N>]) -> N
 where
-    N: num::Float + Clone + std::iter::Sum<N>,
+    N: num::Float + std::iter::Sum<N>,
 {
     a.iter().zip(b.iter()).map(|(a, b)| (*a - *b).norm_sqr()).sum::<N>().sqrt()
 }
@@ -145,14 +145,14 @@ where
 #[inline]
 pub(crate) fn manhattan_distance_impl<T>(a: &[T], b: &[T]) -> T
 where
-    T: num::Float + Clone + std::iter::Sum<T>,
+    T: num::Float + std::iter::Sum<T>,
 {
     a.iter().zip(b.iter()).map(|(a, b)| (*a - *b).abs()).sum()
 }
 
 pub(crate) fn manhattan_distance_complex_impl<N>(a: &[num::Complex<N>], b: &[num::Complex<N>]) -> N
 where
-    N: num::Float + Clone + std::iter::Sum<N>,
+    N: num::Float + std::iter::Sum<N>,
 {
     a.iter().zip(b.iter()).map(|(a, b)| (*a - *b).norm()).sum()
 }
@@ -160,7 +160,7 @@ where
 #[inline]
 pub(crate) fn chebyshev_distance_impl<T>(a: &[T], b: &[T]) -> T
 where
-    T: num::Float + Clone + PartialOrd,
+    T: num::Float,
 {
     a.iter().zip(b.iter()).map(|(a, b)| (*a - *b).abs()).fold(T::zero(), |acc, x| acc.max(x))
 }
@@ -168,7 +168,7 @@ where
 #[inline]
 pub(crate) fn chebyshev_distance_complex_impl<N>(a: &[num::Complex<N>], b: &[num::Complex<N>]) -> N
 where
-    N: num::Float + Clone + PartialOrd,
+    N: num::Float,
 {
     a.iter().zip(b.iter()).map(|(a, b)| (*a - *b).norm()).fold(N::zero(), |acc, x| acc.max(x))
 }
@@ -176,7 +176,7 @@ where
 #[inline]
 pub(crate) fn minkowski_distance_impl<T>(a: &[T], b: &[T], p: T) -> T
 where
-    T: num::Float + Clone + std::iter::Sum<T>,
+    T: num::Float + std::iter::Sum<T>,
 {
     a.iter().zip(b.iter()).map(|(a, b)| (*a - *b).abs().powf(p)).sum::<T>().powf(T::one() / p)
 }
@@ -188,7 +188,7 @@ pub(crate) fn minkowski_distance_complex_impl<N>(
     p: N,
 ) -> N
 where
-    N: num::Float + Clone + std::iter::Sum<N>,
+    N: num::Float + std::iter::Sum<N>,
 {
     a.iter().zip(b.iter()).map(|(a, b)| (*a - *b).norm().powf(p)).sum::<N>().powf(N::one() / p)
 }
@@ -196,7 +196,7 @@ where
 #[inline]
 pub(crate) fn angle_with_impl<T>(a: &[T], b: &[T], norm_a: T, norm_b: T) -> T
 where
-    T: num::Float + Clone + std::iter::Sum<T>,
+    T: num::Float + std::iter::Sum<T>,
 {
     let dot = dot_impl(a, b);
     let cos_theta = dot / (norm_a * norm_b);
@@ -322,7 +322,7 @@ where
 #[inline]
 pub(crate) fn cosine_similarity_impl<T>(a: &[T], b: &[T], norm_a: T, norm_b: T) -> T
 where
-    T: num::Float + Clone + std::iter::Sum<T> + std::ops::Div<Output = T>,
+    T: num::Float + std::iter::Sum<T> + std::ops::Div<Output = T>,
 {
     let dot = dot_impl(a, b);
     dot / (norm_a * norm_b)
@@ -336,7 +336,7 @@ pub(crate) fn cosine_similarity_complex_impl<N>(
     norm_b: N,
 ) -> num::Complex<N>
 where
-    N: num::Float + Clone + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+    N: num::Float + std::iter::Sum<N> + std::ops::Neg<Output = N>,
     num::Complex<N>: std::ops::Div<Output = num::Complex<N>>,
 {
     let dot = hermitian_dot_impl(a, b);

@@ -187,7 +187,7 @@ impl<T, O> FlexVector<T, O> {
                 "pattern must not be empty if len > 0".to_string(),
             ));
         }
-        let elements = pattern.iter().cloned().cycle().take(len).collect();
+        let elements = pattern.iter().cycle().take(len).cloned().collect();
         Ok(FlexVector { elements, _orientation: PhantomData })
     }
 }
@@ -726,7 +726,7 @@ where
 // ================================
 impl<T, O> VectorOps<T> for FlexVector<T, O>
 where
-    T: Clone,
+    T: Copy,
 {
     type Output = Self;
 
@@ -813,7 +813,7 @@ where
     #[inline]
     fn elementwise_min(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
-        T: PartialOrd + Clone,
+        T: PartialOrd + Copy,
     {
         self.check_same_length_and_raise(other)?;
         Ok(FlexVector::from_vec(elementwise_min_impl(self.as_slice(), other.as_slice())))
@@ -822,7 +822,7 @@ where
     #[inline]
     fn elementwise_min_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
     where
-        T: PartialOrd + Clone,
+        T: PartialOrd + Copy,
     {
         if self.len() != other.len() || out.len() != self.len() {
             return Err(VectorError::MismatchedLengthError(
@@ -837,7 +837,7 @@ where
     #[inline]
     fn elementwise_max(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
-        T: PartialOrd + Clone,
+        T: PartialOrd + Copy,
     {
         self.check_same_length_and_raise(other)?;
         Ok(FlexVector::from_vec(elementwise_max_impl(self.as_slice(), other.as_slice())))
@@ -846,7 +846,7 @@ where
     #[inline]
     fn elementwise_max_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
     where
-        T: PartialOrd + Clone,
+        T: PartialOrd + Copy,
     {
         if self.len() != other.len() || out.len() != self.len() {
             return Err(VectorError::MismatchedLengthError(
@@ -865,7 +865,7 @@ where
 // ================================
 impl<T, O> VectorOpsMut<T> for FlexVector<T, O>
 where
-    T: Clone,
+    T: Copy,
 {
     type Output = Self;
 
@@ -887,14 +887,14 @@ where
 // ================================
 impl<T, O> VectorOpsFloat<T> for FlexVector<T, O>
 where
-    T: num::Float + Clone + std::iter::Sum<T>,
+    T: num::Float + std::iter::Sum<T>,
 {
     type Output = Self;
 
     #[inline]
     fn normalize(&self) -> Result<Self::Output, VectorError>
     where
-        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+        T: num::Float + std::ops::Div<T, Output = T> + num::Zero,
         Self::Output: std::iter::FromIterator<T>,
     {
         normalize_impl(self.as_slice(), self.norm())
@@ -903,7 +903,7 @@ where
     #[inline]
     fn normalize_into(&self, out: &mut [T]) -> Result<(), VectorError>
     where
-        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+        T: num::Float + std::ops::Div<T, Output = T> + num::Zero,
     {
         let norm = self.norm();
         normalize_into_impl(self.as_slice(), norm, out)
@@ -913,11 +913,7 @@ where
     #[inline]
     fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
     where
-        T: Copy
-            + PartialEq
-            + std::ops::Div<T, Output = T>
-            + std::ops::Mul<T, Output = T>
-            + num::Zero,
+        T: num::Float + std::ops::Div<T, Output = T> + std::ops::Mul<T, Output = T> + num::Zero,
         Self::Output: std::iter::FromIterator<T>,
     {
         normalize_to_impl(self.as_slice(), self.norm(), magnitude)
@@ -926,11 +922,7 @@ where
     #[inline]
     fn normalize_to_into(&self, magnitude: T, out: &mut [T]) -> Result<(), VectorError>
     where
-        T: Copy
-            + PartialEq
-            + std::ops::Div<T, Output = T>
-            + std::ops::Mul<T, Output = T>
-            + num::Zero,
+        T: num::Float + std::ops::Div<T, Output = T> + std::ops::Mul<T, Output = T> + num::Zero,
     {
         let norm = self.norm();
         normalize_to_into_impl(self.as_slice(), norm, magnitude, out)
@@ -939,7 +931,7 @@ where
     #[inline]
     fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
     where
-        T: num::Float + Clone,
+        T: num::Float,
     {
         self.check_same_length_and_raise(end)?;
         if weight < T::zero() || weight > T::one() {
@@ -953,7 +945,7 @@ where
     #[inline]
     fn lerp_into(&self, end: &Self, weight: T, out: &mut [T]) -> Result<(), VectorError>
     where
-        T: num::Float + Clone,
+        T: num::Float,
     {
         self.check_same_length_and_raise(end)?;
         if self.len() != out.len() {
@@ -971,7 +963,7 @@ where
     #[inline]
     fn midpoint(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
-        T: num::Float + Clone,
+        T: num::Float,
     {
         self.check_same_length_and_raise(other)?;
         let mut out = FlexVector::zero(self.len());
@@ -982,7 +974,7 @@ where
     #[inline]
     fn distance(&self, other: &Self) -> Result<T, VectorError>
     where
-        T: num::Float + Clone + std::iter::Sum<T>,
+        T: num::Float + std::iter::Sum<T>,
     {
         self.check_same_length_and_raise(other)?;
         Ok(distance_impl(self.as_slice(), other.as_slice()))
@@ -991,7 +983,7 @@ where
     #[inline]
     fn manhattan_distance(&self, other: &Self) -> Result<T, VectorError>
     where
-        T: num::Float + Clone + std::iter::Sum<T>,
+        T: num::Float + std::iter::Sum<T>,
     {
         self.check_same_length_and_raise(other)?;
         Ok(manhattan_distance_impl(self.as_slice(), other.as_slice()))
@@ -1000,7 +992,7 @@ where
     #[inline]
     fn chebyshev_distance(&self, other: &Self) -> Result<T, VectorError>
     where
-        T: num::Float + Clone + PartialOrd,
+        T: num::Float + PartialOrd,
     {
         self.check_same_length_and_raise(other)?;
         Ok(chebyshev_distance_impl(self.as_slice(), other.as_slice()))
@@ -1009,7 +1001,7 @@ where
     #[inline]
     fn minkowski_distance(&self, other: &Self, p: T) -> Result<T, VectorError>
     where
-        T: num::Float + Clone + std::iter::Sum<T>,
+        T: num::Float + std::iter::Sum<T>,
     {
         self.check_same_length_and_raise(other)?;
         if p < T::one() {
@@ -1021,7 +1013,7 @@ where
     #[inline]
     fn angle_with(&self, other: &Self) -> Result<T, VectorError>
     where
-        T: num::Float + Clone + std::iter::Sum<T>,
+        T: num::Float + std::iter::Sum<T>,
     {
         self.check_same_length_and_raise(other)?;
         let norm_self = self.norm();
@@ -1037,7 +1029,7 @@ where
     #[inline]
     fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
-        T: num::Float + Clone + std::iter::Sum<T>,
+        T: num::Float + std::iter::Sum<T>,
         Self::Output: std::iter::FromIterator<T>,
     {
         self.check_same_length_and_raise(other)?;
@@ -1054,7 +1046,7 @@ where
     #[inline]
     fn cosine_similarity(&self, other: &Self) -> Result<T, VectorError>
     where
-        T: num::Float + Clone + std::iter::Sum<T> + std::ops::Div<Output = T>,
+        T: num::Float + std::iter::Sum<T> + std::ops::Div<Output = T>,
     {
         self.check_same_length_and_raise(other)?;
         let norm_self = self.norm();
@@ -1075,14 +1067,14 @@ where
 // ================================
 impl<T, O> VectorOpsFloatMut<T> for FlexVector<T, O>
 where
-    T: num::Float + Clone + std::iter::Sum<T>,
+    T: num::Float + std::iter::Sum<T>,
 {
     type Output = Self;
 
     #[inline]
     fn mut_normalize(&mut self) -> Result<(), VectorError>
     where
-        T: Copy + PartialEq + std::ops::Div<T, Output = T> + num::Zero,
+        T: num::Float + std::ops::Div<T, Output = T> + num::Zero,
     {
         let norm = self.norm();
         mut_normalize_impl(self.as_mut_slice(), norm)
@@ -1091,11 +1083,7 @@ where
     #[inline]
     fn mut_normalize_to(&mut self, magnitude: T) -> Result<(), VectorError>
     where
-        T: Copy
-            + PartialEq
-            + std::ops::Div<T, Output = T>
-            + std::ops::Mul<T, Output = T>
-            + num::Zero,
+        T: num::Float + std::ops::Div<T, Output = T> + std::ops::Mul<T, Output = T> + num::Zero,
     {
         let n = self.norm();
         mut_normalize_to_impl(self.as_mut_slice(), n, magnitude)
@@ -1104,7 +1092,7 @@ where
     #[inline]
     fn mut_lerp(&mut self, end: &Self, weight: T) -> Result<(), VectorError>
     where
-        T: num::Float + Copy + PartialOrd,
+        T: num::Float,
     {
         self.check_same_length_and_raise(end)?;
         if weight < T::zero() || weight > T::one() {
@@ -1123,13 +1111,14 @@ where
 
 impl<N, O> VectorOpsComplex<N> for FlexVector<Complex<N>, O>
 where
-    N: num::Float + Clone + std::iter::Sum<N>,
+    N: num::Num + Copy + std::iter::Sum<N>,
 {
     type Output = Self;
 
     #[inline]
     fn normalize(&self) -> Result<Self::Output, VectorError>
     where
+        N: num::Float,
         Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
         Self::Output: std::iter::FromIterator<Complex<N>>,
     {
@@ -1139,6 +1128,7 @@ where
     #[inline]
     fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
     where
+        N: num::Float,
         Complex<N>: Copy
             + PartialEq
             + std::ops::Div<Complex<N>, Output = Complex<N>>
@@ -1156,7 +1146,7 @@ where
     #[inline]
     fn dot(&self, other: &Self) -> Result<Complex<N>, VectorError>
     where
-        N: num::Num + Copy + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+        N: num::Num + std::iter::Sum<N> + std::ops::Neg<Output = N>,
     {
         self.check_same_length_and_raise(other)?;
         Ok(hermitian_dot_impl(self.as_slice(), other.as_slice()))
@@ -1165,7 +1155,7 @@ where
     #[inline]
     fn lerp(&self, end: &Self, weight: N) -> Result<Self::Output, VectorError>
     where
-        N: num::Float + Clone + PartialOrd,
+        N: num::Float,
         Complex<N>: Copy
             + std::ops::Add<Output = Complex<N>>
             + std::ops::Mul<Output = Complex<N>>
@@ -1185,7 +1175,7 @@ where
     #[inline]
     fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
     where
-        N: num::Float + Clone,
+        N: num::Float,
     {
         self.check_same_length_and_raise(end)?;
         self.lerp(end, num::cast(0.5).unwrap())
@@ -1194,7 +1184,7 @@ where
     #[inline]
     fn distance(&self, other: &Self) -> Result<N, VectorError>
     where
-        N: num::Float + Clone + std::iter::Sum<N>,
+        N: num::Float + std::iter::Sum<N>,
     {
         self.check_same_length_and_raise(other)?;
         Ok(distance_complex_impl(self.as_slice(), other.as_slice()))
@@ -1203,7 +1193,7 @@ where
     #[inline]
     fn manhattan_distance(&self, other: &Self) -> Result<N, VectorError>
     where
-        N: num::Float + Clone + std::iter::Sum<N>,
+        N: num::Float + std::iter::Sum<N>,
     {
         self.check_same_length_and_raise(other)?;
         Ok(manhattan_distance_complex_impl(self.as_slice(), other.as_slice()))
@@ -1212,7 +1202,7 @@ where
     #[inline]
     fn chebyshev_distance(&self, other: &Self) -> Result<N, VectorError>
     where
-        N: num::Float + Clone + PartialOrd,
+        N: num::Float,
     {
         self.check_same_length_and_raise(other)?;
         Ok(chebyshev_distance_complex_impl(self.as_slice(), other.as_slice()))
@@ -1221,7 +1211,7 @@ where
     #[inline]
     fn minkowski_distance(&self, other: &Self, p: N) -> Result<N, VectorError>
     where
-        N: num::Float + Clone + std::iter::Sum<N>,
+        N: num::Float + std::iter::Sum<N>,
     {
         self.check_same_length_and_raise(other)?;
         if p < N::one() {
@@ -1233,7 +1223,7 @@ where
     #[inline]
     fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
     where
-        N: num::Float + Clone + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+        N: num::Float + std::iter::Sum<N> + std::ops::Neg<Output = N>,
         Complex<N>: Copy
             + std::ops::Mul<Output = Complex<N>>
             + std::ops::Add<Output = Complex<N>>
@@ -1255,7 +1245,7 @@ where
     #[inline]
     fn cosine_similarity(&self, other: &Self) -> Result<num::Complex<N>, VectorError>
     where
-        N: num::Float + Clone + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+        N: num::Float + std::iter::Sum<N> + std::ops::Neg<Output = N>,
         Complex<N>: std::ops::Div<Output = Complex<N>>,
     {
         self.check_same_length_and_raise(other)?;
@@ -1272,13 +1262,14 @@ where
 
 impl<N, O> VectorOpsComplexMut<N> for FlexVector<Complex<N>, O>
 where
-    N: num::Float + Clone + std::iter::Sum<N>,
+    N: num::Num + Copy + std::iter::Sum<N>,
 {
     type Output = Self;
 
     #[inline]
     fn mut_normalize(&mut self) -> Result<(), VectorError>
     where
+        N: num::Float,
         Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>> + num::Zero,
     {
         let norm = self.norm();
@@ -1288,6 +1279,7 @@ where
     #[inline]
     fn mut_normalize_to(&mut self, magnitude: N) -> Result<(), VectorError>
     where
+        N: num::Float,
         Complex<N>: Copy
             + PartialEq
             + std::ops::Div<Complex<N>, Output = Complex<N>>
@@ -1305,12 +1297,11 @@ where
     #[inline]
     fn mut_lerp(&mut self, end: &Self, weight: N) -> Result<(), VectorError>
     where
-        N: num::Float + Copy + PartialOrd,
+        N: num::Float,
         Complex<N>: Copy
             + std::ops::Add<Output = Complex<N>>
             + std::ops::Mul<Output = Complex<N>>
-            + std::ops::Sub<Output = Complex<N>>
-            + num::One,
+            + std::ops::Sub<Output = Complex<N>>,
     {
         self.check_same_length_and_raise(end)?;
         if weight < N::zero() || weight > N::one() {
