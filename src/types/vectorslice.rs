@@ -367,14 +367,11 @@ where
     }
 
     #[inline]
-    fn midpoint(&self, other: &Self) -> Result<Self::Output, VectorError>
+    fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
     where
         T: num::Float,
     {
-        self.check_same_length_and_raise(other)?;
-        let mut out = FlexVector::zero(self.len());
-        lerp_impl(self.as_slice(), other.as_slice(), num::cast(0.5).unwrap(), out.as_mut_slice());
-        Ok(out)
+        self.lerp(end, num::cast(0.5).unwrap())
     }
 
     #[inline]
@@ -382,14 +379,7 @@ where
     where
         T: num::Float,
     {
-        self.check_same_length_and_raise(end)?;
-        if self.len() != out.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Output buffer has different length than input vectors".to_string(),
-            ));
-        }
-        lerp_impl(self.as_slice(), end.as_slice(), num::cast(0.5).unwrap(), out);
-        Ok(())
+        self.lerp_into(end, num::cast(0.5).unwrap(), out)
     }
 
     #[inline]
@@ -594,12 +584,48 @@ where
     }
 
     #[inline]
+    fn lerp_into(&self, end: &Self, weight: N, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One,
+    {
+        self.check_same_length_and_raise(end)?;
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        if weight < N::zero() || weight > N::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        let w = Complex::new(weight, N::zero());
+        lerp_impl(self.as_slice(), end.as_slice(), w, out);
+        Ok(())
+    }
+
+    #[inline]
     fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
     where
         N: num::Float,
     {
-        self.check_same_length_and_raise(end)?;
         self.lerp(end, num::cast(0.5).unwrap())
+    }
+
+    #[inline]
+    fn midpoint_into(&self, end: &Self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One,
+    {
+        self.lerp_into(end, num::cast(0.5).unwrap(), out)
     }
 
     #[inline]
@@ -1049,14 +1075,11 @@ where
     }
 
     #[inline]
-    fn midpoint(&self, other: &Self) -> Result<Self::Output, VectorError>
+    fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
     where
         T: num::Float,
     {
-        self.check_same_length_and_raise(other)?;
-        let mut out = FlexVector::zero(self.len());
-        lerp_impl(self.as_slice(), other.as_slice(), T::from(0.5).unwrap(), out.as_mut_slice());
-        Ok(out)
+        self.lerp(end, num::cast(0.5).unwrap())
     }
 
     #[inline]
@@ -1064,14 +1087,7 @@ where
     where
         T: num::Float,
     {
-        self.check_same_length_and_raise(end)?;
-        if self.len() != out.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Output buffer has different length than input vectors".to_string(),
-            ));
-        }
-        lerp_impl(self.as_slice(), end.as_slice(), T::from(0.5).unwrap(), out);
-        Ok(())
+        self.lerp_into(end, num::cast(0.5).unwrap(), out)
     }
 
     #[inline]
@@ -1308,12 +1324,48 @@ where
     }
 
     #[inline]
+    fn lerp_into(&self, end: &Self, weight: N, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One,
+    {
+        self.check_same_length_and_raise(end)?;
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        if weight < N::zero() || weight > N::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        let w = Complex::new(weight, N::zero());
+        lerp_impl(self.as_slice(), end.as_slice(), w, out);
+        Ok(())
+    }
+
+    #[inline]
     fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
     where
         N: num::Float,
     {
-        self.check_same_length_and_raise(end)?;
         self.lerp(end, num::cast(0.5).unwrap())
+    }
+
+    #[inline]
+    fn midpoint_into(&self, end: &Self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One,
+    {
+        self.lerp_into(end, num::cast(0.5).unwrap(), out)
     }
 
     #[inline]
@@ -2800,6 +2852,99 @@ mod tests {
         assert!(vslice_a.lerp(&vslice_b, 1.1).is_err());
     }
 
+    // -- lerp_into --
+
+    #[test]
+    fn test_vector_slice_complex_lerp_into_basic() {
+        let a = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let b = [num::Complex::new(5.0, 6.0), num::Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.lerp_into(&vslice_b, 0.5, &mut out).unwrap();
+        // Should be the midpoint
+        assert!((out[0] - num::Complex::new(3.0, 4.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(5.0, 6.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_lerp_into_weight_zero() {
+        let a = [num::Complex::new(1.0, 2.0)];
+        let b = [num::Complex::new(5.0, 6.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..1);
+        let vslice_b = VectorSlice::from_range(&b, 0..1);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        vslice_a.lerp_into(&vslice_b, 0.0, &mut out).unwrap();
+        // Should be equal to a
+        assert!((out[0] - num::Complex::new(1.0, 2.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_lerp_into_weight_one() {
+        let a = [num::Complex::new(1.0, 2.0)];
+        let b = [num::Complex::new(5.0, 6.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..1);
+        let vslice_b = VectorSlice::from_range(&b, 0..1);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        vslice_a.lerp_into(&vslice_b, 1.0, &mut out).unwrap();
+        // Should be equal to b
+        assert!((out[0] - num::Complex::new(5.0, 6.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_lerp_into_weight_out_of_bounds() {
+        let a = [num::Complex::new(1.0, 2.0)];
+        let b = [num::Complex::new(5.0, 6.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..1);
+        let vslice_b = VectorSlice::from_range(&b, 0..1);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result_low = vslice_a.lerp_into(&vslice_b, -0.1, &mut out);
+        let result_high = vslice_a.lerp_into(&vslice_b, 1.1, &mut out);
+        assert!(result_low.is_err());
+        assert!(result_high.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_complex_lerp_into_mismatched_length_end() {
+        let a = [num::Complex::new(1.0, 2.0)];
+        let b = [num::Complex::new(5.0, 6.0), num::Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..1);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result = vslice_a.lerp_into(&vslice_b, 0.5, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_complex_lerp_into_mismatched_length_out() {
+        let a = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let b = [num::Complex::new(5.0, 6.0), num::Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result = vslice_a.lerp_into(&vslice_b, 0.5, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_complex_lerp_into_empty() {
+        let a: [num::Complex<f64>; 0] = [];
+        let b: [num::Complex<f64>; 0] = [];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..0);
+        let vslice_b: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&b, 0..0);
+        let mut out: [num::Complex<f64>; 0] = [];
+        vslice_a.lerp_into(&vslice_b, 0.5, &mut out).unwrap();
+        assert_eq!(out, []);
+    }
+
     // -- midpoint --
 
     #[test]
@@ -2817,6 +2962,84 @@ mod tests {
             assert!((x.re - y.re).abs() < 1e-8);
             assert!((x.im - y.im).abs() < 1e-8);
         }
+    }
+
+    // -- midpoint_into --
+
+    #[test]
+    fn test_vector_slice_complex_midpoint_into_basic() {
+        let a = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let b = [num::Complex::new(5.0, 6.0), num::Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        // Should be the midpoint
+        assert!((out[0] - num::Complex::new(3.0, 4.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(5.0, 6.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_midpoint_into_negative_values() {
+        let a = [num::Complex::new(-1.0, -2.0), num::Complex::new(-3.0, -4.0)];
+        let b = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        assert!((out[0] - num::Complex::new(0.0, 0.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_midpoint_into_identical() {
+        let a = [num::Complex::new(2.0, 3.0), num::Complex::new(4.0, 5.0)];
+        let b = [num::Complex::new(2.0, 3.0), num::Complex::new(4.0, 5.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        assert!((out[0] - num::Complex::new(2.0, 3.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(4.0, 5.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_midpoint_into_mismatched_length_end() {
+        let a = [num::Complex::new(1.0, 2.0)];
+        let b = [num::Complex::new(3.0, 4.0), num::Complex::new(5.0, 6.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..1);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result = vslice_a.midpoint_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_complex_midpoint_into_mismatched_length_out() {
+        let a = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let b = [num::Complex::new(5.0, 6.0), num::Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result = vslice_a.midpoint_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_complex_midpoint_into_empty() {
+        let a: [num::Complex<f64>; 0] = [];
+        let b: [num::Complex<f64>; 0] = [];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..0);
+        let vslice_b: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&b, 0..0);
+        let mut out: [num::Complex<f64>; 0] = [];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, []);
     }
 
     // -- distance --
@@ -4516,6 +4739,99 @@ mod tests {
         assert!(vslice_a.lerp(&vslice_b, 1.1).is_err());
     }
 
+    // -- lerp_into --
+
+    #[test]
+    fn test_vector_slice_mut_complex_lerp_into_basic() {
+        let mut a = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let mut b = [num::Complex::new(5.0, 6.0), num::Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.lerp_into(&vslice_b, 0.5, &mut out).unwrap();
+        // Should be the midpoint
+        assert!((out[0] - num::Complex::new(3.0, 4.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(5.0, 6.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_lerp_into_weight_zero() {
+        let mut a = [num::Complex::new(1.0, 2.0)];
+        let mut b = [num::Complex::new(5.0, 6.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..1);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        vslice_a.lerp_into(&vslice_b, 0.0, &mut out).unwrap();
+        // Should be equal to a
+        assert!((out[0] - num::Complex::new(1.0, 2.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_lerp_into_weight_one() {
+        let mut a = [num::Complex::new(1.0, 2.0)];
+        let mut b = [num::Complex::new(5.0, 6.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..1);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        vslice_a.lerp_into(&vslice_b, 1.0, &mut out).unwrap();
+        // Should be equal to b
+        assert!((out[0] - num::Complex::new(5.0, 6.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_lerp_into_weight_out_of_bounds() {
+        let mut a = [num::Complex::new(1.0, 2.0)];
+        let mut b = [num::Complex::new(5.0, 6.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..1);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result_low = vslice_a.lerp_into(&vslice_b, -0.1, &mut out);
+        let result_high = vslice_a.lerp_into(&vslice_b, 1.1, &mut out);
+        assert!(result_low.is_err());
+        assert!(result_high.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_lerp_into_mismatched_length_end() {
+        let mut a = [num::Complex::new(1.0, 2.0)];
+        let mut b = [num::Complex::new(5.0, 6.0), num::Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result = vslice_a.lerp_into(&vslice_b, 0.5, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_lerp_into_mismatched_length_out() {
+        let mut a = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let mut b = [num::Complex::new(5.0, 6.0), num::Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result = vslice_a.lerp_into(&vslice_b, 0.5, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_lerp_into_empty() {
+        let mut a: [num::Complex<f64>; 0] = [];
+        let mut b: [num::Complex<f64>; 0] = [];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..0);
+        let vslice_b: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut b, 0..0);
+        let mut out: [num::Complex<f64>; 0] = [];
+        vslice_a.lerp_into(&vslice_b, 0.5, &mut out).unwrap();
+        assert_eq!(out, []);
+    }
+
     // -- midpoint --
 
     #[test]
@@ -4534,6 +4850,85 @@ mod tests {
             assert!((x.re - y.re).abs() < 1e-8);
             assert!((x.im - y.im).abs() < 1e-8);
         }
+    }
+
+    // -- midpoint_into --
+
+    #[test]
+    fn test_vector_slice_mut_complex_midpoint_into_basic() {
+        let mut a = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let mut b = [num::Complex::new(5.0, 6.0), num::Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        // Should be the midpoint
+        assert!((out[0] - num::Complex::new(3.0, 4.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(5.0, 6.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_midpoint_into_negative_values() {
+        let mut a = [num::Complex::new(-1.0, -2.0), num::Complex::new(-3.0, -4.0)];
+        let mut b = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        assert!((out[0] - num::Complex::new(0.0, 0.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_midpoint_into_identical() {
+        let mut a = [num::Complex::new(2.0, 3.0), num::Complex::new(4.0, 5.0)];
+        let mut b = [num::Complex::new(2.0, 3.0), num::Complex::new(4.0, 5.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        assert!((out[0] - num::Complex::new(2.0, 3.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(4.0, 5.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_midpoint_into_mismatched_length_end() {
+        let mut a = [num::Complex::new(1.0, 2.0)];
+        let mut b = [num::Complex::new(3.0, 4.0), num::Complex::new(5.0, 6.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result = vslice_a.midpoint_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_midpoint_into_mismatched_length_out() {
+        let mut a = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let mut b = [num::Complex::new(5.0, 6.0), num::Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result = vslice_a.midpoint_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_midpoint_into_empty() {
+        let mut a: [num::Complex<f64>; 0] = [];
+        let mut b: [num::Complex<f64>; 0] = [];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..0);
+        let vslice_b: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut b, 0..0);
+        let mut out: [num::Complex<f64>; 0] = [];
+        vslice_a.midpoint_into(&vslice_b, &mut out).unwrap();
+        assert_eq!(out, []);
     }
 
     // -- distance --

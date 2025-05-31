@@ -653,10 +653,32 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
     where
         N: num::Float;
 
+    /// Linear interpolation between self and end by real weight in [0, 1], writing into a preallocated buffer.
+    /// The output buffer must have the same length as self.
+    fn lerp_into(&self, end: &Self, weight: N, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One;
+
     /// Midpoint
     fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
     where
         N: num::Float;
+
+    /// Midpoint linear interpolation between self and end, writing into a preallocated buffer.
+    /// The output buffer must have the same length as self.
+    fn midpoint_into(&self, end: &Self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One;
 
     /// Euclidean distance (L2 norm) between self and other (returns real).
     fn distance(&self, other: &Self) -> Result<N, VectorError>

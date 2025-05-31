@@ -962,14 +962,11 @@ where
     }
 
     #[inline]
-    fn midpoint(&self, other: &Self) -> Result<Self::Output, VectorError>
+    fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
     where
         T: num::Float,
     {
-        self.check_same_length_and_raise(other)?;
-        let mut out = FlexVector::zero(self.len());
-        lerp_impl(self.as_slice(), other.as_slice(), num::cast(0.5).unwrap(), out.as_mut_slice());
-        Ok(out)
+        self.lerp(end, num::cast(0.5).unwrap())
     }
 
     #[inline]
@@ -977,14 +974,7 @@ where
     where
         T: num::Float,
     {
-        self.check_same_length_and_raise(end)?;
-        if self.len() != out.len() {
-            return Err(VectorError::MismatchedLengthError(
-                "Output buffer has different length than input vectors".to_string(),
-            ));
-        }
-        lerp_impl(self.as_slice(), end.as_slice(), num::cast(0.5).unwrap(), out);
-        Ok(())
+        self.lerp_into(end, num::cast(0.5).unwrap(), out)
     }
 
     #[inline]
@@ -1237,12 +1227,48 @@ where
     }
 
     #[inline]
+    fn lerp_into(&self, end: &Self, weight: N, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One,
+    {
+        self.check_same_length_and_raise(end)?;
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        if weight < N::zero() || weight > N::one() {
+            return Err(VectorError::OutOfRangeError("weight must be in [0, 1]".to_string()));
+        }
+        let w = Complex::new(weight, N::zero());
+        lerp_impl(self.as_slice(), end.as_slice(), w, out);
+        Ok(())
+    }
+
+    #[inline]
     fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
     where
         N: num::Float,
     {
-        self.check_same_length_and_raise(end)?;
         self.lerp(end, num::cast(0.5).unwrap())
+    }
+
+    #[inline]
+    fn midpoint_into(&self, end: &Self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One,
+    {
+        self.lerp_into(end, num::cast(0.5).unwrap(), out)
     }
 
     #[inline]
@@ -7829,6 +7855,92 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -- lerp_into --
+
+    #[test]
+    fn test_flexvector_lerp_into_complex_f64_basic() {
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(5.0, 6.0),
+            Complex::new(7.0, 8.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        v1.lerp_into(&v2, 0.5, &mut out).unwrap();
+        // Should be the midpoint
+        assert!((out[0] - Complex::new(3.0, 4.0)).norm() < 1e-12);
+        assert!((out[1] - Complex::new(5.0, 6.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_complex_f64_weight_zero() {
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(5.0, 6.0)]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        v1.lerp_into(&v2, 0.0, &mut out).unwrap();
+        // Should be equal to v1
+        assert!((out[0] - Complex::new(1.0, 2.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_complex_f64_weight_one() {
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(5.0, 6.0)]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        v1.lerp_into(&v2, 1.0, &mut out).unwrap();
+        // Should be equal to v2
+        assert!((out[0] - Complex::new(5.0, 6.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_complex_f64_weight_out_of_bounds() {
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(5.0, 6.0)]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result_low = v1.lerp_into(&v2, -0.1, &mut out);
+        let result_high = v1.lerp_into(&v2, 1.1, &mut out);
+        assert!(result_low.is_err());
+        assert!(result_high.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_complex_f64_mismatched_length_end() {
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(5.0, 6.0),
+            Complex::new(7.0, 8.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = v1.lerp_into(&v2, 0.5, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_complex_f64_mismatched_length_out() {
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(5.0, 6.0),
+            Complex::new(7.0, 8.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = v1.lerp_into(&v2, 0.5, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_lerp_into_complex_f64_empty() {
+        let v1: FlexVector<Complex<f64>> = FlexVector::new();
+        let v2: FlexVector<Complex<f64>> = FlexVector::new();
+        let mut out: [Complex<f64>; 0] = [];
+        v1.lerp_into(&v2, 0.5, &mut out).unwrap();
+        assert_eq!(out, []);
+    }
+
     // -- midpoint --
 
     #[test]
@@ -7867,6 +7979,99 @@ mod tests {
         let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
         let result = v1.midpoint(&v2);
         assert!(result.is_err());
+    }
+
+    // -- midpoint_into --
+
+    #[test]
+    fn test_flexvector_midpoint_into_complex_f64_basic() {
+        use num::Complex;
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(5.0, 6.0),
+            Complex::new(7.0, 8.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        v1.midpoint_into(&v2, &mut out).unwrap();
+        // Should be the midpoint
+        assert!((out[0] - Complex::new(3.0, 4.0)).norm() < 1e-12);
+        assert!((out[1] - Complex::new(5.0, 6.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_midpoint_into_complex_f64_negative_values() {
+        use num::Complex;
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(-1.0, -2.0),
+            Complex::new(-3.0, -4.0),
+        ]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        v1.midpoint_into(&v2, &mut out).unwrap();
+        assert!((out[0] - Complex::new(0.0, 0.0)).norm() < 1e-12);
+        assert!((out[1] - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_midpoint_into_complex_f64_identical() {
+        use num::Complex;
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(2.0, 3.0),
+            Complex::new(4.0, 5.0),
+        ]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(2.0, 3.0),
+            Complex::new(4.0, 5.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        v1.midpoint_into(&v2, &mut out).unwrap();
+        assert!((out[0] - Complex::new(2.0, 3.0)).norm() < 1e-12);
+        assert!((out[1] - Complex::new(4.0, 5.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_midpoint_into_complex_f64_mismatched_length_end() {
+        use num::Complex;
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(3.0, 4.0),
+            Complex::new(5.0, 6.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = v1.midpoint_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_midpoint_into_complex_f64_mismatched_length_out() {
+        use num::Complex;
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(5.0, 6.0),
+            Complex::new(7.0, 8.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = v1.midpoint_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_midpoint_into_complex_f64_empty() {
+        use num::Complex;
+        let v1: FlexVector<Complex<f64>> = FlexVector::new();
+        let v2: FlexVector<Complex<f64>> = FlexVector::new();
+        let mut out: [Complex<f64>; 0] = [];
+        v1.midpoint_into(&v2, &mut out).unwrap();
+        assert_eq!(out, []);
     }
 
     // -- distance --
