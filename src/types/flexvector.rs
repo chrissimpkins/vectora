@@ -1164,20 +1164,46 @@ where
     }
 
     #[inline]
+    fn normalize_into(&self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
+        Self::Output: std::iter::FromIterator<Complex<N>>,
+    {
+        normalize_into_impl(self.as_slice(), Complex::new(self.norm(), N::zero()), out)
+    }
+
+    #[inline]
     fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
     where
         N: num::Float,
         Complex<N>: Copy
             + PartialEq
             + std::ops::Div<Complex<N>, Output = Complex<N>>
-            + std::ops::Mul<Complex<N>, Output = Complex<N>>
-            + num::Zero,
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>,
         Self::Output: std::iter::FromIterator<Complex<N>>,
     {
         normalize_to_impl(
             self.as_slice(),
             Complex::new(self.norm(), N::zero()),
             Complex::new(magnitude, N::zero()),
+        )
+    }
+
+    #[inline]
+    fn normalize_to_into(&self, magnitude: N, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>,
+    {
+        normalize_to_into_impl(
+            self.as_slice(),
+            Complex::new(self.norm(), N::zero()),
+            Complex::new(magnitude, N::zero()),
+            out,
         )
     }
 
@@ -7537,6 +7563,65 @@ mod tests {
         assert!(normalized.is_err());
     }
 
+    // -- normalize_into --
+
+    #[test]
+    fn test_normalize_into_complex_f64_basic() {
+        use num::Complex;
+        let v = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(3.0, 4.0)]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        v.normalize_into(&mut out).unwrap();
+        // The norm is 5.0, so the normalized vector should be [0.6 + 0.8i]
+        assert!((out[0].re - 0.6).abs() < 1e-12);
+        assert!((out[0].im - 0.8).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_into_complex_f64_multiple_elements() {
+        use num::Complex;
+        let v = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let norm = ((1.0 * 1.0 + 2.0 * 2.0) + (3.0 * 3.0 + 4.0 * 4.0)).sqrt();
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        v.normalize_into(&mut out).unwrap();
+        assert!((out[0].re - 1.0 / norm).abs() < 1e-12);
+        assert!((out[0].im - 2.0 / norm).abs() < 1e-12);
+        assert!((out[1].re - 3.0 / norm).abs() < 1e-12);
+        assert!((out[1].im - 4.0 / norm).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_normalize_into_complex_f64_zero_vector() {
+        use num::Complex;
+        let v = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(0.0, 0.0)]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = v.normalize_into(&mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_normalize_into_complex_f64_empty() {
+        use num::Complex;
+        let v: FlexVector<Complex<f64>> = FlexVector::new();
+        let mut out: [Complex<f64>; 0] = [];
+        let result = v.normalize_into(&mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_normalize_into_complex_f64_wrong_length() {
+        use num::Complex;
+        let v = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = v.normalize_into(&mut out);
+        assert!(result.is_err());
+    }
+
     // -- normalize_to --
 
     #[test]
@@ -7577,6 +7662,65 @@ mod tests {
         let v: FlexVector<Complex<f64>> = FlexVector::new();
         let normalized = v.normalize_to(1.0);
         assert!(normalized.is_err());
+    }
+
+    // -- normalize_to_into --
+
+    #[test]
+    fn test_flexvector_normalize_to_into_basic_complex_f64() {
+        use num::Complex;
+        let v = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(3.0, 4.0)]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        v.normalize_to_into(10.0, &mut out).unwrap();
+        // The original norm is 5.0, so the normalized vector should be [6.0 + 8.0i]
+        assert!((out[0].re - 6.0).abs() < 1e-12);
+        assert!((out[0].im - 8.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_normalize_to_into_multiple_elements_complex_f64() {
+        use num::Complex;
+        let v = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let norm = ((1.0 * 1.0 + 2.0 * 2.0) + (3.0 * 3.0 + 4.0 * 4.0)).sqrt();
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        v.normalize_to_into(2.0, &mut out).unwrap();
+        assert!((out[0].re - 1.0 / norm * 2.0).abs() < 1e-12);
+        assert!((out[0].im - 2.0 / norm * 2.0).abs() < 1e-12);
+        assert!((out[1].re - 3.0 / norm * 2.0).abs() < 1e-12);
+        assert!((out[1].im - 4.0 / norm * 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_normalize_to_into_zero_vector_complex_f64() {
+        use num::Complex;
+        let v = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(0.0, 0.0)]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = v.normalize_to_into(1.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_normalize_to_into_empty_complex_f64() {
+        use num::Complex;
+        let v: FlexVector<Complex<f64>> = FlexVector::new();
+        let mut out: [Complex<f64>; 0] = [];
+        let result = v.normalize_to_into(1.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_normalize_to_into_wrong_length_complex_f64() {
+        use num::Complex;
+        let v = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = v.normalize_to_into(1.0, &mut out);
+        assert!(result.is_err());
     }
 
     // -- dot --

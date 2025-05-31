@@ -616,6 +616,13 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
         Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
         Self::Output: std::iter::FromIterator<Complex<N>>;
 
+    /// ...
+    fn normalize_into(&self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
+        Self::Output: std::iter::FromIterator<Complex<N>>;
+
     /// Returns a new vector with the same direction and the given magnitude (real).
     fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
     where
@@ -626,7 +633,15 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
             + std::ops::Mul<Complex<N>, Output = Complex<N>>,
         Self::Output: std::iter::FromIterator<Complex<N>>;
 
-    // TODO: add complex type *_into methods with pre-allocated buffer support
+    /// Writes a normalized version of self with the given magnitude into the provided buffer.
+    /// The output buffer must have the same length as self.
+    fn normalize_to_into(&self, magnitude: N, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>;
 
     /// Hermitian dot product: for all complex types
     fn dot(&self, other: &Self) -> Result<Complex<N>, VectorError>

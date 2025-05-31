@@ -520,6 +520,16 @@ where
     }
 
     #[inline]
+    fn normalize_into(&self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
+        Self::Output: std::iter::FromIterator<Complex<N>>,
+    {
+        normalize_into_impl(self.as_slice(), Complex::new(self.norm(), N::zero()), out)
+    }
+
+    #[inline]
     fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
     where
         N: num::Float,
@@ -534,6 +544,23 @@ where
             self.as_slice(),
             Complex::new(self.norm(), N::zero()),
             Complex::new(magnitude, N::zero()),
+        )
+    }
+
+    #[inline]
+    fn normalize_to_into(&self, magnitude: N, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>,
+    {
+        normalize_to_into_impl(
+            self.as_slice(),
+            Complex::new(self.norm(), N::zero()),
+            Complex::new(magnitude, N::zero()),
+            out,
         )
     }
 
@@ -1213,6 +1240,16 @@ where
     }
 
     #[inline]
+    fn normalize_into(&self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
+        Self::Output: std::iter::FromIterator<Complex<N>>,
+    {
+        normalize_into_impl(self.as_slice(), Complex::new(self.norm(), N::zero()), out)
+    }
+
+    #[inline]
     fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
     where
         N: num::Float,
@@ -1226,6 +1263,23 @@ where
             self.as_slice(),
             Complex::new(self.norm(), N::zero()),
             Complex::new(magnitude, N::zero()),
+        )
+    }
+
+    #[inline]
+    fn normalize_to_into(&self, magnitude: N, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>,
+    {
+        normalize_to_into_impl(
+            self.as_slice(),
+            Complex::new(self.norm(), N::zero()),
+            Complex::new(magnitude, N::zero()),
+            out,
         )
     }
 
@@ -2509,7 +2563,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_normalize() {
-        use num::Complex;
         let a = [Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)];
         let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
         // The norm is sqrt(|3+4i|^2 + |0|^2) = sqrt(25) = 5
@@ -2523,10 +2576,62 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_normalize_zero_vector() {
-        use num::Complex;
         let a = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
         let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
         let result = vslice.normalize();
+        assert!(result.is_err());
+    }
+
+    // -- normalize_into (Complex<f64>) --
+
+    #[test]
+    fn test_vector_slice_complex_normalize_into_basic() {
+        let a = [Complex::new(3.0, 4.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        vslice.normalize_into(&mut out).unwrap();
+        // The norm is 5.0, so the normalized vector should be [0.6 + 0.8i]
+        assert!((out[0].re - 0.6).abs() < 1e-12);
+        assert!((out[0].im - 0.8).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_normalize_into_multiple_elements() {
+        let a = [Complex::new(1.0_f64, 2.0), Complex::new(3.0, 4.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let norm = ((1.0_f64 * 1.0 + 2.0 * 2.0) + (3.0 * 3.0 + 4.0 * 4.0)).sqrt();
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        vslice.normalize_into(&mut out).unwrap();
+        assert!((out[0].re - 1.0 / norm).abs() < 1e-12);
+        assert!((out[0].im - 2.0 / norm).abs() < 1e-12);
+        assert!((out[1].re - 3.0 / norm).abs() < 1e-12);
+        assert!((out[1].im - 4.0 / norm).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_normalize_into_zero_vector() {
+        let a = [Complex::new(0.0, 0.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = vslice.normalize_into(&mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_complex_normalize_into_empty() {
+        let a: [Complex<f64>; 0] = [];
+        let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..0);
+        let mut out: [Complex<f64>; 0] = [];
+        let result = vslice.normalize_into(&mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_complex_normalize_into_wrong_length() {
+        let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = vslice.normalize_into(&mut out);
         assert!(result.is_err());
     }
 
@@ -2534,7 +2639,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_normalize_to() {
-        use num::Complex;
         let a = [Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)];
         let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
         // The norm is 5, so scaling to magnitude 10 multiplies by 2
@@ -2548,10 +2652,62 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_normalize_to_zero_vector() {
-        use num::Complex;
         let a = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
         let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
         let result = vslice.normalize_to(10.0);
+        assert!(result.is_err());
+    }
+
+    // -- normalize_to_into --
+
+    #[test]
+    fn test_vector_slice_complex_normalize_to_into_basic() {
+        let a = [Complex::new(3.0, 4.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        vslice.normalize_to_into(10.0, &mut out).unwrap();
+        // The original norm is 5.0, so the normalized vector should be [6.0 + 8.0i]
+        assert!((out[0].re - 6.0).abs() < 1e-12);
+        assert!((out[0].im - 8.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_normalize_to_into_multiple_elements() {
+        let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let norm = ((1.0_f64 * 1.0 + 2.0 * 2.0) + (3.0 * 3.0 + 4.0 * 4.0)).sqrt();
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        vslice.normalize_to_into(2.0, &mut out).unwrap();
+        assert!((out[0].re - 1.0 / norm * 2.0).abs() < 1e-12);
+        assert!((out[0].im - 2.0 / norm * 2.0).abs() < 1e-12);
+        assert!((out[1].re - 3.0 / norm * 2.0).abs() < 1e-12);
+        assert!((out[1].im - 4.0 / norm * 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_normalize_to_into_zero_vector() {
+        let a = [Complex::new(0.0, 0.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = vslice.normalize_to_into(1.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_complex_normalize_to_into_empty() {
+        let a: [Complex<f64>; 0] = [];
+        let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..0);
+        let mut out: [Complex<f64>; 0] = [];
+        let result = vslice.normalize_to_into(1.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_complex_normalize_to_into_wrong_length() {
+        let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let vslice: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = vslice.normalize_to_into(1.0, &mut out);
         assert!(result.is_err());
     }
 
@@ -2559,7 +2715,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_dot_basic() {
-        use num::Complex;
         let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
@@ -2573,7 +2728,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_dot_negative_values() {
-        use num::Complex;
         let a = [Complex::new(-1.0, -2.0), Complex::new(-3.0, -4.0)];
         let b = [Complex::new(2.0, 1.0), Complex::new(4.0, 3.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
@@ -2586,7 +2740,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_dot_zero_vector() {
-        use num::Complex;
         let a = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
         let b = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
@@ -2598,7 +2751,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_dot_empty() {
-        use num::Complex;
         let a: [Complex<f64>; 0] = [];
         let b: [Complex<f64>; 0] = [];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..0);
@@ -2610,7 +2762,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_dot_mismatched_length() {
-        use num::Complex;
         let a = [Complex::new(1.0, 2.0)];
         let b = [Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
@@ -2623,7 +2774,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_lerp() {
-        use num::Complex;
         let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
@@ -2642,7 +2792,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_lerp_weight_out_of_bounds() {
-        use num::Complex;
         let a = [Complex::new(1.0, 2.0)];
         let b = [Complex::new(3.0, 4.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
@@ -2655,7 +2804,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_midpoint() {
-        use num::Complex;
         let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
@@ -2675,7 +2823,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_distance() {
-        use num::Complex;
         let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
@@ -2692,7 +2839,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_manhattan_distance() {
-        use num::Complex;
         let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
@@ -2709,7 +2855,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_chebyshev_distance() {
-        use num::Complex;
         let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
@@ -2726,7 +2871,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_minkowski_distance() {
-        use num::Complex;
         let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
@@ -2744,7 +2888,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_project_onto_basic() {
-        use num::Complex;
         let a = [Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)];
         let b = [Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
@@ -2757,7 +2900,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_project_onto_parallel() {
-        use num::Complex;
         let a = [Complex::new(2.0, 2.0), Complex::new(4.0, 4.0)];
         let b = [Complex::new(1.0, 1.0), Complex::new(2.0, 2.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
@@ -2769,7 +2911,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_project_onto_orthogonal() {
-        use num::Complex;
         let a = [Complex::new(0.0, 1.0), Complex::new(0.0, 0.0)];
         let b = [Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
@@ -2781,7 +2922,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_project_onto_identical() {
-        use num::Complex;
         let a = [Complex::new(5.0, 5.0), Complex::new(5.0, 5.0)];
         let b = [Complex::new(5.0, 5.0), Complex::new(5.0, 5.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
@@ -2793,7 +2933,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_project_onto_zero_vector() {
-        use num::Complex;
         let a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let b = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
@@ -2806,7 +2945,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_cosine_similarity_parallel() {
-        use num::Complex;
         let a = [Complex::new(1.0, 2.0), Complex::new(2.0, 4.0)];
         let b = [Complex::new(2.0, 4.0), Complex::new(4.0, 8.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
@@ -2817,7 +2955,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_cosine_similarity_orthogonal() {
-        use num::Complex;
         let a = [Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)];
         let b = [Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..2);
@@ -2828,7 +2965,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_cosine_similarity_opposite() {
-        use num::Complex;
         let a = [Complex::new(1.0, 0.0)];
         let b = [Complex::new(-1.0, 0.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
@@ -2839,7 +2975,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_cosine_similarity_identical() {
-        use num::Complex;
         let a = [Complex::new(3.0, 4.0)];
         let b = [Complex::new(3.0, 4.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
@@ -2850,7 +2985,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_cosine_similarity_arbitrary() {
-        use num::Complex;
         let a = [Complex::new(1.0, 2.0)];
         let b = [Complex::new(2.0, 1.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
@@ -2861,7 +2995,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_complex_cosine_similarity_zero_vector() {
-        use num::Complex;
         let a = [Complex::new(0.0, 0.0)];
         let b = [Complex::new(1.0, 2.0)];
         let vslice_a: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from_range(&a, 0..1);
@@ -3717,6 +3850,69 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -- normalize_to_into --
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_to_into_basic() {
+        use num::Complex;
+        let mut a = [Complex::new(3.0, 4.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        vslice.normalize_to_into(10.0, &mut out).unwrap();
+        // The original norm is 5.0, so the normalized vector should be [6.0 + 8.0i]
+        assert!((out[0].re - 6.0).abs() < 1e-12);
+        assert!((out[0].im - 8.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_to_into_multiple_elements() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let norm = ((1.0_f64 * 1.0 + 2.0 * 2.0) + (3.0 * 3.0 + 4.0 * 4.0)).sqrt();
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        vslice.normalize_to_into(2.0, &mut out).unwrap();
+        assert!((out[0].re - 1.0 / norm * 2.0).abs() < 1e-12);
+        assert!((out[0].im - 2.0 / norm * 2.0).abs() < 1e-12);
+        assert!((out[1].re - 3.0 / norm * 2.0).abs() < 1e-12);
+        assert!((out[1].im - 4.0 / norm * 2.0).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_to_into_zero_vector() {
+        use num::Complex;
+        let mut a = [Complex::new(0.0, 0.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = vslice.normalize_to_into(1.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_to_into_empty() {
+        use num::Complex;
+        let mut a: [Complex<f64>; 0] = [];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..0);
+        let mut out: [Complex<f64>; 0] = [];
+        let result = vslice.normalize_to_into(1.0, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_to_into_wrong_length() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = vslice.normalize_to_into(1.0, &mut out);
+        assert!(result.is_err());
+    }
+
     // -- lerp --
 
     #[test]
@@ -4128,7 +4324,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_normalize() {
-        use num::Complex;
         let mut a = [Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)];
         let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
             VectorSliceMut::from_range(&mut a, 0..2);
@@ -4143,7 +4338,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_normalize_zero_vector() {
-        use num::Complex;
         let mut a = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
         let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
             VectorSliceMut::from_range(&mut a, 0..2);
@@ -4151,11 +4345,73 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // -- normalize_into --
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_into_basic() {
+        use num::Complex;
+        let mut a = [Complex::new(3.0, 4.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        vslice.normalize_into(&mut out).unwrap();
+        // The norm is 5.0, so the normalized vector should be [0.6 + 0.8i]
+        assert!((out[0].re - 0.6).abs() < 1e-12);
+        assert!((out[0].im - 0.8).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_into_multiple_elements() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0_f64, 2.0), Complex::new(3.0, 4.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let norm = ((1.0_f64 * 1.0 + 2.0 * 2.0) + (3.0 * 3.0 + 4.0 * 4.0)).sqrt();
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        vslice.normalize_into(&mut out).unwrap();
+        assert!((out[0].re - 1.0 / norm).abs() < 1e-12);
+        assert!((out[0].im - 2.0 / norm).abs() < 1e-12);
+        assert!((out[1].re - 3.0 / norm).abs() < 1e-12);
+        assert!((out[1].im - 4.0 / norm).abs() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_into_zero_vector() {
+        use num::Complex;
+        let mut a = [Complex::new(0.0, 0.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = vslice.normalize_into(&mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_into_empty() {
+        use num::Complex;
+        let mut a: [Complex<f64>; 0] = [];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..0);
+        let mut out: [Complex<f64>; 0] = [];
+        let result = vslice.normalize_into(&mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_normalize_into_wrong_length() {
+        use num::Complex;
+        let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
+        let vslice: VectorSliceMut<'_, Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = vslice.normalize_into(&mut out);
+        assert!(result.is_err());
+    }
+
     // -- normalize_to --
 
     #[test]
     fn test_vector_slice_mut_complex_normalize_to() {
-        use num::Complex;
         let mut a = [Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)];
         let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
             VectorSliceMut::from_range(&mut a, 0..2);
@@ -4170,7 +4426,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_normalize_to_zero_vector() {
-        use num::Complex;
         let mut a = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
         let vslice: VectorSliceMut<'_, Complex<f64>, Column> =
             VectorSliceMut::from_range(&mut a, 0..2);
@@ -4182,7 +4437,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_dot_basic() {
-        use num::Complex;
         let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         // Compute expected before mutable borrow
@@ -4197,7 +4451,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_dot_mismatched_length() {
-        use num::Complex;
         let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let mut b = [Complex::new(5.0, 6.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4209,7 +4462,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_dot_zero() {
-        use num::Complex;
         let mut a = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
         let mut b = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4222,7 +4474,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_dot_empty() {
-        use num::Complex;
         let mut a: [Complex<f64>; 0] = [];
         let mut b: [Complex<f64>; 0] = [];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4237,7 +4488,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_lerp() {
-        use num::Complex;
         let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4257,7 +4507,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_lerp_weight_out_of_bounds() {
-        use num::Complex;
         let mut a = [Complex::new(1.0, 2.0)];
         let mut b = [Complex::new(3.0, 4.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4271,7 +4520,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_midpoint() {
-        use num::Complex;
         let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Row> =
@@ -4292,7 +4540,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_distance() {
-        use num::Complex;
         let mut a = [Complex::new(1.0_f64, 2.0), Complex::new(3.0, 4.0)];
         let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         // Euclidean distance: sqrt(sum_i |a[i] - b[i]|^2)
@@ -4310,7 +4557,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_manhattan_distance() {
-        use num::Complex;
         let mut a = [Complex::new(1.0_f64, 2.0), Complex::new(3.0, 4.0)];
         let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         // Manhattan distance: sum_i |a[i] - b[i]|
@@ -4328,7 +4574,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_chebyshev_distance() {
-        use num::Complex;
         let mut a = [Complex::new(1.0_f64, 2.0), Complex::new(3.0, 4.0)];
         let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         // Chebyshev distance: max_i |a[i] - b[i]|
@@ -4346,7 +4591,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_minkowski_distance() {
-        use num::Complex;
         let mut a = [Complex::new(1.0_f64, 2.0), Complex::new(3.0, 4.0)];
         let mut b = [Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)];
         // Minkowski distance: (|a[0]-b[0]|^p + |a[1]-b[1]|^p)^(1/p)
@@ -4365,7 +4609,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_project_onto_basic() {
-        use num::Complex;
         let mut a = [Complex::new(3.0, 4.0), Complex::new(0.0, 0.0)];
         let mut b = [Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4379,7 +4622,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_project_onto_parallel() {
-        use num::Complex;
         let mut a = [Complex::new(2.0, 2.0), Complex::new(4.0, 4.0)];
         let mut b = [Complex::new(1.0, 1.0), Complex::new(2.0, 2.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Row> =
@@ -4392,7 +4634,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_project_onto_orthogonal() {
-        use num::Complex;
         let mut a = [Complex::new(0.0, 1.0), Complex::new(0.0, 0.0)];
         let mut b = [Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4405,7 +4646,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_project_onto_identical() {
-        use num::Complex;
         let mut a = [Complex::new(5.0, 5.0), Complex::new(5.0, 5.0)];
         let mut b = [Complex::new(5.0, 5.0), Complex::new(5.0, 5.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Row> =
@@ -4418,7 +4658,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_project_onto_zero_vector() {
-        use num::Complex;
         let mut a = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
         let mut b = [Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4432,7 +4671,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_cosine_similarity_parallel() {
-        use num::Complex;
         let mut a = [Complex::new(1.0, 2.0), Complex::new(2.0, 4.0)];
         let mut b = [Complex::new(2.0, 4.0), Complex::new(4.0, 8.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4444,7 +4682,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_cosine_similarity_orthogonal() {
-        use num::Complex;
         let mut a = [Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)];
         let mut b = [Complex::new(0.0, 0.0), Complex::new(1.0, 0.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4456,7 +4693,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_cosine_similarity_opposite() {
-        use num::Complex;
         let mut a = [Complex::new(1.0, 0.0)];
         let mut b = [Complex::new(-1.0, 0.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4468,7 +4704,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_cosine_similarity_identical() {
-        use num::Complex;
         let mut a = [Complex::new(3.0, 4.0)];
         let mut b = [Complex::new(3.0, 4.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4480,7 +4715,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_cosine_similarity_arbitrary() {
-        use num::Complex;
         let mut a = [Complex::new(1.0, 2.0)];
         let mut b = [Complex::new(2.0, 1.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
@@ -4492,7 +4726,6 @@ mod tests {
 
     #[test]
     fn test_vector_slice_mut_complex_cosine_similarity_zero_vector() {
-        use num::Complex;
         let mut a = [Complex::new(0.0, 0.0)];
         let mut b = [Complex::new(1.0, 2.0)];
         let vslice_a: VectorSliceMut<'_, Complex<f64>, Column> =
