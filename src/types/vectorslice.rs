@@ -2,10 +2,10 @@
 
 use crate::errors::VectorError;
 use crate::types::flexvector::FlexVector;
-use crate::types::orientation::{Column, Row};
+use crate::types::orientation::{Column, Row, VectorOrientation};
 use crate::types::traits::{
-    VectorBase, VectorBaseMut, VectorOps, VectorOpsComplex, VectorOpsFloat, VectorOpsFloatMut,
-    VectorOpsMut, VectorOrientationName,
+    VectorBase, VectorBaseMut, VectorHasOrientation, VectorOps, VectorOpsComplex, VectorOpsFloat,
+    VectorOpsFloatMut, VectorOpsMut, VectorOrientationName,
 };
 use crate::types::utils::{
     angle_with_impl, chebyshev_distance_complex_impl, chebyshev_distance_impl,
@@ -160,6 +160,20 @@ impl<'a, T, O> VectorBase<T> for VectorSlice<'a, T, O> {
     #[inline]
     fn as_slice(&self) -> &[T] {
         self.elements
+    }
+}
+
+impl<'a, T, O> VectorHasOrientation for VectorSlice<'a, T, O>
+where
+    O: 'static,
+{
+    #[inline]
+    fn orientation(&self) -> VectorOrientation {
+        if self.is_column() {
+            VectorOrientation::Column
+        } else {
+            VectorOrientation::Row
+        }
     }
 }
 
@@ -902,6 +916,20 @@ impl<'a, T, O> VectorBaseMut<T> for VectorSliceMut<'a, T, O> {
     #[inline]
     fn as_mut_slice(&mut self) -> &mut [T] {
         self.elements
+    }
+}
+
+impl<'a, T, O> VectorHasOrientation for VectorSliceMut<'a, T, O>
+where
+    O: 'static,
+{
+    #[inline]
+    fn orientation(&self) -> VectorOrientation {
+        if self.is_column() {
+            VectorOrientation::Column
+        } else {
+            VectorOrientation::Row
+        }
     }
 }
 
@@ -1940,6 +1968,22 @@ mod tests {
         let collected: Vec<i32> = vslice.iter().copied().collect();
         assert_eq!(collected, vec![1, 2, 3]);
         assert_eq!(vslice.to_vec(), vec![1, 2, 3]);
+    }
+
+    // -- VectorHasOrientation trait for VectorSlice --
+
+    #[test]
+    fn test_vector_slice_orientation_row() {
+        let data = [1, 2, 3];
+        let vslice: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&data, 0..3);
+        assert_eq!(vslice.orientation(), VectorOrientation::Row);
+    }
+
+    #[test]
+    fn test_vector_slice_orientation_column() {
+        let data = [1, 2, 3];
+        let vslice: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..3);
+        assert_eq!(vslice.orientation(), VectorOrientation::Column);
     }
 
     // -- VectorOps trait for VectorSlice --
@@ -3861,6 +3905,22 @@ mod tests {
         // Mutate through as_mut_slice
         vslice.as_mut_slice()[1] = num::Complex::new(9.0, 9.0);
         assert_eq!(data, [num::Complex::new(1.0, 2.0), num::Complex::new(9.0, 9.0)]);
+    }
+
+    // -- VectorHasOrientation trait for VectorSliceMut --
+
+    #[test]
+    fn test_vector_slice_mut_orientation_row() {
+        let mut data = [1, 2, 3];
+        let vslice: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut data, 0..3);
+        assert_eq!(vslice.orientation(), VectorOrientation::Row);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_orientation_column() {
+        let mut data = [1, 2, 3];
+        let vslice: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data, 0..3);
+        assert_eq!(vslice.orientation(), VectorOrientation::Column);
     }
 
     // -- VectorOps trait for VectorSliceMut --
