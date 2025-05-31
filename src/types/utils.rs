@@ -5,14 +5,20 @@ use crate::errors::VectorError;
 use num::Complex;
 
 #[inline]
-pub(crate) fn mut_translate_impl<T: num::Num + Copy>(out: &mut [T], b: &[T]) {
+pub(crate) fn mut_translate_impl<T>(out: &mut [T], b: &[T])
+where
+    T: Copy + std::ops::Add<Output = T>,
+{
     for (out_elem, &b_elem) in out.iter_mut().zip(b) {
         *out_elem = *out_elem + b_elem;
     }
 }
 
 #[inline]
-pub(crate) fn translate_impl<T: num::Num + Copy>(a: &[T], b: &[T], out: &mut [T]) {
+pub(crate) fn translate_impl<T>(a: &[T], b: &[T], out: &mut [T])
+where
+    T: Copy + std::ops::Add<Output = T>,
+{
     for ((out_elem, &a_elem), &b_elem) in out.iter_mut().zip(a).zip(b) {
         *out_elem = a_elem + b_elem;
     }
@@ -53,7 +59,10 @@ where
 /// Writes the cross product of two 3D vectors into the provided output buffer.
 /// Assumes all slices are of length 3.
 #[inline]
-pub(crate) fn cross_into_impl<T: num::Num + Copy>(a: &[T], b: &[T], out: &mut [T]) {
+pub(crate) fn cross_into_impl<T>(a: &[T], b: &[T], out: &mut [T])
+where
+    T: num::Num + Copy,
+{
     out[0] = a[1] * b[2] - a[2] * b[1];
     out[1] = a[2] * b[0] - a[0] * b[2];
     out[2] = a[0] * b[1] - a[1] * b[0];
@@ -61,7 +70,10 @@ pub(crate) fn cross_into_impl<T: num::Num + Copy>(a: &[T], b: &[T], out: &mut [T
 
 /// Returns a Vec containing the elementwise minimum of two slices.
 /// Assumes all slices are the same length.
-pub(crate) fn elementwise_min_impl<T: PartialOrd + Copy>(a: &[T], b: &[T]) -> Vec<T> {
+pub(crate) fn elementwise_min_impl<T>(a: &[T], b: &[T]) -> Vec<T>
+where
+    T: PartialOrd + Copy,
+{
     a.iter()
         .zip(b.iter())
         .map(|(a_elem, b_elem)| if a_elem < b_elem { *a_elem } else { *b_elem })
@@ -71,7 +83,10 @@ pub(crate) fn elementwise_min_impl<T: PartialOrd + Copy>(a: &[T], b: &[T]) -> Ve
 /// Writes the elementwise minimum of two slices into the provided output buffer.
 /// Assumes all slices are the same length.
 #[inline]
-pub(crate) fn elementwise_min_into_impl<T: PartialOrd + Copy>(a: &[T], b: &[T], out: &mut [T]) {
+pub(crate) fn elementwise_min_into_impl<T>(a: &[T], b: &[T], out: &mut [T])
+where
+    T: PartialOrd + Copy,
+{
     for ((out_elem, a_elem), b_elem) in out.iter_mut().zip(a.iter()).zip(b.iter()) {
         *out_elem = if a_elem < b_elem { *a_elem } else { *b_elem };
     }
@@ -80,7 +95,10 @@ pub(crate) fn elementwise_min_into_impl<T: PartialOrd + Copy>(a: &[T], b: &[T], 
 /// Returns a Vec containing the elementwise maximum of two slices.
 /// Assumes all slices are the same length.
 #[inline]
-pub(crate) fn elementwise_max_impl<T: PartialOrd + Copy>(a: &[T], b: &[T]) -> Vec<T> {
+pub(crate) fn elementwise_max_impl<T>(a: &[T], b: &[T]) -> Vec<T>
+where
+    T: PartialOrd + Copy,
+{
     a.iter()
         .zip(b.iter())
         .map(|(a_elem, b_elem)| if a_elem > b_elem { *a_elem } else { *b_elem })
@@ -90,7 +108,10 @@ pub(crate) fn elementwise_max_impl<T: PartialOrd + Copy>(a: &[T], b: &[T]) -> Ve
 /// Writes the elementwise maximum of two slices into the provided output buffer.
 /// Assumes all slices are the same length.
 #[inline]
-pub(crate) fn elementwise_max_into_impl<T: PartialOrd + Copy>(a: &[T], b: &[T], out: &mut [T]) {
+pub(crate) fn elementwise_max_into_impl<T>(a: &[T], b: &[T], out: &mut [T])
+where
+    T: PartialOrd + Copy,
+{
     for ((out_elem, a_elem), b_elem) in out.iter_mut().zip(a.iter()).zip(b.iter()) {
         *out_elem = if a_elem > b_elem { *a_elem } else { *b_elem };
     }
