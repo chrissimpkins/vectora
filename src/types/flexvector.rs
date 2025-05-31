@@ -968,7 +968,7 @@ where
     {
         self.check_same_length_and_raise(other)?;
         let mut out = FlexVector::zero(self.len());
-        lerp_impl(self.as_slice(), other.as_slice(), T::from(0.5).unwrap(), out.as_mut_slice());
+        lerp_impl(self.as_slice(), other.as_slice(), num::cast(0.5).unwrap(), out.as_mut_slice());
         Ok(out)
     }
 
@@ -983,7 +983,7 @@ where
                 "Output buffer has different length than input vectors".to_string(),
             ));
         }
-        lerp_impl(self.as_slice(), end.as_slice(), T::from(0.5).unwrap(), out);
+        lerp_impl(self.as_slice(), end.as_slice(), num::cast(0.5).unwrap(), out);
         Ok(())
     }
 
