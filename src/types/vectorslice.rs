@@ -2,7 +2,7 @@
 
 use crate::errors::VectorError;
 use crate::types::flexvector::FlexVector;
-use crate::types::orientation::Column;
+use crate::types::orientation::{Column, Row};
 use crate::types::traits::{
     VectorBase, VectorBaseMut, VectorOps, VectorOpsComplex, VectorOpsFloat, VectorOpsFloatMut,
     VectorOpsMut, VectorOrientationName,
@@ -19,6 +19,7 @@ use crate::types::utils::{
     translate_impl,
 };
 
+use std::any::TypeId;
 use std::fmt;
 use std::marker::PhantomData;
 
@@ -738,6 +739,33 @@ where
 // ================================
 
 impl<'a, T, O> VectorSlice<'a, T, O> {
+    /// ...
+    #[inline]
+    pub fn is_row(&self) -> bool
+    where
+        O: 'static,
+    {
+        TypeId::of::<O>() == TypeId::of::<Row>()
+    }
+
+    /// ...
+    #[inline]
+    pub fn is_column(&self) -> bool
+    where
+        O: 'static,
+    {
+        TypeId::of::<O>() == TypeId::of::<Column>()
+    }
+
+    /// Returns a new FlexVector with the same elements and orientation.
+    #[inline]
+    pub fn to_flexvector(&self) -> FlexVector<T, O>
+    where
+        T: Clone,
+    {
+        FlexVector::from_vec(self.elements.to_vec())
+    }
+
     // ================================
     //
     // Private methods
@@ -1497,6 +1525,32 @@ where
 // ================================
 
 impl<'a, T, O> VectorSliceMut<'a, T, O> {
+    /// ...
+    #[inline]
+    pub fn is_row(&self) -> bool
+    where
+        O: 'static,
+    {
+        TypeId::of::<O>() == TypeId::of::<Row>()
+    }
+
+    /// ...
+    #[inline]
+    pub fn is_column(&self) -> bool
+    where
+        O: 'static,
+    {
+        TypeId::of::<O>() == TypeId::of::<Column>()
+    }
+
+    /// Returns a new FlexVector with the same elements and orientation.
+    #[inline]
+    pub fn to_flexvector(&self) -> FlexVector<T, O>
+    where
+        T: Clone,
+    {
+        FlexVector::from_vec(self.elements.to_vec())
+    }
     // ================================
     //
     // Private methods
@@ -3376,6 +3430,52 @@ mod tests {
         let vslice_b = VectorSlice::from_range(&b, 0..1);
         let result = vslice_a.cosine_similarity(&vslice_b);
         assert!(result.is_err());
+    }
+
+    // ================================
+    //
+    // VectorSlice methods
+    //
+    // ================================
+
+    // -- is_row & is_column --
+
+    #[test]
+    fn test_vector_slice_is_row_and_is_column() {
+        let data = [1, 2, 3];
+        let vslice_row: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&data, 0..3);
+        let vslice_col: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..3);
+        assert!(vslice_row.is_row());
+        assert!(!vslice_row.is_column());
+        assert!(vslice_col.is_column());
+        assert!(!vslice_col.is_row());
+    }
+
+    // -- to_flexvector --
+
+    #[test]
+    fn test_vector_slice_to_flexvector_basic() {
+        let data = [10, 20, 30];
+        let vslice: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..3);
+        let flex: FlexVector<i32> = vslice.to_flexvector();
+        assert_eq!(flex.as_slice(), &[10, 20, 30]);
+    }
+
+    #[test]
+    fn test_vector_slice_to_flexvector_empty() {
+        let data: [i32; 0] = [];
+        let vslice: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&data, 0..0);
+        let flex: FlexVector<i32, Row> = vslice.to_flexvector();
+        assert_eq!(flex.as_slice(), &[]);
+    }
+
+    #[test]
+    fn test_vector_slice_to_flexvector_complex() {
+        let data = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let vslice: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&data, 0..2);
+        let flex: FlexVector<Complex<f64>> = vslice.to_flexvector();
+        assert_eq!(flex.as_slice(), &data);
     }
 
     // /////////////////////////////////
@@ -5386,5 +5486,53 @@ mod tests {
         let vslice_b = VectorSliceMut::from_range(&mut b, 0..1);
         let result = vslice_a.cosine_similarity(&vslice_b);
         assert!(result.is_err());
+    }
+
+    // ================================
+    //
+    // VectorSliceMut methods
+    //
+    // ================================
+
+    // -- is_row and is_column --
+
+    #[test]
+    fn test_vector_slice_mut_is_row_and_is_column() {
+        let mut data1 = [1, 2, 3];
+        let mut data2 = [1, 2, 3];
+        let vslice_row: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut data1, 0..3);
+        let vslice_col: VectorSliceMut<'_, i32, Column> =
+            VectorSliceMut::from_range(&mut data2, 0..3);
+        assert!(vslice_row.is_row());
+        assert!(!vslice_row.is_column());
+        assert!(vslice_col.is_column());
+        assert!(!vslice_col.is_row());
+    }
+
+    // -- to_flexvector --
+
+    #[test]
+    fn test_vector_slice_mut_to_flexvector_basic() {
+        let mut data = [10, 20, 30];
+        let vslice: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data, 0..3);
+        let flex: FlexVector<i32> = vslice.to_flexvector();
+        assert_eq!(flex.as_slice(), &[10, 20, 30]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_to_flexvector_empty() {
+        let mut data: [i32; 0] = [];
+        let vslice: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut data, 0..0);
+        let flex: FlexVector<i32, Row> = vslice.to_flexvector();
+        assert_eq!(flex.as_slice(), &[]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_to_flexvector_complex() {
+        let mut data = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let vslice: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut data, 0..2);
+        let flex: FlexVector<num::Complex<f64>> = vslice.to_flexvector();
+        assert_eq!(flex.as_slice(), &data);
     }
 }
