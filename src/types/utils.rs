@@ -216,7 +216,7 @@ where
 #[inline]
 pub(crate) fn project_onto_into_impl<T>(other: &[T], scalar: T, out: &mut [T])
 where
-    T: num::Float + Copy,
+    T: Copy + std::ops::Mul<T, Output = T>,
 {
     for (o, &x) in out.iter_mut().zip(other.iter()) {
         *o = x * scalar;

@@ -1333,6 +1333,30 @@ where
     }
 
     #[inline]
+    fn project_onto_into(&self, other: &Self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy,
+    {
+        self.check_same_length_and_raise(other)?;
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        let numerator = hermitian_dot_impl(self.as_slice(), other.as_slice());
+        let denominator = hermitian_dot_impl(other.as_slice(), other.as_slice());
+        if denominator == Complex::new(N::zero(), N::zero()) {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot project onto zero vector".to_string(),
+            ));
+        }
+        let scalar = numerator / denominator;
+        project_onto_into_impl(other.as_slice(), scalar, out);
+        Ok(())
+    }
+
+    #[inline]
     fn cosine_similarity(&self, other: &Self) -> Result<num::Complex<N>, VectorError>
     where
         N: num::Float + std::iter::Sum<N> + std::ops::Neg<Output = N>,
@@ -8375,6 +8399,134 @@ mod tests {
         let v2 = FlexVector::from_vec(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
         let result = v1.project_onto(&v2);
         assert!(result.is_err());
+    }
+
+    // -- project_onto_into --
+
+    #[test]
+    fn test_flexvector_project_onto_into_complex_f64_basic() {
+        use num::Complex;
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(3.0, 4.0),
+            Complex::new(0.0, 0.0),
+        ]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 0.0),
+            Complex::new(0.0, 0.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        v1.project_onto_into(&v2, &mut out).unwrap();
+        // Project v1 onto v2: should be [3.0 - 4.0i, 0.0]
+        assert!((out[0] - Complex::new(3.0, -4.0)).norm() < 1e-12);
+        assert!((out[1] - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_complex_f64_parallel() {
+        use num::Complex;
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(2.0, 2.0),
+            Complex::new(4.0, 4.0),
+        ]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 1.0),
+            Complex::new(2.0, 2.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        v1.project_onto_into(&v2, &mut out).unwrap();
+        // v1 is parallel to v2, so projection should be v1 itself
+        assert!((out[0] - Complex::new(2.0, 2.0)).norm() < 1e-12);
+        assert!((out[1] - Complex::new(4.0, 4.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_complex_f64_orthogonal() {
+        use num::Complex;
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(0.0, 1.0),
+            Complex::new(0.0, 0.0),
+        ]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 0.0),
+            Complex::new(0.0, 0.0),
+        ]);
+        let mut out = [Complex::new(99.0, 99.0); 2];
+        v1.project_onto_into(&v2, &mut out).unwrap();
+        // Hermitian projection: should be [0.0 - 1.0i, 0.0]
+        assert!((out[0] - Complex::new(0.0, -1.0)).norm() < 1e-12);
+        assert!((out[1] - Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_complex_f64_identical() {
+        use num::Complex;
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(5.0, 5.0),
+            Complex::new(5.0, 5.0),
+        ]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(5.0, 5.0),
+            Complex::new(5.0, 5.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        v1.project_onto_into(&v2, &mut out).unwrap();
+        assert!((out[0] - Complex::new(5.0, 5.0)).norm() < 1e-12);
+        assert!((out[1] - Complex::new(5.0, 5.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_complex_f64_zero_vector() {
+        use num::Complex;
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(0.0, 0.0),
+            Complex::new(0.0, 0.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 2];
+        let result = v1.project_onto_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_complex_f64_mismatched_length_other() {
+        use num::Complex;
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(3.0, 4.0),
+            Complex::new(5.0, 6.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = v1.project_onto_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_complex_f64_mismatched_length_out() {
+        use num::Complex;
+        let v1 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+        ]);
+        let v2 = FlexVector::<Complex<f64>>::from_vec(vec![
+            Complex::new(5.0, 6.0),
+            Complex::new(7.0, 8.0),
+        ]);
+        let mut out = [Complex::new(0.0, 0.0); 1];
+        let result = v1.project_onto_into(&v2, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_flexvector_project_onto_into_complex_f64_empty() {
+        use num::Complex;
+        let v1: FlexVector<Complex<f64>> = FlexVector::new();
+        let v2: FlexVector<Complex<f64>> = FlexVector::new();
+        let mut out: [Complex<f64>; 0] = [];
+        let result = v1.project_onto_into(&v2, &mut out);
+        assert!(result.is_err()); // zero vector error
     }
 
     // -- cosine_similarity --

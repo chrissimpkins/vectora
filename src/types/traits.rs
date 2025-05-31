@@ -755,6 +755,12 @@ pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
         Self::Output: std::iter::FromIterator<Complex<N>>;
 
     /// ...
+    fn project_onto_into(&self, other: &Self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy;
+
+    /// ...
     fn cosine_similarity(&self, other: &Self) -> Result<Complex<N>, VectorError>
     where
         N: num::Float + std::iter::Sum<N> + std::ops::Neg<Output = N>,

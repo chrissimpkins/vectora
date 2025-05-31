@@ -690,6 +690,30 @@ where
     }
 
     #[inline]
+    fn project_onto_into(&self, other: &Self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy,
+    {
+        self.check_same_length_and_raise(other)?;
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        let numerator = hermitian_dot_impl(self.as_slice(), other.as_slice());
+        let denominator = hermitian_dot_impl(other.as_slice(), other.as_slice());
+        if denominator == Complex::new(N::zero(), N::zero()) {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot project onto zero vector".to_string(),
+            ));
+        }
+        let scalar = numerator / denominator;
+        project_onto_into_impl(other.as_slice(), scalar, out);
+        Ok(())
+    }
+
+    #[inline]
     fn cosine_similarity(&self, other: &Self) -> Result<num::Complex<N>, VectorError>
     where
         N: num::Float + std::iter::Sum<N> + std::ops::Neg<Output = N>,
@@ -1422,6 +1446,30 @@ where
         }
         let scalar = hermitian_dot_impl(self.as_slice(), other.as_slice()) / denom;
         Ok(project_onto_impl(other.as_slice(), scalar))
+    }
+
+    #[inline]
+    fn project_onto_into(&self, other: &Self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy,
+    {
+        self.check_same_length_and_raise(other)?;
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has different length than input vectors".to_string(),
+            ));
+        }
+        let numerator = hermitian_dot_impl(self.as_slice(), other.as_slice());
+        let denominator = hermitian_dot_impl(other.as_slice(), other.as_slice());
+        if denominator == Complex::new(N::zero(), N::zero()) {
+            return Err(VectorError::ZeroVectorError(
+                "Cannot project onto zero vector".to_string(),
+            ));
+        }
+        let scalar = numerator / denominator;
+        project_onto_into_impl(other.as_slice(), scalar, out);
+        Ok(())
     }
 
     #[inline]
@@ -3162,6 +3210,110 @@ mod tests {
         let vslice_b = VectorSlice::from_range(&b, 0..2);
         let result = vslice_a.project_onto(&vslice_b);
         assert!(result.is_err());
+    }
+
+    // -- project_onto_into --
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_into_basic() {
+        let a = [num::Complex::new(3.0, 4.0), num::Complex::new(0.0, 0.0)];
+        let b = [num::Complex::new(1.0, 0.0), num::Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        // Project a onto b: should be [3.0 - 4.0i, 0.0]
+        assert!((out[0] - num::Complex::new(3.0, -4.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_into_parallel() {
+        let a = [num::Complex::new(2.0, 2.0), num::Complex::new(4.0, 4.0)];
+        let b = [num::Complex::new(1.0, 1.0), num::Complex::new(2.0, 2.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        // a is parallel to b, so projection should be a
+        assert!((out[0] - num::Complex::new(2.0, 2.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(4.0, 4.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_into_orthogonal() {
+        let a = [num::Complex::new(0.0, 1.0), num::Complex::new(0.0, 0.0)];
+        let b = [num::Complex::new(1.0, 0.0), num::Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(99.0, 99.0); 2];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        // Hermitian projection: should be [0.0 - 1.0i, 0.0]
+        assert!((out[0] - num::Complex::new(0.0, -1.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_into_identical() {
+        let a = [num::Complex::new(5.0, 5.0), num::Complex::new(5.0, 5.0)];
+        let b = [num::Complex::new(5.0, 5.0), num::Complex::new(5.0, 5.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Row> = VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        assert!((out[0] - num::Complex::new(5.0, 5.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(5.0, 5.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_into_zero_vector() {
+        let a = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let b = [num::Complex::new(0.0, 0.0), num::Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_into_mismatched_length_other() {
+        let a = [num::Complex::new(1.0, 2.0)];
+        let b = [num::Complex::new(3.0, 4.0), num::Complex::new(5.0, 6.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..1);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_into_mismatched_length_out() {
+        let a = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let b = [num::Complex::new(5.0, 6.0), num::Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..2);
+        let vslice_b = VectorSlice::from_range(&b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_complex_project_onto_into_empty() {
+        let a: [num::Complex<f64>; 0] = [];
+        let b: [num::Complex<f64>; 0] = [];
+        let vslice_a: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&a, 0..0);
+        let vslice_b: VectorSlice<'_, num::Complex<f64>, Column> =
+            VectorSlice::from_range(&b, 0..0);
+        let mut out: [num::Complex<f64>; 0] = [];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err()); // zero vector error
     }
 
     // -- cosine_similarity --
@@ -5060,6 +5212,112 @@ mod tests {
         let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
         let result = vslice_a.project_onto(&vslice_b);
         assert!(result.is_err());
+    }
+
+    // -- project_onto --
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_into_basic() {
+        let mut a = [num::Complex::new(3.0, 4.0), num::Complex::new(0.0, 0.0)];
+        let mut b = [num::Complex::new(1.0, 0.0), num::Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        // Project a onto b: should be [3.0 - 4.0i, 0.0]
+        assert!((out[0] - num::Complex::new(3.0, -4.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_into_parallel() {
+        let mut a = [num::Complex::new(2.0, 2.0), num::Complex::new(4.0, 4.0)];
+        let mut b = [num::Complex::new(1.0, 1.0), num::Complex::new(2.0, 2.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        // a is parallel to b, so projection should be a
+        assert!((out[0] - num::Complex::new(2.0, 2.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(4.0, 4.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_into_orthogonal() {
+        let mut a = [num::Complex::new(0.0, 1.0), num::Complex::new(0.0, 0.0)];
+        let mut b = [num::Complex::new(1.0, 0.0), num::Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(99.0, 99.0); 2];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        // Hermitian projection: should be [0.0 - 1.0i, 0.0]
+        assert!((out[0] - num::Complex::new(0.0, -1.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(0.0, 0.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_into_identical() {
+        let mut a = [num::Complex::new(5.0, 5.0), num::Complex::new(5.0, 5.0)];
+        let mut b = [num::Complex::new(5.0, 5.0), num::Complex::new(5.0, 5.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Row> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        vslice_a.project_onto_into(&vslice_b, &mut out).unwrap();
+        assert!((out[0] - num::Complex::new(5.0, 5.0)).norm() < 1e-12);
+        assert!((out[1] - num::Complex::new(5.0, 5.0)).norm() < 1e-12);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_into_zero_vector() {
+        let mut a = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let mut b = [num::Complex::new(0.0, 0.0), num::Complex::new(0.0, 0.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 2];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_into_mismatched_length_other() {
+        let mut a = [num::Complex::new(1.0, 2.0)];
+        let mut b = [num::Complex::new(3.0, 4.0), num::Complex::new(5.0, 6.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..1);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_into_mismatched_length_out() {
+        let mut a = [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0)];
+        let mut b = [num::Complex::new(5.0, 6.0), num::Complex::new(7.0, 8.0)];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..2);
+        let vslice_b = VectorSliceMut::from_range(&mut b, 0..2);
+        let mut out = [num::Complex::new(0.0, 0.0); 1];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vector_slice_mut_complex_project_onto_into_empty() {
+        let mut a: [num::Complex<f64>; 0] = [];
+        let mut b: [num::Complex<f64>; 0] = [];
+        let vslice_a: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut a, 0..0);
+        let vslice_b: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut b, 0..0);
+        let mut out: [num::Complex<f64>; 0] = [];
+        let result = vslice_a.project_onto_into(&vslice_b, &mut out);
+        assert!(result.is_err()); // zero vector error
     }
 
     // -- cosine_similarity --
