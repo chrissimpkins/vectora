@@ -1665,6 +1665,19 @@ impl<T, O> FlexVector<T, O> {
         Ok(FlexVector { elements, _orientation: PhantomData })
     }
 
+    /// Broadcasts this vector to the given length by repeating its elements.
+    /// Returns an error if self is empty and len > 0.
+    pub fn broadcast_to(&self, len: usize) -> Result<FlexVector<T, O>, VectorError>
+    where
+        T: Clone,
+    {
+        if self.is_empty() && len > 0 {
+            return Err(VectorError::ValueError("Cannot broadcast empty vector".to_string()));
+        }
+        let elements = self.elements.iter().cycle().take(len).cloned().collect();
+        Ok(FlexVector { elements, _orientation: PhantomData })
+    }
+
     /// Consumes the FlexVector and returns a Vec<T>.
     #[inline]
     pub fn into_vec(self) -> Vec<T> {
@@ -5656,6 +5669,78 @@ mod tests {
         let v = FVector::from_vec(vec![Complex::new(1.0, 2.0)]);
         let mask = vec![true, false];
         let result = v.filter_by_mask(&mask);
+        assert!(result.is_err());
+    }
+
+    // -- broadcast_to --
+
+    #[test]
+    fn test_broadcast_to_i32() {
+        let v = FVector::from_vec(vec![1, 2]);
+        let b = v.broadcast_to(5).unwrap();
+        assert_eq!(b.as_slice(), &[1, 2, 1, 2, 1]);
+
+        let v = FVector::from_vec(vec![7]);
+        let b = v.broadcast_to(4).unwrap();
+        assert_eq!(b.as_slice(), &[7, 7, 7, 7]);
+
+        let v: FlexVector<i32, Column> = FVector::from_vec(vec![]);
+        let b = v.broadcast_to(0).unwrap();
+        assert!(b.is_empty());
+
+        let v: FlexVector<i32, Column> = FVector::from_vec(vec![]);
+        let result = v.broadcast_to(3);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_broadcast_to_f64() {
+        let v = FVector::from_vec(vec![1.5, -2.0]);
+        let b = v.broadcast_to(5).unwrap();
+        assert_eq!(b.as_slice(), &[1.5, -2.0, 1.5, -2.0, 1.5]);
+
+        let v = FVector::from_vec(vec![3.14]);
+        let b = v.broadcast_to(3).unwrap();
+        assert_eq!(b.as_slice(), &[3.14, 3.14, 3.14]);
+
+        let v: FlexVector<f64, Column> = FVector::from_vec(vec![]);
+        let b = v.broadcast_to(0).unwrap();
+        assert!(b.is_empty());
+
+        let v: FlexVector<f64, Column> = FVector::from_vec(vec![]);
+        let result = v.broadcast_to(2);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_broadcast_to_complex_f64() {
+        use num::Complex;
+        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let b = v.broadcast_to(5).unwrap();
+        assert_eq!(
+            b.as_slice(),
+            &[
+                Complex::new(1.0, 2.0),
+                Complex::new(-3.0, 4.0),
+                Complex::new(1.0, 2.0),
+                Complex::new(-3.0, 4.0),
+                Complex::new(1.0, 2.0)
+            ]
+        );
+
+        let v = FVector::from_vec(vec![Complex::new(0.0, 1.0)]);
+        let b = v.broadcast_to(3).unwrap();
+        assert_eq!(
+            b.as_slice(),
+            &[Complex::new(0.0, 1.0), Complex::new(0.0, 1.0), Complex::new(0.0, 1.0)]
+        );
+
+        let v: FlexVector<Complex<f64>, Column> = FVector::from_vec(vec![]);
+        let b = v.broadcast_to(0).unwrap();
+        assert!(b.is_empty());
+
+        let v: FlexVector<Complex<f64>, Column> = FVector::from_vec(vec![]);
+        let result = v.broadcast_to(1);
         assert!(result.is_err());
     }
 
