@@ -506,17 +506,35 @@ where
     }
 }
 
+impl<'a, T, O> From<VectorSlice<'a, T, O>> for FlexVector<T, O>
+where
+    T: Clone,
+{
+    fn from(vs: VectorSlice<'a, T, O>) -> Self {
+        FlexVector::from_slice(vs.as_slice())
+    }
+}
+
+impl<'a, T, O> From<VectorSliceMut<'a, T, O>> for FlexVector<T, O>
+where
+    T: Clone,
+{
+    fn from(vs: VectorSliceMut<'a, T, O>) -> Self {
+        FlexVector::from_slice(vs.as_slice())
+    }
+}
+
 // From trait impl for Column <==> Row FlexVector conversions
 impl<T> From<FlexVector<T, Column>> for FlexVector<T, Row> {
     #[inline]
-    fn from(v: FlexVector<T, Column>) -> Self {
-        FlexVector { elements: v.elements, _orientation: PhantomData }
+    fn from(fv: FlexVector<T, Column>) -> Self {
+        FlexVector { elements: fv.elements, _orientation: PhantomData }
     }
 }
 impl<T> From<FlexVector<T, Row>> for FlexVector<T, Column> {
     #[inline]
-    fn from(v: FlexVector<T, Row>) -> Self {
-        FlexVector { elements: v.elements, _orientation: PhantomData }
+    fn from(fv: FlexVector<T, Row>) -> Self {
+        FlexVector { elements: fv.elements, _orientation: PhantomData }
     }
 }
 
@@ -3554,6 +3572,70 @@ mod tests {
         assert!(fv_col.is_empty());
         let fv_row: FlexVector<i32, Row> = rc.into();
         assert!(fv_row.is_empty());
+    }
+
+    #[test]
+    fn test_from_vectorslice_i32() {
+        let v = FVector::from_vec(vec![1, 2, 3, 4]);
+        let vslice = v.as_vslice(1..3);
+        let fv: FlexVector<i32> = FlexVector::from(vslice);
+        assert_eq!(fv.as_slice(), &[2, 3]);
+    }
+
+    #[test]
+    fn test_from_vectorslice_f64() {
+        let v = FVector::from_vec(vec![1.1, 2.2, 3.3, 4.4]);
+        let vslice = v.as_vslice(0..2);
+        let fv: FlexVector<f64> = FlexVector::from(vslice);
+        assert_eq!(fv.as_slice(), &[1.1, 2.2]);
+    }
+
+    #[test]
+    fn test_from_vectorslice_complex_f64() {
+        use num::Complex;
+        let v = FVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+            Complex::new(5.0, 6.0),
+        ]);
+        let vslice = v.as_vslice(1..3);
+        let fv: FlexVector<Complex<f64>> = FlexVector::from(vslice);
+        assert_eq!(fv.as_slice(), &[Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
+    }
+
+    #[test]
+    fn test_from_vectorslicemut_i32() {
+        let mut v = FVector::from_vec(vec![10, 20, 30, 40]);
+        {
+            let vslice_mut = v.as_mut_vslice(2..4);
+            let fv: FlexVector<i32> = FlexVector::from(vslice_mut);
+            assert_eq!(fv.as_slice(), &[30, 40]);
+        }
+    }
+
+    #[test]
+    fn test_from_vectorslicemut_f64() {
+        let mut v = FVector::from_vec(vec![1.5, 2.5, 3.5]);
+        {
+            let vslice_mut = v.as_mut_vslice(0..2);
+            let fv: FlexVector<f64> = FlexVector::from(vslice_mut);
+            assert_eq!(fv.as_slice(), &[1.5, 2.5]);
+        }
+    }
+
+    #[test]
+    fn test_from_vectorslicemut_complex_f64() {
+        use num::Complex;
+        let mut v = FVector::from_vec(vec![
+            Complex::new(7.0, 8.0),
+            Complex::new(9.0, 10.0),
+            Complex::new(11.0, 12.0),
+        ]);
+        {
+            let vslice_mut = v.as_mut_vslice(1..3);
+            let fv: FlexVector<Complex<f64>> = FlexVector::from(vslice_mut);
+            assert_eq!(fv.as_slice(), &[Complex::new(9.0, 10.0), Complex::new(11.0, 12.0)]);
+        }
     }
 
     #[test]
