@@ -1773,9 +1773,12 @@ impl_vector_binop_assign!(check_len, FlexVector, SubAssign, sub_assign, -);
 impl_vector_binop_assign!(check_len, FlexVector, MulAssign, mul_assign, *);
 impl_vector_binop_div_assign!(check_len, FlexVector);
 
+impl_vector_scalar_op!(FlexVector, Add, add, +);
+impl_vector_scalar_op_assign!(FlexVector, AddAssign, add_assign, +);
+impl_vector_scalar_op!(FlexVector, Sub, sub, -);
+impl_vector_scalar_op_assign!(FlexVector, SubAssign, sub_assign, -);
 impl_vector_scalar_op!(FlexVector, Mul, mul, *);
 impl_vector_scalar_op_assign!(FlexVector, MulAssign, mul_assign, *);
-
 impl_vector_scalar_div_op!(FlexVector);
 impl_vector_scalar_div_op_assign!(FlexVector);
 
@@ -9086,6 +9089,90 @@ mod tests {
         let mut v1 = FVector::from_vec(vec![1.0f64, 2.0]);
         let v2 = FlexVector::from_vec(vec![1.0f64, 2.0, 3.0]);
         v1 /= v2;
+    }
+
+    #[test]
+    fn test_scalar_add() {
+        let v = FVector::from_vec(vec![1, 2, 3]);
+        let sum = v.clone() + 10;
+        assert_eq!(sum.as_slice(), &[11, 12, 13]);
+    }
+
+    #[test]
+    fn test_scalar_add_f64() {
+        let v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let sum = v.clone() + 2.0;
+        assert_eq!(sum.as_slice(), &[3.5, 0.0, 2.0]);
+    }
+
+    #[test]
+    fn test_scalar_add_complex_f64() {
+        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let sum = v.clone() + Complex::new(2.0, 1.0);
+        assert_eq!(sum.as_slice(), &[Complex::new(3.0, 3.0), Complex::new(-1.0, 5.0)]);
+    }
+
+    #[test]
+    fn test_scalar_add_assign() {
+        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        v += 10;
+        assert_eq!(v.as_slice(), &[11, 12, 13]);
+    }
+
+    #[test]
+    fn test_scalar_add_assign_f64() {
+        let mut v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        v += 2.0;
+        assert_eq!(v.as_slice(), &[3.5, 0.0, 2.0]);
+    }
+
+    #[test]
+    fn test_scalar_add_assign_complex_f64() {
+        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        v += Complex::new(2.0, 1.0);
+        assert_eq!(v.as_slice(), &[Complex::new(3.0, 3.0), Complex::new(-1.0, 5.0)]);
+    }
+
+    #[test]
+    fn test_scalar_sub() {
+        let v = FVector::from_vec(vec![10, 20, 30]);
+        let diff = v.clone() - 5;
+        assert_eq!(diff.as_slice(), &[5, 15, 25]);
+    }
+
+    #[test]
+    fn test_scalar_sub_f64() {
+        let v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let diff = v.clone() - 2.0;
+        assert_eq!(diff.as_slice(), &[-0.5, -4.0, -2.0]);
+    }
+
+    #[test]
+    fn test_scalar_sub_complex_f64() {
+        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let diff = v.clone() - Complex::new(2.0, 1.0);
+        assert_eq!(diff.as_slice(), &[Complex::new(-1.0, 1.0), Complex::new(-5.0, 3.0)]);
+    }
+
+    #[test]
+    fn test_scalar_sub_assign() {
+        let mut v = FVector::from_vec(vec![10, 20, 30]);
+        v -= 5;
+        assert_eq!(v.as_slice(), &[5, 15, 25]);
+    }
+
+    #[test]
+    fn test_scalar_sub_assign_f64() {
+        let mut v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        v -= 2.0;
+        assert_eq!(v.as_slice(), &[-0.5, -4.0, -2.0]);
+    }
+
+    #[test]
+    fn test_scalar_sub_assign_complex_f64() {
+        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        v -= Complex::new(2.0, 1.0);
+        assert_eq!(v.as_slice(), &[Complex::new(-1.0, 1.0), Complex::new(-5.0, 3.0)]);
     }
 
     #[test]
