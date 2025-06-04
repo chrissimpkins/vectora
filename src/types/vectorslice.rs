@@ -5,7 +5,7 @@ use crate::types::flexvector::FlexVector;
 use crate::types::orientation::{Column, Row, VectorOrientation};
 use crate::types::traits::{
     VectorBase, VectorBaseMut, VectorHasOrientation, VectorOps, VectorOpsComplex, VectorOpsFloat,
-    VectorOpsFloatMut, VectorOpsMut, VectorOrientationName,
+    VectorOpsFloatMut, VectorOpsMut,
 };
 use crate::types::utils::{
     angle_with_impl, chebyshev_distance_complex_impl, chebyshev_distance_impl,
@@ -101,21 +101,21 @@ impl<'a, T, O> IntoIterator for &'a VectorSlice<'a, T, O> {
 impl<'a, T, O> fmt::Display for VectorSlice<'a, T, O>
 where
     T: fmt::Debug,
-    O: VectorOrientationName + 'static,
+    O: 'static,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} VectorSlice {:?}", O::orientation_name(), self.elements)
+        write!(f, "{} VectorSlice {:?}", &self.orientation_name(), self.elements)
     }
 }
 
 impl<'a, T, O> std::fmt::Debug for VectorSlice<'a, T, O>
 where
     T: std::fmt::Debug,
-    O: VectorOrientationName + 'static,
+    O: 'static,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("VectorSlice")
-            .field("orientation", &O::orientation_name())
+            .field("orientation", &self.orientation_name())
             .field("elements", &self.elements)
             .finish()
     }
@@ -879,21 +879,21 @@ impl<'a, T, O> IntoIterator for &'a mut VectorSliceMut<'a, T, O> {
 impl<'a, T, O> fmt::Display for VectorSliceMut<'a, T, O>
 where
     T: fmt::Debug,
-    O: VectorOrientationName + 'static,
+    O: 'static,
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} VectorSliceMut {:?}", O::orientation_name(), self.elements)
+        write!(f, "{} VectorSliceMut {:?}", &self.orientation_name(), self.elements)
     }
 }
 
 impl<'a, T, O> std::fmt::Debug for VectorSliceMut<'a, T, O>
 where
     T: std::fmt::Debug,
-    O: VectorOrientationName + 'static,
+    O: 'static,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("VectorSliceMut")
-            .field("orientation", &O::orientation_name())
+            .field("orientation", &self.orientation_name())
             .field("elements", &self.elements)
             .finish()
     }

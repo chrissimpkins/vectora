@@ -17,8 +17,7 @@ use crate::{
     types::traits::Transposable, types::traits::VectorBase, types::traits::VectorBaseMut,
     types::traits::VectorHasOrientation, types::traits::VectorOps, types::traits::VectorOpsComplex,
     types::traits::VectorOpsComplexMut, types::traits::VectorOpsFloat,
-    types::traits::VectorOpsFloatMut, types::traits::VectorOpsMut,
-    types::traits::VectorOrientationName, types::vectorslice::VectorSlice,
+    types::traits::VectorOpsFloatMut, types::traits::VectorOpsMut, types::vectorslice::VectorSlice,
     types::vectorslice::VectorSliceMut,
 };
 
@@ -213,10 +212,10 @@ impl<T, O> Default for FlexVector<T, O> {
 impl<T, O> std::fmt::Display for FlexVector<T, O>
 where
     T: std::fmt::Debug,
-    O: VectorOrientationName + 'static,
+    O: 'static,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} FlexVector {:?}", O::orientation_name(), self.elements)
+        write!(f, "{} FlexVector {:?}", &self.orientation_name(), self.elements)
     }
 }
 
@@ -228,11 +227,11 @@ where
 impl<T, O> std::fmt::Debug for FlexVector<T, O>
 where
     T: std::fmt::Debug,
-    O: VectorOrientationName + 'static,
+    O: 'static,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FlexVector")
-            .field("orientation", &O::orientation_name())
+            .field("orientation", &self.orientation_name())
             .field("elements", &self.elements)
             .finish()
     }

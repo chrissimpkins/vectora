@@ -796,16 +796,9 @@ pub trait VectorOpsComplexMut<N>: VectorBaseMut<Complex<N>> {
 pub trait VectorHasOrientation {
     /// ...
     fn orientation(&self) -> VectorOrientation;
-}
 
-// ================================
-//
-// pub(crate) trait impls
-//
-// ================================
-
-/// Helper trait for orientation name.
-pub(crate) trait VectorOrientationName {
-    /// Returns orientation name.
-    fn orientation_name() -> &'static str;
+    /// Returns the orientation name as a string.
+    fn orientation_name(&self) -> String {
+        self.orientation().to_string()
+    }
 }
