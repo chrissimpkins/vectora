@@ -121,15 +121,6 @@ where
     }
 }
 
-impl<'a, T, O> std::hash::Hash for VectorSlice<'a, T, O>
-where
-    T: std::hash::Hash,
-{
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.elements.hash(state);
-    }
-}
-
 impl<'a, T, O> Ord for VectorSlice<'a, T, O>
 where
     T: Ord,
@@ -147,6 +138,21 @@ where
 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.elements.partial_cmp(other.elements)
+    }
+}
+
+impl<'a, T, O> std::hash::Hash for VectorSlice<'a, T, O>
+where
+    T: std::hash::Hash,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.elements.hash(state);
+    }
+}
+
+impl<'a, T, O> From<&'a FlexVector<T, O>> for VectorSlice<'a, T, O> {
+    fn from(fv: &'a FlexVector<T, O>) -> Self {
+        VectorSlice::new(fv.as_slice())
     }
 }
 
@@ -807,6 +813,7 @@ impl<'a, T, O> VectorSlice<'a, T, O> {
 // /////////////////////////////////
 
 /// ...
+#[derive(PartialEq, Eq)]
 pub struct VectorSliceMut<'a, T, O = Column> {
     /// ...
     pub elements: &'a mut [T],
@@ -848,6 +855,12 @@ impl<'a, T, O> std::ops::Deref for VectorSliceMut<'a, T, O> {
 
 impl<'a, T, O> std::ops::DerefMut for VectorSliceMut<'a, T, O> {
     fn deref_mut(&mut self) -> &mut Self::Target {
+        self.elements
+    }
+}
+
+impl<'a, T, O> AsRef<[T]> for VectorSliceMut<'a, T, O> {
+    fn as_ref(&self) -> &[T] {
         self.elements
     }
 }
@@ -896,6 +909,41 @@ where
             .field("orientation", &self.orientation_name())
             .field("elements", &self.elements)
             .finish()
+    }
+}
+
+impl<'a, T, O> Ord for VectorSliceMut<'a, T, O>
+where
+    T: Ord,
+    O: Eq,
+{
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.elements.cmp(&other.elements)
+    }
+}
+
+impl<'a, T, O> PartialOrd for VectorSliceMut<'a, T, O>
+where
+    T: PartialOrd,
+    O: PartialEq,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.elements.partial_cmp(&other.elements)
+    }
+}
+
+impl<'a, T, O> std::hash::Hash for VectorSliceMut<'a, T, O>
+where
+    T: std::hash::Hash,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.elements.hash(state);
+    }
+}
+
+impl<'a, T, O> From<&'a mut FlexVector<T, O>> for VectorSliceMut<'a, T, O> {
+    fn from(fv: &'a mut FlexVector<T, O>) -> Self {
+        VectorSliceMut::new(fv.as_mut_slice())
     }
 }
 
@@ -1874,6 +1922,33 @@ mod tests {
         assert_eq!(hash1, hash2);
     }
 
+    // -- Eq / PartialEq traits for VectorSlice --
+
+    #[test]
+    fn test_vectorslice_partial_eq_same_elements_and_orientation() {
+        let data = [1, 2, 3];
+        let vslice1: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..3);
+        let vslice2: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..3);
+        assert_eq!(vslice1, vslice2);
+    }
+
+    #[test]
+    fn test_vectorslice_partial_eq_different_elements() {
+        let data1 = [1, 2, 3];
+        let data2 = [1, 2, 4];
+        let vslice1: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&data1, 0..3);
+        let vslice2: VectorSlice<'_, i32, Row> = VectorSlice::from_range(&data2, 0..3);
+        assert_ne!(vslice1, vslice2);
+    }
+
+    #[test]
+    fn test_vectorslice_partial_eq_empty_slices_same_orientation() {
+        let data: [i32; 0] = [];
+        let vslice1: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..0);
+        let vslice2: VectorSlice<'_, i32, Column> = VectorSlice::from_range(&data, 0..0);
+        assert_eq!(vslice1, vslice2);
+    }
+
     // -- Ord / PartialOrd traits for VectorSlice --
 
     #[test]
@@ -1904,6 +1979,37 @@ mod tests {
         assert!(vslice1 < vslice2);
         assert!(vslice2 > vslice1);
         assert_eq!(vslice1.partial_cmp(&vslice1), Some(std::cmp::Ordering::Equal));
+    }
+
+    // -- From trait for VectorSlice --
+
+    #[test]
+    fn test_vectorslice_from_flexvector_i32() {
+        let fv = FlexVector::from_vec(vec![1, 2, 3, 4]);
+        let vslice: VectorSlice<'_, i32, Column> = VectorSlice::from(&fv);
+        assert_eq!(vslice.elements, &[1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_vectorslice_from_flexvector_f64() {
+        let fv = FlexVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let vslice: VectorSlice<'_, f64, Row> = VectorSlice::from(&fv);
+        assert_eq!(vslice.elements, &[1.5, 2.5, 3.5]);
+    }
+
+    #[test]
+    fn test_vectorslice_from_flexvector_complex_f64() {
+        use num::Complex;
+        let fv = FlexVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+            Complex::new(5.0, 6.0),
+        ]);
+        let vslice: VectorSlice<'_, Complex<f64>, Column> = VectorSlice::from(&fv);
+        assert_eq!(
+            vslice.elements,
+            &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]
+        );
     }
 
     // -- VectorBase trait for VectorSlice --
@@ -3687,6 +3793,35 @@ mod tests {
         assert_eq!(fv.as_slice(), &[10, 400, 30, 100, 50]);
     }
 
+    // -- AsRef trait for VectorSliceMut --
+
+    #[test]
+    fn test_vector_slice_mut_as_ref_basic() {
+        let mut data = [1, 2, 3, 4, 5];
+        let vslice: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data, 2..5);
+        let slice_ref: &[i32] = vslice.as_ref();
+        assert_eq!(slice_ref, &[3, 4, 5]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_as_ref_complex() {
+        let mut data =
+            [num::Complex::new(1.0, 2.0), num::Complex::new(3.0, 4.0), num::Complex::new(5.0, 6.0)];
+        let vslice: VectorSliceMut<'_, num::Complex<f64>, Column> =
+            VectorSliceMut::from_range(&mut data, 1..3);
+        let slice_ref: &[num::Complex<f64>] = vslice.as_ref();
+        assert_eq!(slice_ref, &[num::Complex::new(3.0, 4.0), num::Complex::new(5.0, 6.0)]);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_as_ref_with_std_function() {
+        let mut data = [10, 20, 30, 40];
+        let vslice: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut data, 1..4);
+        // Use a standard library function that takes AsRef<[i32]>
+        let sum: i32 = vslice.as_ref().iter().sum();
+        assert_eq!(sum, 20 + 30 + 40);
+    }
+
     // -- AsMut trait for VectorSliceMut --
     #[test]
     fn test_vector_slice_mut_as_mut_basic() {
@@ -3813,6 +3948,168 @@ mod tests {
         assert!(debug.contains("elements"));
         assert!(debug.contains("Complex { re: 5.0, im: 6.0 }"));
         assert!(debug.contains("Complex { re: 7.0, im: 8.0 }"));
+    }
+
+    // -- Eq/PartialEq trait for VectorSliceMut --
+
+    #[test]
+    fn test_vectorslicemut_partial_eq_same_elements_and_orientation() {
+        let mut data1 = [1, 2, 3];
+        let mut data2 = [1, 2, 3];
+        let vslice1: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data1, 0..3);
+        let vslice2: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data2, 0..3);
+        assert_eq!(vslice1, vslice2);
+    }
+
+    #[test]
+    fn test_vectorslicemut_partial_eq_different_elements() {
+        let mut data1 = [1, 2, 3];
+        let mut data2 = [1, 2, 4];
+        let vslice1: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data1, 0..3);
+        let vslice2: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data2, 0..3);
+        assert_ne!(vslice1, vslice2);
+    }
+
+    #[test]
+    fn test_vectorslicemut_partial_eq_empty_slices_same_orientation() {
+        let mut data1: [i32; 0] = [];
+        let mut data2: [i32; 0] = [];
+        let vslice1: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut data1, 0..0);
+        let vslice2: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut data2, 0..0);
+        assert_eq!(vslice1, vslice2);
+    }
+
+    // -- Ord/PartialOrd trait for VectorSliceMut --
+
+    #[test]
+    fn test_vectorslicemut_ord_basic() {
+        let mut data1 = [1, 2, 3, 4, 5];
+        let mut data2 = data1.clone();
+        let vslice1: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data1, 1..4); // [2, 3, 4]
+        let vslice2: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data2, 2..5); // [3, 4, 5]
+        assert!(vslice1 < vslice2);
+        assert!(vslice2 > vslice1);
+    }
+
+    #[test]
+    fn test_vectorslicemut_ord_equal() {
+        let mut data1 = [1, 2, 3, 4];
+        let mut data2 = data1.clone();
+        let vslice1: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut data1, 0..3);
+        let vslice2: VectorSliceMut<'_, i32, Row> = VectorSliceMut::from_range(&mut data2, 0..3);
+        assert_eq!(vslice1, vslice2);
+        assert!(vslice1 <= vslice2);
+        assert!(vslice1 >= vslice2);
+    }
+
+    #[test]
+    fn test_vectorslicemut_partial_ord_f64() {
+        let mut data1 = [1.0, 2.0, 3.0, 4.0];
+        let mut data2 = data1.clone();
+        let vslice1: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut data1, 0..3); // [1.0, 2.0, 3.0]
+        let vslice2: VectorSliceMut<'_, f64, Column> = VectorSliceMut::from_range(&mut data2, 1..4); // [2.0, 3.0, 4.0]
+        assert!(vslice1 < vslice2);
+        assert!(vslice2 > vslice1);
+        assert_eq!(vslice1.partial_cmp(&vslice1), Some(std::cmp::Ordering::Equal));
+    }
+
+    // -- Hash trait for VectorSliceMut --
+
+    #[test]
+    fn test_vector_slice_mut_hash_basic() {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        let mut data1 = [1, 2, 3, 4];
+        let mut data2 = [1, 2, 3, 4];
+        let vslice1: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data1, 1..4);
+        let vslice2: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data2, 1..4);
+
+        let mut hasher1 = DefaultHasher::new();
+        vslice1.hash(&mut hasher1);
+        let hash1 = hasher1.finish();
+
+        let mut hasher2 = DefaultHasher::new();
+        vslice2.hash(&mut hasher2);
+        let hash2 = hasher2.finish();
+
+        assert_eq!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_hash_different() {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        let mut data1 = [1, 2, 3, 4];
+        let mut data2 = [1, 2, 3, 4];
+        let vslice1: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data1, 0..3);
+        let vslice2: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from_range(&mut data2, 1..4);
+
+        let mut hasher1 = DefaultHasher::new();
+        vslice1.hash(&mut hasher1);
+        let hash1 = hasher1.finish();
+
+        let mut hasher2 = DefaultHasher::new();
+        vslice2.hash(&mut hasher2);
+        let hash2 = hasher2.finish();
+
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_vector_slice_mut_hash_complex() {
+        use num::Complex;
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+
+        let mut data1 = [Complex::new(1, 2), Complex::new(3, 4), Complex::new(5, 6)];
+        let mut data2 = data1.clone();
+        let vslice1: VectorSliceMut<'_, Complex<i32>, Row> =
+            VectorSliceMut::from_range(&mut data1, 0..2);
+        let vslice2: VectorSliceMut<'_, Complex<i32>, Row> =
+            VectorSliceMut::from_range(&mut data2, 0..2);
+
+        let mut hasher1 = DefaultHasher::new();
+        vslice1.hash(&mut hasher1);
+        let hash1 = hasher1.finish();
+
+        let mut hasher2 = DefaultHasher::new();
+        vslice2.hash(&mut hasher2);
+        let hash2 = hasher2.finish();
+
+        assert_eq!(hash1, hash2);
+    }
+
+    // -- From trait for VectorSliceMut --
+
+    #[test]
+    fn test_vectorslicemut_from_flexvector_i32() {
+        let mut fv = FlexVector::from_vec(vec![1, 2, 3, 4]);
+        let vslice: VectorSliceMut<'_, i32, Column> = VectorSliceMut::from(&mut fv);
+        assert_eq!(vslice.elements, &mut [1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_vectorslicemut_from_flexvector_f64() {
+        let mut fv = FlexVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let vslice: VectorSliceMut<'_, f64, Row> = VectorSliceMut::from(&mut fv);
+        assert_eq!(vslice.elements, &mut [1.5, 2.5, 3.5]);
+    }
+
+    #[test]
+    fn test_vectorslicemut_from_flexvector_complex_f64() {
+        use num::Complex;
+        let mut fv = FlexVector::from_vec(vec![
+            Complex::new(1.0, 2.0),
+            Complex::new(3.0, 4.0),
+            Complex::new(5.0, 6.0),
+        ]);
+        let vslice: VectorSliceMut<'_, Complex<f64>, Column> = VectorSliceMut::from(&mut fv);
+        assert_eq!(
+            vslice.elements,
+            &mut [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]
+        );
     }
 
     // -- VectorBase trait for VectorSliceMut --
