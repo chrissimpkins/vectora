@@ -34,6 +34,11 @@ use num::{Complex, Zero};
 // /////////////////////////////////
 
 /// ...
+pub type ColVS<'a, T> = VectorSlice<'a, T, Column>;
+/// ...
+pub type RowVS<'a, T> = VectorSlice<'a, T, Row>;
+
+/// ...
 #[derive(Clone, PartialEq, Eq)]
 pub struct VectorSlice<'a, T, O = Column> {
     /// ...
@@ -811,6 +816,11 @@ impl<'a, T, O> VectorSlice<'a, T, O> {
 //
 // ================================
 // /////////////////////////////////
+
+/// ...
+pub type ColVSMut<'a, T> = VectorSliceMut<'a, T, Column>;
+/// ...
+pub type RowVSMut<'a, T> = VectorSliceMut<'a, T, Row>;
 
 /// ...
 #[derive(PartialEq, Eq)]
