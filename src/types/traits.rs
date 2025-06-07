@@ -1,0 +1,804 @@
+//! Traits.
+
+use crate::types::orientation::VectorOrientation;
+use num::Complex;
+use std::borrow::Cow;
+
+use crate::errors::VectorError;
+
+/// ...
+pub trait VectorBase<T> {
+    // --- Core accessors ---
+    /// ...
+    fn as_slice(&self) -> &[T];
+
+    /// ...
+    #[inline]
+    fn len(&self) -> usize {
+        self.as_slice().len()
+    }
+
+    /// ...
+    #[inline]
+    fn is_empty(&self) -> bool {
+        self.as_slice().is_empty()
+    }
+
+    // --- Element access ---
+    /// ...
+    #[inline]
+    fn get(&self, index: usize) -> Option<&T> {
+        self.as_slice().get(index)
+    }
+
+    /// ...
+    #[inline]
+    fn first(&self) -> Option<&T> {
+        self.as_slice().first()
+    }
+
+    /// ...
+    #[inline]
+    fn last(&self) -> Option<&T> {
+        self.as_slice().last()
+    }
+
+    // --- Iteration ---
+    /// ...
+    #[inline]
+    fn iter(&self) -> std::slice::Iter<'_, T> {
+        self.as_slice().iter()
+    }
+
+    /// ...
+    #[inline]
+    fn iter_rev(&self) -> std::iter::Rev<std::slice::Iter<'_, T>> {
+        self.as_slice().iter().rev()
+    }
+
+    /// ...
+    #[inline]
+    fn enumerate(&self) -> std::iter::Enumerate<std::slice::Iter<'_, T>> {
+        self.iter().enumerate()
+    }
+
+    // --- Conversion ---
+    /// ...
+    #[inline]
+    fn to_vec(&self) -> Vec<T>
+    where
+        T: Clone,
+    {
+        self.as_slice().to_vec()
+    }
+
+    /// Returns a boxed slice containing a clone of the vector's data.
+    #[inline]
+    fn to_boxed_slice(&self) -> Box<[T]>
+    where
+        T: Clone,
+    {
+        self.as_slice().to_vec().into_boxed_slice()
+    }
+
+    /// Returns an Arc slice containing a clone of the vector's data.
+    #[cfg(target_has_atomic = "ptr")]
+    #[inline]
+    fn to_arc_slice(&self) -> std::sync::Arc<[T]>
+    where
+        T: Clone,
+    {
+        std::sync::Arc::from(self.as_slice().to_vec())
+    }
+
+    /// Returns an Rc slice containing a clone of the vector's data.
+    #[inline]
+    fn to_rc_slice(&self) -> std::rc::Rc<[T]>
+    where
+        T: Clone,
+    {
+        std::rc::Rc::from(self.as_slice().to_vec())
+    }
+
+    /// Returns a Cow<[T]> of the vector's data.
+    #[inline]
+    fn as_cow(&self) -> Cow<'_, [T]>
+    where
+        T: Clone,
+    {
+        Cow::Borrowed(self.as_slice())
+    }
+
+    /// ...
+    #[inline]
+    fn pretty(&self) -> String
+    where
+        T: std::fmt::Debug,
+    {
+        format!("{:#?}", self.as_slice())
+    }
+
+    // --- Search/containment ---
+    /// ...
+    #[inline]
+    fn contains(&self, x: &T) -> bool
+    where
+        T: PartialEq,
+    {
+        self.as_slice().contains(x)
+    }
+
+    /// ...
+    #[inline]
+    fn starts_with(&self, needle: &[T]) -> bool
+    where
+        T: PartialEq,
+    {
+        self.as_slice().starts_with(needle)
+    }
+
+    /// ...
+    #[inline]
+    fn ends_with(&self, needle: &[T]) -> bool
+    where
+        T: PartialEq,
+    {
+        self.as_slice().ends_with(needle)
+    }
+
+    /// ...
+    #[inline]
+    fn position<P>(&self, predicate: P) -> Option<usize>
+    where
+        P: FnMut(&T) -> bool,
+    {
+        self.as_slice().iter().position(predicate)
+    }
+
+    /// ...
+    #[inline]
+    fn rposition<P>(&self, predicate: P) -> Option<usize>
+    where
+        P: FnMut(&T) -> bool,
+    {
+        self.as_slice().iter().rposition(predicate)
+    }
+
+    // --- Slicing/chunking ---
+    /// ...
+    #[inline]
+    fn windows(&self, size: usize) -> std::slice::Windows<'_, T> {
+        self.as_slice().windows(size)
+    }
+
+    /// ...
+    #[inline]
+    fn chunks(&self, size: usize) -> std::slice::Chunks<'_, T> {
+        self.as_slice().chunks(size)
+    }
+
+    /// ...
+    #[inline]
+    fn split_at(&self, mid: usize) -> (&[T], &[T]) {
+        self.as_slice().split_at(mid)
+    }
+
+    /// ...
+    #[inline]
+    fn split<F>(&self, pred: F) -> std::slice::Split<'_, T, F>
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.as_slice().split(pred)
+    }
+
+    /// ...
+    #[inline]
+    fn splitn<F>(&self, n: usize, pred: F) -> std::slice::SplitN<'_, T, F>
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.as_slice().splitn(n, pred)
+    }
+
+    /// ...
+    #[inline]
+    fn rsplit<F>(&self, pred: F) -> std::slice::RSplit<'_, T, F>
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.as_slice().rsplit(pred)
+    }
+
+    /// ...
+    #[inline]
+    fn rsplitn<F>(&self, n: usize, pred: F) -> std::slice::RSplitN<'_, T, F>
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.as_slice().rsplitn(n, pred)
+    }
+
+    // --- Pointer access ---
+    /// ...
+    #[inline]
+    fn as_ptr(&self) -> *const T {
+        self.as_slice().as_ptr()
+    }
+}
+
+/// ...
+pub trait VectorBaseMut<T> {
+    // --- Core accessors ---
+    /// ...
+    fn as_mut_slice(&mut self) -> &mut [T];
+}
+
+/// A trait for types that can be transposed between row and column orientation.
+pub trait Transposable {
+    /// The type returned by transposing.
+    type Transposed;
+
+    /// Returns a new value with the opposite orientation.
+    fn transpose(self) -> Self::Transposed;
+}
+
+/// ...
+pub trait VectorOps<T>: VectorBase<T> {
+    /// ...
+    type Output;
+
+    /// ...
+    fn translate(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Num + Copy;
+
+    /// ...
+    fn translate_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy;
+
+    /// Returns a new vector scaled by the given scalar.
+    #[inline]
+    fn scale(&self, scalar: T) -> Self::Output
+    where
+        T: num::Num + Copy,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        self.as_slice().iter().map(|a| *a * scalar).collect()
+    }
+
+    /// Returns a new vector with all elements negated.
+    #[inline]
+    fn negate(&self) -> Self::Output
+    where
+        T: std::ops::Neg<Output = T> + Copy,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        self.as_slice().iter().map(|a| -*a).collect()
+    }
+
+    /// ...
+    fn dot(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Num + Copy + std::iter::Sum<T>;
+
+    /// Dot product as f64 (for integer and float types).
+    fn dot_to_f64(&self, other: &Self) -> Result<f64, VectorError>
+    where
+        T: num::ToPrimitive;
+
+    ///...
+    fn cross(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Num + Copy,
+        Self::Output: std::iter::FromIterator<T>;
+
+    /// ...
+    fn cross_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy;
+
+    /// ...
+    #[inline]
+    fn sum(&self) -> T
+    where
+        T: num::Num + Copy + std::iter::Sum<T>,
+    {
+        self.as_slice().iter().copied().sum()
+    }
+
+    /// ...
+    #[inline]
+    fn product(&self) -> T
+    where
+        T: num::Num + Copy + std::iter::Product<T>,
+    {
+        self.as_slice().iter().copied().product()
+    }
+
+    /// ...
+    #[inline]
+    fn minimum(&self) -> Option<T>
+    where
+        T: PartialOrd + Copy,
+    {
+        self.as_slice().iter().copied().reduce(|a, b| if a < b { a } else { b })
+    }
+
+    /// Element-wise minimum
+    fn elementwise_min(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: PartialOrd + Copy;
+
+    /// ...
+    fn elementwise_min_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: PartialOrd + Copy;
+
+    /// ...
+    #[inline]
+    fn maximum(&self) -> Option<T>
+    where
+        T: PartialOrd + Copy,
+    {
+        self.as_slice().iter().copied().reduce(|a, b| if a > b { a } else { b })
+    }
+
+    /// Element-wise maximum
+    fn elementwise_max(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: PartialOrd + Copy;
+
+    /// ...
+    fn elementwise_max_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: PartialOrd + Copy;
+
+    /// Returns a new vector where each element is clamped to the [min, max] range.
+    #[inline]
+    fn elementwise_clamp(&self, min: T, max: T) -> Self::Output
+    where
+        T: PartialOrd + Copy,
+        Self::Output: std::iter::FromIterator<T>,
+    {
+        self.as_slice()
+            .iter()
+            .map(|x| {
+                if *x < min {
+                    min
+                } else if *x > max {
+                    max
+                } else {
+                    *x
+                }
+            })
+            .collect()
+    }
+
+    /// ...
+    #[inline]
+    fn elementwise_clamp_into(&self, min: T, max: T, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: PartialOrd + Copy,
+    {
+        if out.len() != self.len() {
+            return Err(VectorError::MismatchedLengthError(
+                "Output buffer has the wrong length".to_string(),
+            ));
+        }
+        for (out_elem, x) in out.iter_mut().zip(self.as_slice()) {
+            *out_elem = if *x < min {
+                min
+            } else if *x > max {
+                max
+            } else {
+                *x
+            };
+        }
+        Ok(())
+    }
+
+    /// L1 norm (sum of absolute values).
+    #[inline]
+    fn l1_norm(&self) -> T
+    where
+        T: num::Signed + Copy + std::iter::Sum<T>,
+    {
+        self.as_slice().iter().map(|a| a.abs()).sum()
+    }
+
+    /// L∞ norm (maximum absolute value).
+    #[inline]
+    fn linf_norm(&self) -> T
+    where
+        T: num::Signed + Copy + PartialOrd,
+    {
+        self.as_slice()
+            .iter()
+            .map(|a| a.abs())
+            .fold(T::zero(), |acc, x| if acc > x { acc } else { x })
+    }
+}
+
+/// ...
+pub trait VectorOpsMut<T>: VectorBaseMut<T> {
+    /// ...
+    type Output;
+
+    /// ...
+    fn mut_translate(&mut self, other: &Self) -> Result<(), VectorError>
+    where
+        T: num::Num + Copy;
+
+    /// Scales the vector in place by the given scalar.
+    #[inline]
+    fn mut_scale(&mut self, scalar: T)
+    where
+        T: num::Num + Copy,
+    {
+        for a in self.as_mut_slice().iter_mut() {
+            *a = *a * scalar;
+        }
+    }
+
+    /// Negates all elements in place.
+    #[inline]
+    fn mut_negate(&mut self)
+    where
+        T: std::ops::Neg<Output = T> + Copy,
+    {
+        for a in self.as_mut_slice().iter_mut() {
+            *a = -*a;
+        }
+    }
+
+    /// Sets all elements to zero in place.
+    #[inline]
+    fn mut_zero(&mut self)
+    where
+        T: num::Zero,
+    {
+        for a in self.as_mut_slice().iter_mut() {
+            *a = T::zero();
+        }
+    }
+}
+/// ...
+pub trait VectorOpsFloat<T>: VectorBase<T> {
+    /// ...
+    type Output;
+
+    /// ...
+    fn normalize(&self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + std::ops::Div<T, Output = T>,
+        Self::Output: std::iter::FromIterator<T>;
+
+    /// ...
+    fn normalize_into(&self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float + std::ops::Div<T, Output = T> + num::Zero;
+
+    /// Returns a new vector with the same direction and the given magnitude.
+    fn normalize_to(&self, magnitude: T) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + std::ops::Div<T, Output = T> + std::ops::Mul<T, Output = T>,
+        Self::Output: std::iter::FromIterator<T>;
+
+    /// ...
+    fn normalize_to_into(&self, magnitude: T, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float + std::ops::Div<T, Output = T> + std::ops::Mul<T, Output = T> + num::Zero;
+
+    /// Linear interpolation between self and end by weight in [0, 1].
+    fn lerp(&self, end: &Self, weight: T) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float;
+
+    /// ...
+    fn lerp_into(&self, end: &Self, weight: T, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float;
+
+    /// Midpoint
+    fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float;
+
+    /// ...
+    fn midpoint_into(&self, end: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float;
+
+    /// Euclidean distance between self and other.
+    fn distance(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + std::iter::Sum<T>;
+
+    /// Manhattan (L1) distance between self and other.
+    fn manhattan_distance(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + std::iter::Sum<T>;
+
+    /// Chebyshev (L∞) distance between self and other.
+    fn chebyshev_distance(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + PartialOrd;
+
+    /// Minkowski (Lp) distance between self and other.
+    fn minkowski_distance(&self, other: &Self, p: T) -> Result<T, VectorError>
+    where
+        T: num::Float + std::iter::Sum<T>;
+
+    /// Euclidean norm (magnitude) of the vector.
+    #[inline]
+    fn norm(&self) -> T
+    where
+        T: num::Float + std::iter::Sum<T>,
+    {
+        self.as_slice().iter().map(|a| (*a).powi(2)).sum::<T>().sqrt()
+    }
+
+    /// Alias for norm (magnitude).
+    #[inline]
+    fn magnitude(&self) -> T
+    where
+        T: num::Float + std::iter::Sum<T>,
+    {
+        self.norm()
+    }
+
+    /// Lp norm (generalized Minkowski norm).
+    #[inline]
+    fn lp_norm(&self, p: T) -> Result<T, VectorError>
+    where
+        T: num::Float + std::iter::Sum<T>,
+    {
+        if p < T::one() {
+            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
+        }
+        Ok(self.as_slice().iter().map(|a| a.abs().powf(p)).sum::<T>().powf(T::one() / p))
+    }
+
+    /// ...
+    fn angle_with(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + std::iter::Sum<T>;
+
+    /// Projects self onto other.
+    /// Returns an error if `other` is the zero vector.
+    fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        T: num::Float + std::iter::Sum<T>,
+        Self::Output: std::iter::FromIterator<T>;
+
+    /// ...
+    fn project_onto_into(&self, other: &Self, out: &mut [T]) -> Result<(), VectorError>
+    where
+        T: num::Float + std::iter::Sum<T>;
+
+    /// ...
+    fn cosine_similarity(&self, other: &Self) -> Result<T, VectorError>
+    where
+        T: num::Float + std::iter::Sum<T> + std::ops::Div<Output = T>;
+}
+
+/// ...
+pub trait VectorOpsFloatMut<T>: VectorBaseMut<T> {
+    /// ...
+    type Output;
+
+    /// ...
+    fn mut_normalize(&mut self) -> Result<(), VectorError>
+    where
+        T: num::Float + std::ops::Div<T, Output = T>;
+
+    /// ...
+    fn mut_normalize_to(&mut self, magnitude: T) -> Result<(), VectorError>
+    where
+        T: num::Float + std::ops::Div<T, Output = T> + std::ops::Mul<T, Output = T> + num::Zero;
+
+    /// In-place linear interpolation between self and end by weight in [0, 1].
+    fn mut_lerp(&mut self, end: &Self, weight: T) -> Result<(), VectorError>
+    where
+        T: num::Float;
+}
+/// ...
+pub trait VectorOpsComplex<N>: VectorBase<Complex<N>> {
+    /// ...
+    type Output;
+
+    /// ...
+    fn normalize(&self) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
+        Self::Output: std::iter::FromIterator<Complex<N>>;
+
+    /// ...
+    fn normalize_into(&self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>>,
+        Self::Output: std::iter::FromIterator<Complex<N>>;
+
+    /// Returns a new vector with the same direction and the given magnitude (real).
+    fn normalize_to(&self, magnitude: N) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>,
+        Self::Output: std::iter::FromIterator<Complex<N>>;
+
+    /// Writes a normalized version of self with the given magnitude into the provided buffer.
+    /// The output buffer must have the same length as self.
+    fn normalize_to_into(&self, magnitude: N, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>;
+
+    /// Hermitian dot product: for all complex types
+    fn dot(&self, other: &Self) -> Result<Complex<N>, VectorError>
+    where
+        N: num::Num + Copy + std::iter::Sum<N> + std::ops::Neg<Output = N>;
+
+    /// Linear interpolation between self and end by real weight in [0, 1].
+    fn lerp(&self, end: &Self, weight: N) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float;
+
+    /// Linear interpolation between self and end by real weight in [0, 1], writing into a preallocated buffer.
+    /// The output buffer must have the same length as self.
+    fn lerp_into(&self, end: &Self, weight: N, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One;
+
+    /// Midpoint
+    fn midpoint(&self, end: &Self) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float;
+
+    /// Midpoint linear interpolation between self and end, writing into a preallocated buffer.
+    /// The output buffer must have the same length as self.
+    fn midpoint_into(&self, end: &Self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + std::ops::Add<Output = Complex<N>>
+            + std::ops::Mul<Output = Complex<N>>
+            + std::ops::Sub<Output = Complex<N>>
+            + num::One;
+
+    /// Euclidean distance (L2 norm) between self and other (returns real).
+    fn distance(&self, other: &Self) -> Result<N, VectorError>
+    where
+        N: num::Float + std::iter::Sum<N>;
+
+    /// Manhattan (L1) distance between self and other (sum of magnitudes of differences).
+    fn manhattan_distance(&self, other: &Self) -> Result<N, VectorError>
+    where
+        N: num::Float + std::iter::Sum<N>;
+
+    /// Chebyshev (L∞) distance between self and other (maximum magnitude of differences).
+    fn chebyshev_distance(&self, other: &Self) -> Result<N, VectorError>
+    where
+        N: num::Float + PartialOrd;
+
+    /// Minkowski (Lp) distance between self and other.
+    fn minkowski_distance(&self, other: &Self, p: N) -> Result<N, VectorError>
+    where
+        N: num::Float + std::iter::Sum<N>;
+
+    /// Euclidean norm (magnitude) of the vector (returns real).
+    #[inline]
+    fn norm(&self) -> N
+    where
+        N: num::Float + std::iter::Sum<N>,
+    {
+        self.as_slice().iter().map(|a| a.norm_sqr()).sum::<N>().sqrt()
+    }
+
+    /// Alias for norm (magnitude).
+    #[inline]
+    fn magnitude(&self) -> N
+    where
+        N: num::Float + std::iter::Sum<N>,
+    {
+        self.norm()
+    }
+
+    /// L1 norm (sum of magnitudes).
+    #[inline]
+    fn l1_norm(&self) -> N
+    where
+        N: num::Float + std::iter::Sum<N>,
+    {
+        self.as_slice().iter().map(|a| a.norm()).sum()
+    }
+
+    /// L∞ norm (maximum magnitude).
+    #[inline]
+    fn linf_norm(&self) -> N
+    where
+        N: num::Float + PartialOrd,
+    {
+        self.as_slice().iter().map(|a| a.norm()).fold(N::zero(), |acc, x| acc.max(x))
+    }
+
+    /// Lp norm (generalized Minkowski norm for complex).
+    #[inline]
+    fn lp_norm(&self, p: N) -> Result<N, VectorError>
+    where
+        N: num::Float + std::iter::Sum<N>,
+    {
+        if p < N::one() {
+            return Err(VectorError::OutOfRangeError("p must be >= 1".to_string()));
+        }
+        Ok(self.as_slice().iter().map(|a| a.norm().powf(p)).sum::<N>().powf(N::one() / p))
+    }
+
+    /// ...
+    fn project_onto(&self, other: &Self) -> Result<Self::Output, VectorError>
+    where
+        N: num::Float + std::iter::Sum<N>,
+        Self::Output: std::iter::FromIterator<Complex<N>>;
+
+    /// ...
+    fn project_onto_into(&self, other: &Self, out: &mut [Complex<N>]) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy;
+
+    /// ...
+    fn cosine_similarity(&self, other: &Self) -> Result<Complex<N>, VectorError>
+    where
+        N: num::Float + std::iter::Sum<N> + std::ops::Neg<Output = N>,
+        Complex<N>: std::ops::Div<Output = Complex<N>>;
+}
+
+/// ...
+pub trait VectorOpsComplexMut<N>: VectorBaseMut<Complex<N>> {
+    /// ...
+    type Output;
+
+    /// ...
+    fn mut_normalize(&mut self) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy + PartialEq + std::ops::Div<Complex<N>, Output = Complex<N>> + num::Zero;
+
+    /// Scales the complex vector in place to the given (real) magnitude.
+    fn mut_normalize_to(&mut self, magnitude: N) -> Result<(), VectorError>
+    where
+        N: num::Float,
+        Complex<N>: Copy
+            + PartialEq
+            + std::ops::Div<Complex<N>, Output = Complex<N>>
+            + std::ops::Mul<Complex<N>, Output = Complex<N>>;
+
+    /// In-place linear interpolation between self and end by real weight in [0, 1].
+    fn mut_lerp(&mut self, end: &Self, weight: N) -> Result<(), VectorError>
+    where
+        N: num::Float;
+}
+/// ...
+pub trait VectorHasOrientation {
+    /// ...
+    fn orientation(&self) -> VectorOrientation;
+
+    /// Returns the orientation name as a string.
+    fn orientation_name(&self) -> String {
+        self.orientation().to_string()
+    }
+}
