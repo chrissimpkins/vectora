@@ -34,17 +34,17 @@ use num::{Complex, Zero};
 // /////////////////////////////////
 
 /// ...
-pub type ColVS<'a, T> = VectorSlice<'a, T, Column>;
-/// ...
-pub type RowVS<'a, T> = VectorSlice<'a, T, Row>;
-
-/// ...
 #[derive(Clone, PartialEq, Eq)]
 pub struct VectorSlice<'a, T, O = Column> {
     /// ...
     pub elements: &'a [T],
     _orientation: PhantomData<O>,
 }
+
+/// ...
+pub type ColVecSli<'a, T> = VectorSlice<'a, T, Column>;
+/// ...
+pub type RowVecSli<'a, T> = VectorSlice<'a, T, Row>;
 
 // ================================
 //
@@ -818,17 +818,17 @@ impl<'a, T, O> VectorSlice<'a, T, O> {
 // /////////////////////////////////
 
 /// ...
-pub type ColVSMut<'a, T> = VectorSliceMut<'a, T, Column>;
-/// ...
-pub type RowVSMut<'a, T> = VectorSliceMut<'a, T, Row>;
-
-/// ...
 #[derive(PartialEq, Eq)]
 pub struct VectorSliceMut<'a, T, O = Column> {
     /// ...
     pub elements: &'a mut [T],
     _orientation: PhantomData<O>,
 }
+
+/// ...
+pub type ColVecSliMut<'a, T> = VectorSliceMut<'a, T, Column>;
+/// ...
+pub type RowVecSliMut<'a, T> = VectorSliceMut<'a, T, Row>;
 
 // ================================
 //
