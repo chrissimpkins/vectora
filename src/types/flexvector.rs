@@ -49,8 +49,6 @@ pub struct FlexVector<T, O = Column> {
 }
 
 /// ...
-pub type FVector<T> = FlexVector<T, Column>;
-/// ...
 pub type ColFVector<T> = FlexVector<T, Column>;
 /// ...
 pub type RowFVector<T> = FlexVector<T, Row>;
@@ -2056,19 +2054,19 @@ mod tests {
 
     #[test]
     fn test_from_fn_i32() {
-        let v = FVector::from_fn(5, |i| i as i32 * 2);
+        let v = ColFVector::from_fn(5, |i| i as i32 * 2);
         assert_eq!(v.as_slice(), &[0, 2, 4, 6, 8]);
     }
 
     #[test]
     fn test_from_fn_f64() {
-        let v = FVector::from_fn(4, |i| (i as f64).powi(2));
+        let v = ColFVector::from_fn(4, |i| (i as f64).powi(2));
         assert_eq!(v.as_slice(), &[0.0, 1.0, 4.0, 9.0]);
     }
 
     #[test]
     fn test_from_fn_complex() {
-        let v = FVector::from_fn(3, |i| Complex::new(i as f64, -(i as f64)));
+        let v = ColFVector::from_fn(3, |i| Complex::new(i as f64, -(i as f64)));
         assert_eq!(
             v.as_slice(),
             &[Complex::new(0.0, 0.0), Complex::new(1.0, -1.0), Complex::new(2.0, -2.0)]
@@ -2077,13 +2075,13 @@ mod tests {
 
     #[test]
     fn test_from_fn_zero_length() {
-        let v: FlexVector<i32> = FVector::from_fn(0, |_| 42);
+        let v: FlexVector<i32> = ColFVector::from_fn(0, |_| 42);
         assert!(v.is_empty());
     }
 
     #[test]
     fn test_from_fn_with_fn_pointer() {
-        let v = FVector::from_fn(4, square_usize);
+        let v = ColFVector::from_fn(4, square_usize);
         assert_eq!(v.as_slice(), &[0, 1, 4, 9]);
     }
 
@@ -2118,14 +2116,14 @@ mod tests {
     #[test]
     fn test_repeat_pattern_i32_basic() {
         let pattern = [1, 2, 3];
-        let v = FVector::repeat_pattern(&pattern, 8).unwrap();
+        let v = ColFVector::repeat_pattern(&pattern, 8).unwrap();
         assert_eq!(v.as_slice(), &[1, 2, 3, 1, 2, 3, 1, 2]);
     }
 
     #[test]
     fn test_repeat_pattern_i32_exact_multiple() {
         let pattern = [4, 5];
-        let v = FVector::repeat_pattern(&pattern, 6).unwrap();
+        let v = ColFVector::repeat_pattern(&pattern, 6).unwrap();
         assert_eq!(v.as_slice(), &[4, 5, 4, 5, 4, 5]);
     }
 
@@ -2139,35 +2137,35 @@ mod tests {
     #[test]
     fn test_repeat_pattern_i32_pattern_empty_len_zero() {
         let pattern: [i32; 0] = [];
-        let v = FVector::repeat_pattern(&pattern, 0).unwrap();
+        let v = ColFVector::repeat_pattern(&pattern, 0).unwrap();
         assert!(v.is_empty());
     }
 
     #[test]
     fn test_repeat_pattern_i32_pattern_empty_len_nonzero() {
         let pattern: [i32; 0] = [];
-        let result = FVector::repeat_pattern(&pattern, 3);
+        let result = ColFVector::repeat_pattern(&pattern, 3);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_repeat_pattern_f64_basic() {
         let pattern = [1.5, 2.5];
-        let v = FVector::repeat_pattern(&pattern, 5).unwrap();
+        let v = ColFVector::repeat_pattern(&pattern, 5).unwrap();
         assert_eq!(v.as_slice(), &[1.5, 2.5, 1.5, 2.5, 1.5]);
     }
 
     #[test]
     fn test_repeat_pattern_f64_empty_pattern_len_zero() {
         let pattern: [f64; 0] = [];
-        let v = FVector::repeat_pattern(&pattern, 0).unwrap();
+        let v = ColFVector::repeat_pattern(&pattern, 0).unwrap();
         assert!(v.is_empty());
     }
 
     #[test]
     fn test_repeat_pattern_f64_empty_pattern_len_nonzero() {
         let pattern: [f64; 0] = [];
-        let result = FVector::repeat_pattern(&pattern, 2);
+        let result = ColFVector::repeat_pattern(&pattern, 2);
         assert!(result.is_err());
     }
 
@@ -2175,7 +2173,7 @@ mod tests {
     fn test_repeat_pattern_complex_f64_basic() {
         use num::Complex;
         let pattern = [Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)];
-        let v = FVector::repeat_pattern(&pattern, 5).unwrap();
+        let v = ColFVector::repeat_pattern(&pattern, 5).unwrap();
         assert_eq!(
             v.as_slice(),
             &[
@@ -2192,7 +2190,7 @@ mod tests {
     fn test_repeat_pattern_complex_f64_empty_pattern_len_zero() {
         use num::Complex;
         let pattern: [Complex<f64>; 0] = [];
-        let v = FVector::repeat_pattern(&pattern, 0).unwrap();
+        let v = ColFVector::repeat_pattern(&pattern, 0).unwrap();
         assert!(v.is_empty());
     }
 
@@ -2200,7 +2198,7 @@ mod tests {
     fn test_repeat_pattern_complex_f64_empty_pattern_len_nonzero() {
         use num::Complex;
         let pattern: [Complex<f64>; 0] = [];
-        let result = FVector::repeat_pattern(&pattern, 1);
+        let result = ColFVector::repeat_pattern(&pattern, 1);
         assert!(result.is_err());
     }
 
@@ -2307,7 +2305,7 @@ mod tests {
         let a = 1;
         let b = 2;
         let c = 3;
-        let refs = FVector::from_vec(vec![&a, &b, &c]);
+        let refs = ColFVector::from_vec(vec![&a, &b, &c]);
         let owned = refs.cloned();
         assert_eq!(owned.as_slice(), &[1, 2, 3]);
     }
@@ -2324,30 +2322,30 @@ mod tests {
         use num::Complex;
         let a = Complex::new(1.0, 2.0);
         let b = Complex::new(3.0, 4.0);
-        let refs = FVector::from_vec(vec![&a, &b]);
+        let refs = ColFVector::from_vec(vec![&a, &b]);
         let owned = refs.cloned();
         assert_eq!(owned.as_slice(), &[a, b]);
     }
 
     #[test]
     fn test_flatten_flexvector_of_flexvector() {
-        let row1 = FVector::from_vec(vec![1, 2]);
-        let row2 = FVector::from_vec(vec![3, 4, 5]);
-        let nested = FVector::from_vec(vec![row1, row2]);
+        let row1 = ColFVector::from_vec(vec![1, 2]);
+        let row2 = ColFVector::from_vec(vec![3, 4, 5]);
+        let nested = ColFVector::from_vec(vec![row1, row2]);
         let flat = nested.flatten();
         assert_eq!(flat.as_slice(), &[1, 2, 3, 4, 5]);
     }
 
     #[test]
     fn test_flatten_flexvector_of_vec() {
-        let nested = FVector::from_vec(vec![vec![10, 20], vec![30]]);
+        let nested = ColFVector::from_vec(vec![vec![10, 20], vec![30]]);
         let flat = nested.flatten();
         assert_eq!(flat.as_slice(), &[10, 20, 30]);
     }
 
     #[test]
     fn test_flatten_flexvector_of_array() {
-        let nested = FVector::from_vec(vec![[1, 2], [3, 4]]);
+        let nested = ColFVector::from_vec(vec![[1, 2], [3, 4]]);
         let flat = nested.flatten();
         assert_eq!(flat.as_slice(), &[1, 2, 3, 4]);
     }
@@ -2356,7 +2354,7 @@ mod tests {
     fn test_flatten_flexvector_of_slice_refs() {
         let a = [7, 8];
         let b = [9];
-        let nested = FVector::from_vec(vec![&a[..], &b[..]]);
+        let nested = ColFVector::from_vec(vec![&a[..], &b[..]]);
         let flat = nested.flatten();
         assert_eq!(flat.as_slice(), &[&7, &8, &9]);
     }
@@ -2370,7 +2368,7 @@ mod tests {
 
     #[test]
     fn test_flatten_with_empty_inner() {
-        let nested = FVector::from_vec(vec![vec![], vec![1, 2], vec![]]);
+        let nested = ColFVector::from_vec(vec![vec![], vec![1, 2], vec![]]);
         let flat = nested.flatten();
         assert_eq!(flat.as_slice(), &[1, 2]);
     }
@@ -2379,7 +2377,7 @@ mod tests {
     fn test_flatten_cloned_flexvector_of_slice_refs() {
         let a = [8, 9];
         let b = [10];
-        let nested = FVector::from_vec(vec![&a[..], &b[..]]);
+        let nested = ColFVector::from_vec(vec![&a[..], &b[..]]);
         let flat = nested.flatten_cloned();
         let expected: Vec<i32> = vec![8, 9, 10];
         assert_eq!(flat.as_slice(), expected.as_slice());
@@ -2390,7 +2388,7 @@ mod tests {
     fn test_flatten_cloned_flexvector_of_refs() {
         let x = 42;
         let y = 43;
-        let nested = FVector::from_vec(vec![vec![&x, &y], vec![&x]]);
+        let nested = ColFVector::from_vec(vec![vec![&x, &y], vec![&x]]);
         let flat = nested.flatten_cloned();
         assert_eq!(flat.as_slice(), &[42, 43, 42]);
         let _: &[i32] = flat.as_slice(); // type check: &[i32]
@@ -2405,7 +2403,7 @@ mod tests {
 
     #[test]
     fn test_flatten_cloned_with_empty_inner() {
-        let nested = FVector::from_vec(vec![vec![], vec![&1, &2], vec![]]);
+        let nested = ColFVector::from_vec(vec![vec![], vec![&1, &2], vec![]]);
         let flat = nested.flatten_cloned();
         assert_eq!(flat.as_slice(), &[1, 2]);
     }
@@ -2665,7 +2663,7 @@ mod tests {
     // ================================
     #[test]
     fn test_deref_access_slice_methods_i32() {
-        let v = FVector::from_vec(vec![3, 1, 2]);
+        let v = ColFVector::from_vec(vec![3, 1, 2]);
         // Use sort (not implemented in FlexVector directly)
         let mut sorted = v.clone();
         sorted.sort();
@@ -2676,7 +2674,7 @@ mod tests {
 
     #[test]
     fn test_deref_access_slice_methods_f64() {
-        let v = FVector::from_vec(vec![3.5, 1.5, 2.5]);
+        let v = ColFVector::from_vec(vec![3.5, 1.5, 2.5]);
         // Use sort_by
         let mut sorted = v.clone();
         sorted.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -2689,7 +2687,7 @@ mod tests {
     #[test]
     fn test_deref_access_slice_methods_complex() {
         use num::Complex;
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(3.0, 4.0),
             Complex::new(5.0, 6.0),
@@ -2709,7 +2707,7 @@ mod tests {
 
     #[test]
     fn test_deref_mut_i32() {
-        let mut v = FVector::from_vec(vec![10, 20, 30]);
+        let mut v = ColFVector::from_vec(vec![10, 20, 30]);
         // Mutate via indexing
         v[1] = 99;
         assert_eq!(v.as_slice(), &[10, 99, 30]);
@@ -2720,7 +2718,7 @@ mod tests {
 
     #[test]
     fn test_deref_mut_f64() {
-        let mut v = FVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let mut v = ColFVector::from_vec(vec![1.5, 2.5, 3.5]);
         // Mutate via indexing
         v[0] = -1.5;
         assert_eq!(v.as_slice(), &[-1.5, 2.5, 3.5]);
@@ -2732,7 +2730,7 @@ mod tests {
     #[test]
     fn test_deref_mut_complex_f64() {
         use num::Complex;
-        let mut v = FVector::from_vec(vec![
+        let mut v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(3.0, 4.0),
             Complex::new(5.0, 6.0),
@@ -2755,14 +2753,14 @@ mod tests {
     // ================================
     #[test]
     fn test_asref_i32() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let slice: &[i32] = v.as_ref();
         assert_eq!(slice, &[1, 2, 3]);
     }
 
     #[test]
     fn test_asref_f64() {
-        let v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         let slice: &[f64] = v.as_ref();
         assert_eq!(slice, &[1.1, 2.2, 3.3]);
     }
@@ -2770,14 +2768,14 @@ mod tests {
     #[test]
     fn test_asref_complex_f64() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let slice: &[Complex<f64>] = v.as_ref();
         assert_eq!(slice, &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
     }
 
     #[test]
     fn test_asmut_i32() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         let slice: &mut [i32] = v.as_mut();
         slice[0] = 10;
         slice[2] = 30;
@@ -2786,7 +2784,7 @@ mod tests {
 
     #[test]
     fn test_asmut_f64() {
-        let mut v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let mut v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         let slice: &mut [f64] = v.as_mut();
         slice[1] = 9.9;
         assert_eq!(v.as_slice(), &[1.1, 9.9, 3.3]);
@@ -2795,7 +2793,7 @@ mod tests {
     #[test]
     fn test_asmut_complex_f64() {
         use num::Complex;
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let slice: &mut [Complex<f64>] = v.as_mut();
         slice[0].re = 10.0;
         slice[1].im = 40.0;
@@ -2811,7 +2809,7 @@ mod tests {
     #[test]
     fn test_borrow_i32() {
         use std::borrow::Borrow;
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let slice: &[i32] = v.borrow();
         assert_eq!(slice, &[1, 2, 3]);
     }
@@ -2819,7 +2817,7 @@ mod tests {
     #[test]
     fn test_borrow_f64() {
         use std::borrow::Borrow;
-        let v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         let slice: &[f64] = v.borrow();
         assert_eq!(slice, &[1.1, 2.2, 3.3]);
     }
@@ -2828,7 +2826,7 @@ mod tests {
     fn test_borrow_complex_f64() {
         use num::Complex;
         use std::borrow::Borrow;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let slice: &[Complex<f64>] = v.borrow();
         assert_eq!(slice, &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
     }
@@ -2836,7 +2834,7 @@ mod tests {
     #[test]
     fn test_borrow_mut_i32() {
         use std::borrow::BorrowMut;
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         {
             let slice: &mut [i32] = v.borrow_mut();
             slice[0] = 10;
@@ -2848,7 +2846,7 @@ mod tests {
     #[test]
     fn test_borrow_mut_f64() {
         use std::borrow::BorrowMut;
-        let mut v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let mut v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         {
             let slice: &mut [f64] = v.borrow_mut();
             slice[1] = 9.9;
@@ -2860,7 +2858,7 @@ mod tests {
     fn test_borrow_mut_complex_f64() {
         use num::Complex;
         use std::borrow::BorrowMut;
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         {
             let slice: &mut [Complex<f64>] = v.borrow_mut();
             slice[0].re = 10.0;
@@ -2876,14 +2874,14 @@ mod tests {
     // ================================
     #[test]
     fn test_into_iter_i32() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let collected: Vec<_> = v.into_iter().collect();
         assert_eq!(collected, vec![1, 2, 3]);
     }
 
     #[test]
     fn test_into_iter_f64() {
-        let v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         let collected: Vec<_> = v.into_iter().collect();
         assert_eq!(collected, vec![1.1, 2.2, 3.3]);
     }
@@ -2891,21 +2889,21 @@ mod tests {
     #[test]
     fn test_into_iter_complex_f64() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let collected: Vec<_> = v.into_iter().collect();
         assert_eq!(collected, vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
     }
 
     #[test]
     fn test_iter_ref_i32() {
-        let v = FVector::from_vec(vec![10, 20, 30]);
+        let v = ColFVector::from_vec(vec![10, 20, 30]);
         let collected: Vec<_> = (&v).into_iter().copied().collect();
         assert_eq!(collected, vec![10, 20, 30]);
     }
 
     #[test]
     fn test_iter_ref_f64() {
-        let v = FVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let v = ColFVector::from_vec(vec![1.5, 2.5, 3.5]);
         let collected: Vec<_> = (&v).into_iter().copied().collect();
         assert_eq!(collected, vec![1.5, 2.5, 3.5]);
     }
@@ -2913,14 +2911,14 @@ mod tests {
     #[test]
     fn test_iter_ref_complex_f64() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
         let collected: Vec<_> = (&v).into_iter().cloned().collect();
         assert_eq!(collected, vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
     }
 
     #[test]
     fn test_iter_mutable_i32() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         for x in &mut v {
             *x *= 10;
         }
@@ -2929,7 +2927,7 @@ mod tests {
 
     #[test]
     fn test_iter_mutable_f64() {
-        let mut v = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let mut v = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         for x in &mut v {
             *x += 0.5;
         }
@@ -2939,7 +2937,7 @@ mod tests {
     #[test]
     fn test_iter_mutable_complex_f64() {
         use num::Complex;
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 1.0), Complex::new(2.0, 2.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 1.0), Complex::new(2.0, 2.0)]);
         for x in &mut v {
             x.re *= 2.0;
             x.im *= 3.0;
@@ -2954,18 +2952,18 @@ mod tests {
     // ================================
     #[test]
     fn test_partial_eq_i32() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
-        let v2 = FVector::from_vec(vec![1, 2, 3]);
-        let v3 = FVector::from_vec(vec![3, 2, 1]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
+        let v2 = ColFVector::from_vec(vec![1, 2, 3]);
+        let v3 = ColFVector::from_vec(vec![3, 2, 1]);
         assert_eq!(v1, v2);
         assert_ne!(v1, v3);
     }
 
     #[test]
     fn test_partial_eq_f64() {
-        let v1 = FVector::from_vec(vec![1.1, 2.2, 3.3]);
-        let v2 = FVector::from_vec(vec![1.1, 2.2, 3.3]);
-        let v3 = FVector::from_vec(vec![3.3, 2.2, 1.1]);
+        let v1 = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v2 = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v3 = ColFVector::from_vec(vec![3.3, 2.2, 1.1]);
         assert_eq!(v1, v2);
         assert_ne!(v1, v3);
     }
@@ -2973,9 +2971,9 @@ mod tests {
     #[test]
     fn test_partial_eq_complex_f64() {
         use num::Complex;
-        let v1 = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
-        let v2 = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
-        let v3 = FVector::from_vec(vec![Complex::new(4.0, 3.0), Complex::new(2.0, 1.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v3 = ColFVector::from_vec(vec![Complex::new(4.0, 3.0), Complex::new(2.0, 1.0)]);
         assert_eq!(v1, v2);
         assert_ne!(v1, v3);
     }
@@ -2989,28 +2987,28 @@ mod tests {
 
     #[test]
     fn test_partial_eq_different_lengths() {
-        let v1 = FVector::from_vec(vec![1, 2]);
-        let v2 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
+        let v2 = ColFVector::from_vec(vec![1, 2, 3]);
         assert_ne!(v1, v2);
     }
 
     #[test]
     fn test_partial_eq_f64_nan() {
-        let v1 = FVector::from_vec(vec![f64::NAN, 1.0]);
-        let v2 = FVector::from_vec(vec![f64::NAN, 1.0]);
+        let v1 = ColFVector::from_vec(vec![f64::NAN, 1.0]);
+        let v2 = ColFVector::from_vec(vec![f64::NAN, 1.0]);
         // NaN != NaN, so these should not be equal
         assert_ne!(v1, v2);
 
-        let v3 = FVector::from_vec(vec![f64::NAN, 1.0]);
-        let v4 = FVector::from_vec(vec![f64::NAN, 2.0]);
+        let v3 = ColFVector::from_vec(vec![f64::NAN, 1.0]);
+        let v4 = ColFVector::from_vec(vec![f64::NAN, 2.0]);
         assert_ne!(v3, v4);
     }
 
     #[test]
     fn test_partial_eq_f64_zero_negzero() {
-        let v1 = FVector::from_vec(vec![0.0, -0.0]);
-        let v2 = FVector::from_vec(vec![0.0, -0.0]);
-        let v3 = FVector::from_vec(vec![-0.0, 0.0]);
+        let v1 = ColFVector::from_vec(vec![0.0, -0.0]);
+        let v2 = ColFVector::from_vec(vec![0.0, -0.0]);
+        let v3 = ColFVector::from_vec(vec![-0.0, 0.0]);
         // 0.0 == -0.0 in Rust
         assert_eq!(v1, v2);
         assert_eq!(v1, v3);
@@ -3018,9 +3016,9 @@ mod tests {
 
     #[test]
     fn test_partial_eq_f64_infinity() {
-        let v1 = FVector::from_vec(vec![f64::INFINITY, f64::NEG_INFINITY]);
-        let v2 = FVector::from_vec(vec![f64::INFINITY, f64::NEG_INFINITY]);
-        let v3 = FVector::from_vec(vec![f64::NEG_INFINITY, f64::INFINITY]);
+        let v1 = ColFVector::from_vec(vec![f64::INFINITY, f64::NEG_INFINITY]);
+        let v2 = ColFVector::from_vec(vec![f64::INFINITY, f64::NEG_INFINITY]);
+        let v3 = ColFVector::from_vec(vec![f64::NEG_INFINITY, f64::INFINITY]);
         assert_eq!(v1, v2);
         assert_ne!(v1, v3);
     }
@@ -3029,21 +3027,21 @@ mod tests {
     fn test_partial_eq_complex_nan() {
         use num::Complex;
         let nan = f64::NAN;
-        let v1 = FVector::from_vec(vec![Complex::new(nan, 1.0)]);
-        let v2 = FVector::from_vec(vec![Complex::new(nan, 1.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(nan, 1.0)]);
+        let v2 = ColFVector::from_vec(vec![Complex::new(nan, 1.0)]);
         // Complex::new(NaN, 1.0) != Complex::new(NaN, 1.0)
         assert_ne!(v1, v2);
 
-        let v3 = FVector::from_vec(vec![Complex::new(1.0, nan)]);
-        let v4 = FVector::from_vec(vec![Complex::new(1.0, nan)]);
+        let v3 = ColFVector::from_vec(vec![Complex::new(1.0, nan)]);
+        let v4 = ColFVector::from_vec(vec![Complex::new(1.0, nan)]);
         assert_ne!(v3, v4);
     }
 
     #[test]
     fn test_partial_eq_complex_zero_negzero() {
         use num::Complex;
-        let v1 = FVector::from_vec(vec![Complex::new(0.0, -0.0)]);
-        let v2 = FVector::from_vec(vec![Complex::new(-0.0, 0.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(0.0, -0.0)]);
+        let v2 = ColFVector::from_vec(vec![Complex::new(-0.0, 0.0)]);
         // 0.0 == -0.0 for both real and imaginary parts
         assert_eq!(v1, v2);
     }
@@ -3051,10 +3049,10 @@ mod tests {
     #[test]
     fn test_partial_eq_complex_infinity() {
         use num::Complex;
-        let v1 = FVector::from_vec(vec![Complex::new(f64::INFINITY, 1.0)]);
-        let v2 = FVector::from_vec(vec![Complex::new(f64::INFINITY, 1.0)]);
-        let v3 = FVector::from_vec(vec![Complex::new(1.0, f64::INFINITY)]);
-        let v4 = FVector::from_vec(vec![Complex::new(1.0, f64::INFINITY)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(f64::INFINITY, 1.0)]);
+        let v2 = ColFVector::from_vec(vec![Complex::new(f64::INFINITY, 1.0)]);
+        let v3 = ColFVector::from_vec(vec![Complex::new(1.0, f64::INFINITY)]);
+        let v4 = ColFVector::from_vec(vec![Complex::new(1.0, f64::INFINITY)]);
         assert_eq!(v1, v2);
         assert_eq!(v3, v4);
         assert_ne!(v1, v3);
@@ -3062,23 +3060,23 @@ mod tests {
 
     #[test]
     fn test_eq_trait_i32() {
-        let v1 = FVector::from_vec(vec![5, 6, 7]);
-        let v2 = FVector::from_vec(vec![5, 6, 7]);
+        let v1 = ColFVector::from_vec(vec![5, 6, 7]);
+        let v2 = ColFVector::from_vec(vec![5, 6, 7]);
         assert!(v1.eq(&v2));
     }
 
     #[test]
     fn test_eq_trait_f64() {
-        let v1 = FVector::from_vec(vec![0.0, -0.0]);
-        let v2 = FVector::from_vec(vec![0.0, -0.0]);
+        let v1 = ColFVector::from_vec(vec![0.0, -0.0]);
+        let v2 = ColFVector::from_vec(vec![0.0, -0.0]);
         assert!(v1.eq(&v2));
     }
 
     #[test]
     fn test_eq_trait_complex_f64() {
         use num::Complex;
-        let v1 = FVector::from_vec(vec![Complex::new(0.0, 1.0)]);
-        let v2 = FVector::from_vec(vec![Complex::new(0.0, 1.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(0.0, 1.0)]);
+        let v2 = ColFVector::from_vec(vec![Complex::new(0.0, 1.0)]);
         assert!(v1.eq(&v2));
     }
 
@@ -3089,9 +3087,9 @@ mod tests {
     // ================================
     #[test]
     fn test_partial_ord_i32() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
-        let v2 = FVector::from_vec(vec![1, 2, 4]);
-        let v3 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
+        let v2 = ColFVector::from_vec(vec![1, 2, 4]);
+        let v3 = ColFVector::from_vec(vec![1, 2, 3]);
         assert!(v1 < v2);
         assert!(v2 > v1);
         assert!(v1 <= v3);
@@ -3103,9 +3101,9 @@ mod tests {
 
     #[test]
     fn test_ord_i32() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
-        let v2 = FVector::from_vec(vec![1, 2, 4]);
-        let v3 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
+        let v2 = ColFVector::from_vec(vec![1, 2, 4]);
+        let v3 = ColFVector::from_vec(vec![1, 2, 3]);
         assert_eq!(v1.cmp(&v2), std::cmp::Ordering::Less);
         assert_eq!(v2.cmp(&v1), std::cmp::Ordering::Greater);
         assert_eq!(v1.cmp(&v3), std::cmp::Ordering::Equal);
@@ -3113,9 +3111,9 @@ mod tests {
 
     #[test]
     fn test_partial_ord_f64() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
-        let v2 = FVector::from_vec(vec![1.0, 2.0, 4.0]);
-        let v3 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v2 = ColFVector::from_vec(vec![1.0, 2.0, 4.0]);
+        let v3 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         assert_eq!(v1.partial_cmp(&v2), Some(std::cmp::Ordering::Less));
         assert_eq!(v2.partial_cmp(&v1), Some(std::cmp::Ordering::Greater));
         assert_eq!(v1.partial_cmp(&v3), Some(std::cmp::Ordering::Equal));
@@ -3123,8 +3121,8 @@ mod tests {
 
     #[test]
     fn test_partial_ord_f64_nan() {
-        let v1 = FVector::from_vec(vec![1.0, f64::NAN]);
-        let v2 = FVector::from_vec(vec![1.0, 2.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, f64::NAN]);
+        let v2 = ColFVector::from_vec(vec![1.0, 2.0]);
         // Comparison with NaN yields None
         assert_eq!(v1.partial_cmp(&v2), None);
         assert_eq!(v2.partial_cmp(&v1), None);
@@ -3132,10 +3130,10 @@ mod tests {
 
     #[test]
     fn test_partial_ord_f64_infinity() {
-        let v1 = FVector::from_vec(vec![1.0, f64::INFINITY]);
-        let v2 = FVector::from_vec(vec![1.0, f64::NEG_INFINITY]);
-        let v3 = FVector::from_vec(vec![1.0, f64::INFINITY]);
-        let v4 = FVector::from_vec(vec![1.0, 1.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, f64::INFINITY]);
+        let v2 = ColFVector::from_vec(vec![1.0, f64::NEG_INFINITY]);
+        let v3 = ColFVector::from_vec(vec![1.0, f64::INFINITY]);
+        let v4 = ColFVector::from_vec(vec![1.0, 1.0]);
         // INFINITY > NEG_INFINITY
         assert_eq!(v1.partial_cmp(&v2), Some(std::cmp::Ordering::Greater));
         assert_eq!(v2.partial_cmp(&v1), Some(std::cmp::Ordering::Less));
@@ -3153,9 +3151,9 @@ mod tests {
     // ================================
     #[test]
     fn test_hash_i32() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
-        let v2 = FVector::from_vec(vec![1, 2, 3]);
-        let v3 = FVector::from_vec(vec![3, 2, 1]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
+        let v2 = ColFVector::from_vec(vec![1, 2, 3]);
+        let v3 = ColFVector::from_vec(vec![3, 2, 1]);
 
         let mut hasher1 = DefaultHasher::new();
         v1.hash(&mut hasher1);
@@ -3176,9 +3174,9 @@ mod tests {
     #[test]
     fn test_hash_complex_i32() {
         use num::Complex;
-        let v1 = FVector::from_vec(vec![Complex::new(1, 2), Complex::new(3, 4)]);
-        let v2 = FVector::from_vec(vec![Complex::new(1, 2), Complex::new(3, 4)]);
-        let v3 = FVector::from_vec(vec![Complex::new(4, 3), Complex::new(2, 1)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(1, 2), Complex::new(3, 4)]);
+        let v2 = ColFVector::from_vec(vec![Complex::new(1, 2), Complex::new(3, 4)]);
+        let v3 = ColFVector::from_vec(vec![Complex::new(4, 3), Complex::new(2, 1)]);
 
         let mut hasher1 = DefaultHasher::new();
         v1.hash(&mut hasher1);
@@ -3254,7 +3252,7 @@ mod tests {
     #[test]
     fn test_from_slice_i32() {
         let slice: &[i32] = &[4, 5, 6];
-        let fv = FVector::from(slice);
+        let fv = ColFVector::from(slice);
         let fv_col: FlexVector<i32, Column> = slice.into();
         let fv_row: FlexVector<i32, Row> = slice.into();
         assert_eq!(fv.as_slice(), slice);
@@ -3265,7 +3263,7 @@ mod tests {
     #[test]
     fn test_from_slice_f64() {
         let slice: &[f64] = &[4.4, 5.5, 6.6];
-        let fv = FVector::from(slice);
+        let fv = ColFVector::from(slice);
         let fv_col: FlexVector<f64, Column> = slice.into();
         let fv_row: FlexVector<f64, Row> = slice.into();
         assert_eq!(fv.as_slice(), slice);
@@ -3277,7 +3275,7 @@ mod tests {
     fn test_from_slice_complex_f64() {
         use num::Complex;
         let slice: &[Complex<f64>] = &[Complex::new(7.0, 8.0), Complex::new(9.0, 10.0)];
-        let fv = FVector::from(slice);
+        let fv = ColFVector::from(slice);
         let fv_col: FlexVector<Complex<f64>, Column> = slice.into();
         let fv_row: FlexVector<Complex<f64>, Row> = slice.into();
         assert_eq!(fv.as_slice(), slice);
@@ -3576,7 +3574,7 @@ mod tests {
 
     #[test]
     fn test_from_vectorslice_i32() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4]);
         let vslice = v.as_vslice(1..3);
         let fv: FlexVector<i32> = FlexVector::from(vslice);
         assert_eq!(fv.as_slice(), &[2, 3]);
@@ -3584,7 +3582,7 @@ mod tests {
 
     #[test]
     fn test_from_vectorslice_f64() {
-        let v = FVector::from_vec(vec![1.1, 2.2, 3.3, 4.4]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2, 3.3, 4.4]);
         let vslice = v.as_vslice(0..2);
         let fv: FlexVector<f64> = FlexVector::from(vslice);
         assert_eq!(fv.as_slice(), &[1.1, 2.2]);
@@ -3593,7 +3591,7 @@ mod tests {
     #[test]
     fn test_from_vectorslice_complex_f64() {
         use num::Complex;
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(3.0, 4.0),
             Complex::new(5.0, 6.0),
@@ -3605,7 +3603,7 @@ mod tests {
 
     #[test]
     fn test_from_vectorslicemut_i32() {
-        let mut v = FVector::from_vec(vec![10, 20, 30, 40]);
+        let mut v = ColFVector::from_vec(vec![10, 20, 30, 40]);
         {
             let vslice_mut = v.as_mut_vslice(2..4);
             let fv: FlexVector<i32> = FlexVector::from(vslice_mut);
@@ -3615,7 +3613,7 @@ mod tests {
 
     #[test]
     fn test_from_vectorslicemut_f64() {
-        let mut v = FVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let mut v = ColFVector::from_vec(vec![1.5, 2.5, 3.5]);
         {
             let vslice_mut = v.as_mut_vslice(0..2);
             let fv: FlexVector<f64> = FlexVector::from(vslice_mut);
@@ -3626,7 +3624,7 @@ mod tests {
     #[test]
     fn test_from_vectorslicemut_complex_f64() {
         use num::Complex;
-        let mut v = FVector::from_vec(vec![
+        let mut v = ColFVector::from_vec(vec![
             Complex::new(7.0, 8.0),
             Complex::new(9.0, 10.0),
             Complex::new(11.0, 12.0),
@@ -3708,7 +3706,7 @@ mod tests {
 
     #[test]
     fn test_index_usize() {
-        let v = FVector::from_vec(vec![10, 20, 30, 40]);
+        let v = ColFVector::from_vec(vec![10, 20, 30, 40]);
         assert_eq!(v[0], 10);
         assert_eq!(v[1], 20);
         assert_eq!(v[3], 40);
@@ -3717,13 +3715,13 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_index_usize_out_of_bounds() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let _ = v[10];
     }
 
     #[test]
     fn test_index_range() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4, 5]);
         assert_eq!(&v[1..4], &[2, 3, 4]);
         assert_eq!(&v[0..2], &[1, 2]);
         assert_eq!(&v[2..5], &[3, 4, 5]);
@@ -3731,34 +3729,34 @@ mod tests {
 
     #[test]
     fn test_index_range_from() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4, 5]);
         assert_eq!(&v[2..], &[3, 4, 5]);
         assert_eq!(&v[0..], &[1, 2, 3, 4, 5]);
     }
 
     #[test]
     fn test_index_range_to() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4, 5]);
         assert_eq!(&v[..3], &[1, 2, 3]);
         assert_eq!(&v[..1], &[1]);
     }
 
     #[test]
     fn test_index_range_full() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         assert_eq!(&v[..], &[1, 2, 3]);
     }
 
     #[test]
     fn test_index_range_inclusive() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4, 5]);
         assert_eq!(&v[1..=3], &[2, 3, 4]);
         assert_eq!(&v[0..=4], &[1, 2, 3, 4, 5]);
     }
 
     #[test]
     fn test_index_range_to_inclusive() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4, 5]);
         assert_eq!(&v[..=2], &[1, 2, 3]);
         assert_eq!(&v[..=0], &[1]);
     }
@@ -3766,21 +3764,21 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_index_range_out_of_bounds() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let _ = &v[2..5];
     }
 
     #[test]
     #[should_panic]
     fn test_index_range_inclusive_out_of_bounds() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let _ = &v[1..=5];
     }
 
     #[test]
     #[should_panic]
     fn test_index_range_to_inclusive_out_of_bounds() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let _ = &v[..=5];
     }
 
@@ -3792,7 +3790,7 @@ mod tests {
 
     #[test]
     fn test_index_mut_usize() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         v[0] = 10;
         v[2] = 30;
         assert_eq!(v.as_slice(), &[10, 2, 30]);
@@ -3801,48 +3799,48 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_index_mut_usize_out_of_bounds() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         v[10] = 99;
     }
 
     #[test]
     fn test_index_mut_range() {
-        let mut v = FVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3, 4, 5]);
         v[1..4].copy_from_slice(&[20, 30, 40]);
         assert_eq!(v.as_slice(), &[1, 20, 30, 40, 5]);
     }
 
     #[test]
     fn test_index_mut_range_from() {
-        let mut v = FVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3, 4, 5]);
         v[2..].copy_from_slice(&[99, 100, 101]);
         assert_eq!(v.as_slice(), &[1, 2, 99, 100, 101]);
     }
 
     #[test]
     fn test_index_mut_range_to() {
-        let mut v = FVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3, 4, 5]);
         v[..3].copy_from_slice(&[7, 8, 9]);
         assert_eq!(v.as_slice(), &[7, 8, 9, 4, 5]);
     }
 
     #[test]
     fn test_index_mut_range_full() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         v[..].copy_from_slice(&[10, 20, 30]);
         assert_eq!(v.as_slice(), &[10, 20, 30]);
     }
 
     #[test]
     fn test_index_mut_range_inclusive() {
-        let mut v = FVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3, 4, 5]);
         v[1..=3].copy_from_slice(&[21, 31, 41]);
         assert_eq!(v.as_slice(), &[1, 21, 31, 41, 5]);
     }
 
     #[test]
     fn test_index_mut_range_to_inclusive() {
-        let mut v = FVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3, 4, 5]);
         v[..=2].copy_from_slice(&[100, 200, 300]);
         assert_eq!(v.as_slice(), &[100, 200, 300, 4, 5]);
     }
@@ -3850,21 +3848,21 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_index_mut_range_out_of_bounds() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         v[2..5].copy_from_slice(&[9, 9, 9]);
     }
 
     #[test]
     #[should_panic]
     fn test_index_mut_range_inclusive_out_of_bounds() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         v[1..=5].copy_from_slice(&[9, 9, 9, 9, 9]);
     }
 
     #[test]
     #[should_panic]
     fn test_index_mut_range_to_inclusive_out_of_bounds() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         v[..=5].copy_from_slice(&[9, 9, 9, 9, 9, 9]);
     }
 
@@ -3875,14 +3873,14 @@ mod tests {
     // ================================
     #[test]
     fn test_extend_i32() {
-        let mut v = FVector::from_vec(vec![1, 2]);
+        let mut v = ColFVector::from_vec(vec![1, 2]);
         v.extend(vec![3, 4]);
         assert_eq!(v.as_slice(), &[1, 2, 3, 4]);
     }
 
     #[test]
     fn test_extend_f64() {
-        let mut v = FVector::from_vec(vec![1.1, 2.2]);
+        let mut v = ColFVector::from_vec(vec![1.1, 2.2]);
         v.extend(vec![3.3, 4.4]);
         assert_eq!(v.as_slice(), &[1.1, 2.2, 3.3, 4.4]);
     }
@@ -3890,7 +3888,7 @@ mod tests {
     #[test]
     fn test_extend_complex_f64() {
         use num::Complex;
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0)]);
         v.extend(vec![Complex::new(3.0, 4.0), Complex::new(5.0, 6.0)]);
         assert_eq!(
             v.as_slice(),
@@ -3907,7 +3905,7 @@ mod tests {
 
     #[test]
     fn test_extend_with_empty() {
-        let mut v = FVector::from_vec(vec![1, 2]);
+        let mut v = ColFVector::from_vec(vec![1, 2]);
         v.extend(Vec::<i32>::new());
         assert_eq!(v.as_slice(), &[1, 2]);
     }
@@ -3920,21 +3918,21 @@ mod tests {
     // --- as_slice ---
     #[test]
     fn test_as_slice() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let slice = v.as_slice();
         assert_eq!(slice, &[1, 2, 3]);
     }
 
     #[test]
     fn test_as_slice_f64() {
-        let v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         let slice = v.as_slice();
         assert_eq!(slice, &[1.1, 2.2, 3.3]);
     }
 
     #[test]
     fn test_as_slice_complex() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let slice = v.as_slice();
         assert_eq!(slice, &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0),]);
     }
@@ -3942,7 +3940,7 @@ mod tests {
     // --- len ---
     #[test]
     fn test_len() {
-        let v = FVector::from_vec(vec![10, 20, 30, 40]);
+        let v = ColFVector::from_vec(vec![10, 20, 30, 40]);
         assert_eq!(v.len(), 4);
         let empty = FlexVector::<i32>::new();
         assert_eq!(empty.len(), 0);
@@ -3950,7 +3948,7 @@ mod tests {
 
     #[test]
     fn test_len_f64() {
-        let v = FVector::from_vec(vec![10.0, 20.0]);
+        let v = ColFVector::from_vec(vec![10.0, 20.0]);
         assert_eq!(v.len(), 2);
         let empty = FlexVector::<f64>::new();
         assert_eq!(empty.len(), 0);
@@ -3958,7 +3956,7 @@ mod tests {
 
     #[test]
     fn test_len_complex() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 0.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 0.0)]);
         assert_eq!(v.len(), 1);
         let empty = FlexVector::<Complex<f64>>::new();
         assert_eq!(empty.len(), 0);
@@ -3967,7 +3965,7 @@ mod tests {
     // --- is_empty ---
     #[test]
     fn test_is_empty() {
-        let v = FVector::from_vec(vec![1]);
+        let v = ColFVector::from_vec(vec![1]);
         assert!(!v.is_empty());
         let empty = FlexVector::<i32>::new();
         assert!(empty.is_empty());
@@ -3975,7 +3973,7 @@ mod tests {
 
     #[test]
     fn test_is_empty_f64() {
-        let v = FVector::from_vec(vec![1.0]);
+        let v = ColFVector::from_vec(vec![1.0]);
         assert!(!v.is_empty());
         let empty = FlexVector::<f64>::new();
         assert!(empty.is_empty());
@@ -3983,7 +3981,7 @@ mod tests {
 
     #[test]
     fn test_is_empty_complex() {
-        let v = FVector::from_vec(vec![Complex::new(0.0, 1.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(0.0, 1.0)]);
         assert!(!v.is_empty());
         let empty = FlexVector::<Complex<f64>>::new();
         assert!(empty.is_empty());
@@ -3992,7 +3990,7 @@ mod tests {
     // --- get ---
     #[test]
     fn test_get() {
-        let v = FVector::from_vec(vec![10, 20, 30]);
+        let v = ColFVector::from_vec(vec![10, 20, 30]);
         assert_eq!(v.get(0), Some(&10));
         assert_eq!(v.get(2), Some(&30));
         assert_eq!(v.get(3), None);
@@ -4000,7 +3998,7 @@ mod tests {
 
     #[test]
     fn test_get_f64() {
-        let v = FVector::from_vec(vec![10.5, 20.5, 30.5]);
+        let v = ColFVector::from_vec(vec![10.5, 20.5, 30.5]);
         assert_eq!(v.get(0), Some(&10.5));
         assert_eq!(v.get(2), Some(&30.5));
         assert_eq!(v.get(3), None);
@@ -4008,7 +4006,7 @@ mod tests {
 
     #[test]
     fn test_get_complex() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 1.0), Complex::new(2.0, 2.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 1.0), Complex::new(2.0, 2.0)]);
         assert_eq!(v.get(0), Some(&Complex::new(1.0, 1.0)));
         assert_eq!(v.get(1), Some(&Complex::new(2.0, 2.0)));
         assert_eq!(v.get(2), None);
@@ -4017,7 +4015,7 @@ mod tests {
     // --- first ---
     #[test]
     fn test_first() {
-        let v = FVector::from_vec(vec![5, 6, 7]);
+        let v = ColFVector::from_vec(vec![5, 6, 7]);
         assert_eq!(v.first(), Some(&5));
         let empty = FlexVector::<i32>::new();
         assert_eq!(empty.first(), None);
@@ -4025,7 +4023,7 @@ mod tests {
 
     #[test]
     fn test_first_f64() {
-        let v = FVector::from_vec(vec![5.5, 6.5]);
+        let v = ColFVector::from_vec(vec![5.5, 6.5]);
         assert_eq!(v.first(), Some(&5.5));
         let empty = FlexVector::<f64>::new();
         assert_eq!(empty.first(), None);
@@ -4033,7 +4031,7 @@ mod tests {
 
     #[test]
     fn test_first_complex() {
-        let v = FVector::from_vec(vec![Complex::new(7.0, 8.0), Complex::new(9.0, 10.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(7.0, 8.0), Complex::new(9.0, 10.0)]);
         assert_eq!(v.first(), Some(&Complex::new(7.0, 8.0)));
         let empty = FlexVector::<Complex<f64>>::new();
         assert_eq!(empty.first(), None);
@@ -4042,7 +4040,7 @@ mod tests {
     // --- last ---
     #[test]
     fn test_last() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         assert_eq!(v.last(), Some(&3));
         let empty = FlexVector::<i32>::new();
         assert_eq!(empty.last(), None);
@@ -4050,7 +4048,7 @@ mod tests {
 
     #[test]
     fn test_last_f64() {
-        let v = FVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let v = ColFVector::from_vec(vec![1.5, 2.5, 3.5]);
         assert_eq!(v.last(), Some(&3.5));
         let empty = FlexVector::<f64>::new();
         assert_eq!(empty.last(), None);
@@ -4058,7 +4056,7 @@ mod tests {
 
     #[test]
     fn test_last_complex() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         assert_eq!(v.last(), Some(&Complex::new(3.0, 4.0)));
         let empty = FlexVector::<Complex<f64>>::new();
         assert_eq!(empty.last(), None);
@@ -4067,7 +4065,7 @@ mod tests {
     // --- iter ---
     #[test]
     fn test_iter() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let mut iter = v.iter();
         assert_eq!(iter.next(), Some(&1));
         assert_eq!(iter.next(), Some(&2));
@@ -4077,14 +4075,14 @@ mod tests {
 
     #[test]
     fn test_iter_f64() {
-        let v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         let collected: Vec<_> = v.iter().copied().collect();
         assert_eq!(collected, vec![1.1, 2.2, 3.3]);
     }
 
     #[test]
     fn test_iter_complex() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let collected: Vec<_> = v.iter().cloned().collect();
         assert_eq!(collected, vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0),]);
     }
@@ -4092,21 +4090,21 @@ mod tests {
     // --- iter_rev ---
     #[test]
     fn test_iter_rev() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let collected: Vec<_> = v.iter_rev().copied().collect();
         assert_eq!(collected, vec![3, 2, 1]);
     }
 
     #[test]
     fn test_iter_rev_f64() {
-        let v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         let collected: Vec<_> = v.iter_rev().copied().collect();
         assert_eq!(collected, vec![3.3, 2.2, 1.1]);
     }
 
     #[test]
     fn test_iter_rev_complex() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let collected: Vec<_> = v.iter_rev().cloned().collect();
         assert_eq!(collected, vec![Complex::new(3.0, 4.0), Complex::new(1.0, 2.0),]);
     }
@@ -4114,21 +4112,21 @@ mod tests {
     // --- enumerate ---
     #[test]
     fn test_enumerate() {
-        let v = FVector::from_vec(vec![10, 20, 30]);
+        let v = ColFVector::from_vec(vec![10, 20, 30]);
         let pairs: Vec<_> = v.enumerate().collect();
         assert_eq!(pairs, vec![(0, &10), (1, &20), (2, &30)]);
     }
 
     #[test]
     fn test_enumerate_f64() {
-        let v = FVector::from_vec(vec![1.5, 2.5]);
+        let v = ColFVector::from_vec(vec![1.5, 2.5]);
         let pairs: Vec<_> = v.enumerate().collect();
         assert_eq!(pairs, vec![(0, &1.5), (1, &2.5)]);
     }
 
     #[test]
     fn test_enumerate_complex() {
-        let v = FVector::from_vec(vec![Complex::new(0.0, 1.0), Complex::new(2.0, 3.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(0.0, 1.0), Complex::new(2.0, 3.0)]);
         let pairs: Vec<_> = v.enumerate().collect();
         assert_eq!(pairs, vec![(0, &Complex::new(0.0, 1.0)), (1, &Complex::new(2.0, 3.0)),]);
     }
@@ -4136,21 +4134,21 @@ mod tests {
     // --- to_vec ---
     #[test]
     fn test_to_vec() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let vec_copy = v.to_vec();
         assert_eq!(vec_copy, vec![1, 2, 3]);
     }
 
     #[test]
     fn test_to_vec_f64() {
-        let v = FVector::from_vec(vec![1.5, 2.5]);
+        let v = ColFVector::from_vec(vec![1.5, 2.5]);
         let vec_copy = v.to_vec();
         assert_eq!(vec_copy, vec![1.5, 2.5]);
     }
 
     #[test]
     fn test_to_vec_complex() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let vec_copy = v.to_vec();
         assert_eq!(vec_copy, vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0),]);
     }
@@ -4223,7 +4221,7 @@ mod tests {
     // --- pretty ---
     #[test]
     fn test_pretty() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let pretty = v.pretty();
         assert!(pretty.contains("1"));
         assert!(pretty.contains("2"));
@@ -4233,7 +4231,7 @@ mod tests {
 
     #[test]
     fn test_pretty_f64() {
-        let v = FVector::from_vec(vec![1.5, 2.5]);
+        let v = ColFVector::from_vec(vec![1.5, 2.5]);
         let pretty = v.pretty();
         assert!(pretty.contains("1.5"));
         assert!(pretty.contains("2.5"));
@@ -4242,7 +4240,7 @@ mod tests {
 
     #[test]
     fn test_pretty_complex() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let pretty = v.pretty();
         assert!(pretty.contains("1.0"));
         assert!(pretty.contains("2.0"));
@@ -4254,21 +4252,21 @@ mod tests {
     // --- contains ---
     #[test]
     fn test_contains() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         assert!(v.contains(&2));
         assert!(!v.contains(&4));
     }
 
     #[test]
     fn test_contains_f64() {
-        let v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         assert!(v.contains(&2.2));
         assert!(!v.contains(&4.4));
     }
 
     #[test]
     fn test_contains_complex() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         assert!(v.contains(&Complex::new(1.0, 2.0)));
         assert!(!v.contains(&Complex::new(0.0, 0.0)));
     }
@@ -4276,21 +4274,21 @@ mod tests {
     // --- starts_with ---
     #[test]
     fn test_starts_with() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         assert!(v.starts_with(&[1, 2]));
         assert!(!v.starts_with(&[2, 3]));
     }
 
     #[test]
     fn test_starts_with_f64() {
-        let v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         assert!(v.starts_with(&[1.1, 2.2]));
         assert!(!v.starts_with(&[2.2, 3.3]));
     }
 
     #[test]
     fn test_starts_with_complex() {
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(3.0, 4.0),
             Complex::new(5.0, 6.0),
@@ -4302,21 +4300,21 @@ mod tests {
     // --- ends_with ---
     #[test]
     fn test_ends_with() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         assert!(v.ends_with(&[2, 3]));
         assert!(!v.ends_with(&[1, 2]));
     }
 
     #[test]
     fn test_ends_with_f64() {
-        let v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         assert!(v.ends_with(&[2.2, 3.3]));
         assert!(!v.ends_with(&[1.1, 2.2]));
     }
 
     #[test]
     fn test_ends_with_complex() {
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(3.0, 4.0),
             Complex::new(5.0, 6.0),
@@ -4328,21 +4326,21 @@ mod tests {
     // --- position ---
     #[test]
     fn test_position() {
-        let v = FVector::from_vec(vec![10, 20, 30]);
+        let v = ColFVector::from_vec(vec![10, 20, 30]);
         assert_eq!(v.position(|&x| x == 20), Some(1));
         assert_eq!(v.position(|&x| x == 99), None);
     }
 
     #[test]
     fn test_position_f64() {
-        let v = FVector::from_vec(vec![10.0, 20.0, 30.0]);
+        let v = ColFVector::from_vec(vec![10.0, 20.0, 30.0]);
         assert_eq!(v.position(|&x| x == 20.0), Some(1));
         assert_eq!(v.position(|&x| x == 99.0), None);
     }
 
     #[test]
     fn test_position_complex() {
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 1.0),
             Complex::new(2.0, 2.0),
             Complex::new(3.0, 3.0),
@@ -4354,21 +4352,21 @@ mod tests {
     // --- rposition ---
     #[test]
     fn test_rposition() {
-        let v = FVector::from_vec(vec![1, 2, 3, 2]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 2]);
         assert_eq!(v.rposition(|&x| x == 2), Some(3));
         assert_eq!(v.rposition(|&x| x == 99), None);
     }
 
     #[test]
     fn test_rposition_f64() {
-        let v = FVector::from_vec(vec![1.0, 2.0, 3.0, 2.0]);
+        let v = ColFVector::from_vec(vec![1.0, 2.0, 3.0, 2.0]);
         assert_eq!(v.rposition(|&x| x == 2.0), Some(3));
         assert_eq!(v.rposition(|&x| x == 99.0), None);
     }
 
     #[test]
     fn test_rposition_complex() {
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 1.0),
             Complex::new(2.0, 2.0),
             Complex::new(3.0, 3.0),
@@ -4381,21 +4379,21 @@ mod tests {
     // --- windows ---
     #[test]
     fn test_windows() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4]);
         let windows: Vec<_> = v.windows(2).collect();
         assert_eq!(windows, vec![&[1, 2][..], &[2, 3][..], &[3, 4][..]]);
     }
 
     #[test]
     fn test_windows_f64() {
-        let v = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let windows: Vec<_> = v.windows(2).collect();
         assert_eq!(windows, vec![&[1.0, 2.0][..], &[2.0, 3.0][..]]);
     }
 
     #[test]
     fn test_windows_complex() {
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 0.0),
             Complex::new(2.0, 0.0),
             Complex::new(3.0, 0.0),
@@ -4413,21 +4411,21 @@ mod tests {
     // --- chunks ---
     #[test]
     fn test_chunks() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4, 5]);
         let chunks: Vec<_> = v.chunks(2).collect();
         assert_eq!(chunks, vec![&[1, 2][..], &[3, 4][..], &[5][..]]);
     }
 
     #[test]
     fn test_chunks_f64() {
-        let v = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let chunks: Vec<_> = v.chunks(2).collect();
         assert_eq!(chunks, vec![&[1.0, 2.0][..], &[3.0][..]]);
     }
 
     #[test]
     fn test_chunks_complex() {
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 0.0),
             Complex::new(2.0, 0.0),
             Complex::new(3.0, 0.0),
@@ -4445,7 +4443,7 @@ mod tests {
     // --- split_at ---
     #[test]
     fn test_split_at() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4]);
         let (left, right) = v.split_at(2);
         assert_eq!(left, &[1, 2]);
         assert_eq!(right, &[3, 4]);
@@ -4453,7 +4451,7 @@ mod tests {
 
     #[test]
     fn test_split_at_f64() {
-        let v = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let (left, right) = v.split_at(1);
         assert_eq!(left, &[1.0]);
         assert_eq!(right, &[2.0, 3.0]);
@@ -4461,7 +4459,7 @@ mod tests {
 
     #[test]
     fn test_split_at_complex() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 0.0), Complex::new(2.0, 0.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 0.0), Complex::new(2.0, 0.0)]);
         let (left, right) = v.split_at(1);
         assert_eq!(left, &[Complex::new(1.0, 0.0)]);
         assert_eq!(right, &[Complex::new(2.0, 0.0)]);
@@ -4470,21 +4468,21 @@ mod tests {
     // --- split ---
     #[test]
     fn test_split() {
-        let v = FVector::from_vec(vec![1, 2, 0, 3, 0, 4]);
+        let v = ColFVector::from_vec(vec![1, 2, 0, 3, 0, 4]);
         let splits: Vec<_> = v.split(|&x| x == 0).collect();
         assert_eq!(splits, vec![&[1, 2][..], &[3][..], &[4][..]]);
     }
 
     #[test]
     fn test_split_f64() {
-        let v = FVector::from_vec(vec![1.0, 0.0, 2.0, 0.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.0, 0.0, 2.0, 0.0, 3.0]);
         let splits: Vec<_> = v.split(|&x| x == 0.0).collect();
         assert_eq!(splits, vec![&[1.0][..], &[2.0][..], &[3.0][..]]);
     }
 
     #[test]
     fn test_split_complex() {
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 0.0),
             Complex::new(0.0, 0.0),
             Complex::new(2.0, 0.0),
@@ -4496,21 +4494,21 @@ mod tests {
     // --- splitn ---
     #[test]
     fn test_splitn() {
-        let v = FVector::from_vec(vec![1, 0, 2, 0, 3]);
+        let v = ColFVector::from_vec(vec![1, 0, 2, 0, 3]);
         let splits: Vec<_> = v.splitn(2, |&x| x == 0).collect();
         assert_eq!(splits, vec![&[1][..], &[2, 0, 3][..]]);
     }
 
     #[test]
     fn test_splitn_f64() {
-        let v = FVector::from_vec(vec![1.0, 0.0, 2.0, 0.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.0, 0.0, 2.0, 0.0, 3.0]);
         let splits: Vec<_> = v.splitn(2, |&x| x == 0.0).collect();
         assert_eq!(splits, vec![&[1.0][..], &[2.0, 0.0, 3.0][..]]);
     }
 
     #[test]
     fn test_splitn_complex() {
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 0.0),
             Complex::new(0.0, 0.0),
             Complex::new(2.0, 0.0),
@@ -4530,21 +4528,21 @@ mod tests {
     // --- rsplit ---
     #[test]
     fn test_rsplit() {
-        let v = FVector::from_vec(vec![1, 0, 2, 0, 3]);
+        let v = ColFVector::from_vec(vec![1, 0, 2, 0, 3]);
         let splits: Vec<_> = v.rsplit(|&x| x == 0).collect();
         assert_eq!(splits, vec![&[3][..], &[2][..], &[1][..]]);
     }
 
     #[test]
     fn test_rsplit_f64() {
-        let v = FVector::from_vec(vec![1.0, 0.0, 2.0, 0.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.0, 0.0, 2.0, 0.0, 3.0]);
         let splits: Vec<_> = v.rsplit(|&x| x == 0.0).collect();
         assert_eq!(splits, vec![&[3.0][..], &[2.0][..], &[1.0][..]]);
     }
 
     #[test]
     fn test_rsplit_complex() {
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 0.0),
             Complex::new(0.0, 0.0),
             Complex::new(2.0, 0.0),
@@ -4565,21 +4563,21 @@ mod tests {
     // --- rsplitn ---
     #[test]
     fn test_rsplitn() {
-        let v = FVector::from_vec(vec![1, 0, 2, 0, 3]);
+        let v = ColFVector::from_vec(vec![1, 0, 2, 0, 3]);
         let splits: Vec<_> = v.rsplitn(2, |&x| x == 0).collect();
         assert_eq!(splits, vec![&[3][..], &[1, 0, 2][..]]);
     }
 
     #[test]
     fn test_rsplitn_f64() {
-        let v = FVector::from_vec(vec![1.0, 0.0, 2.0, 0.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.0, 0.0, 2.0, 0.0, 3.0]);
         let splits: Vec<_> = v.rsplitn(2, |&x| x == 0.0).collect();
         assert_eq!(splits, vec![&[3.0][..], &[1.0, 0.0, 2.0][..]]);
     }
 
     #[test]
     fn test_rsplitn_complex() {
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 0.0),
             Complex::new(0.0, 0.0),
             Complex::new(2.0, 0.0),
@@ -4733,7 +4731,7 @@ mod tests {
     // --- push ---
     #[test]
     fn test_push() {
-        let mut v = FVector::new();
+        let mut v = ColFVector::new();
         v.push(1);
         v.push(2);
         assert_eq!(v.as_slice(), &[1, 2]);
@@ -4741,7 +4739,7 @@ mod tests {
 
     #[test]
     fn test_push_f64() {
-        let mut v = FVector::new();
+        let mut v = ColFVector::new();
         v.push(1.1);
         v.push(2.2);
         assert_eq!(v.as_slice(), &[1.1, 2.2]);
@@ -4749,7 +4747,7 @@ mod tests {
 
     #[test]
     fn test_push_complex() {
-        let mut v = FVector::new();
+        let mut v = ColFVector::new();
         v.push(Complex::new(1.0, 2.0));
         v.push(Complex::new(3.0, 4.0));
         assert_eq!(v.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
@@ -4758,7 +4756,7 @@ mod tests {
     // --- pop ---
     #[test]
     fn test_pop() {
-        let mut v = FVector::from_vec(vec![1, 2]);
+        let mut v = ColFVector::from_vec(vec![1, 2]);
         assert_eq!(v.pop(), Some(2));
         assert_eq!(v.pop(), Some(1));
         assert_eq!(v.pop(), None);
@@ -4766,7 +4764,7 @@ mod tests {
 
     #[test]
     fn test_pop_f64() {
-        let mut v = FVector::from_vec(vec![1.1, 2.2]);
+        let mut v = ColFVector::from_vec(vec![1.1, 2.2]);
         assert_eq!(v.pop(), Some(2.2));
         assert_eq!(v.pop(), Some(1.1));
         assert_eq!(v.pop(), None);
@@ -4774,7 +4772,7 @@ mod tests {
 
     #[test]
     fn test_pop_complex() {
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         assert_eq!(v.pop(), Some(Complex::new(3.0, 4.0)));
         assert_eq!(v.pop(), Some(Complex::new(1.0, 2.0)));
         assert_eq!(v.pop(), None);
@@ -4783,21 +4781,21 @@ mod tests {
     // --- insert ---
     #[test]
     fn test_insert() {
-        let mut v = FVector::from_vec(vec![1, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 3]);
         v.insert(1, 2);
         assert_eq!(v.as_slice(), &[1, 2, 3]);
     }
 
     #[test]
     fn test_insert_f64() {
-        let mut v = FVector::from_vec(vec![1.1, 3.3]);
+        let mut v = ColFVector::from_vec(vec![1.1, 3.3]);
         v.insert(1, 2.2);
         assert_eq!(v.as_slice(), &[1.1, 2.2, 3.3]);
     }
 
     #[test]
     fn test_insert_complex() {
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 1.0), Complex::new(3.0, 3.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 1.0), Complex::new(3.0, 3.0)]);
         v.insert(1, Complex::new(2.0, 2.0));
         assert_eq!(
             v.as_slice(),
@@ -4808,21 +4806,21 @@ mod tests {
     // --- remove ---
     #[test]
     fn test_remove() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         assert_eq!(v.remove(1), 2);
         assert_eq!(v.as_slice(), &[1, 3]);
     }
 
     #[test]
     fn test_remove_f64() {
-        let mut v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let mut v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         assert_eq!(v.remove(1), 2.2);
         assert_eq!(v.as_slice(), &[1.1, 3.3]);
     }
 
     #[test]
     fn test_remove_complex() {
-        let mut v = FVector::from_vec(vec![
+        let mut v = ColFVector::from_vec(vec![
             Complex::new(1.0, 1.0),
             Complex::new(2.0, 2.0),
             Complex::new(3.0, 3.0),
@@ -4834,7 +4832,7 @@ mod tests {
     // --- resize ---
     #[test]
     fn test_resize() {
-        let mut v = FVector::from_vec(vec![1, 2]);
+        let mut v = ColFVector::from_vec(vec![1, 2]);
         v.resize(4, 0);
         assert_eq!(v.as_slice(), &[1, 2, 0, 0]);
         v.resize(2, 0);
@@ -4843,7 +4841,7 @@ mod tests {
 
     #[test]
     fn test_resize_f64() {
-        let mut v = FVector::from_vec(vec![1.1, 2.2]);
+        let mut v = ColFVector::from_vec(vec![1.1, 2.2]);
         v.resize(4, 0.0);
         assert_eq!(v.as_slice(), &[1.1, 2.2, 0.0, 0.0]);
         v.resize(1, 0.0);
@@ -4852,7 +4850,7 @@ mod tests {
 
     #[test]
     fn test_resize_complex() {
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 1.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 1.0)]);
         v.resize(3, Complex::new(0.0, 0.0));
         assert_eq!(
             v.as_slice(),
@@ -4865,7 +4863,7 @@ mod tests {
     // --- clear ---
     #[test]
     fn test_clear() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         assert!(!v.is_empty());
         v.clear();
         assert!(v.is_empty());
@@ -4873,7 +4871,7 @@ mod tests {
 
     #[test]
     fn test_clear_f64() {
-        let mut v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let mut v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         assert!(!v.is_empty());
         v.clear();
         assert!(v.is_empty());
@@ -4881,7 +4879,7 @@ mod tests {
 
     #[test]
     fn test_clear_complex() {
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 1.0), Complex::new(2.0, 2.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 1.0), Complex::new(2.0, 2.0)]);
         assert!(!v.is_empty());
         v.clear();
         assert!(v.is_empty());
@@ -4890,7 +4888,7 @@ mod tests {
     // --- get_mut ---
     #[test]
     fn test_get_mut_single() {
-        let mut v = FVector::from_vec(vec![10, 20, 30]);
+        let mut v = ColFVector::from_vec(vec![10, 20, 30]);
         if let Some(x) = v.get_mut(1) {
             *x = 99;
         }
@@ -4899,13 +4897,13 @@ mod tests {
 
     #[test]
     fn test_get_mut_out_of_bounds() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         assert!(v.get_mut(10).is_none());
     }
 
     #[test]
     fn test_get_mut_range() {
-        let mut v = FVector::from_vec(vec![1, 2, 3, 4]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3, 4]);
         if let Some(slice) = v.get_mut(1..3) {
             slice[0] = 20;
             slice[1] = 30;
@@ -4915,7 +4913,7 @@ mod tests {
 
     #[test]
     fn test_get_mut_full_range() {
-        let mut v = FVector::from_vec(vec![5, 6, 7]);
+        let mut v = ColFVector::from_vec(vec![5, 6, 7]);
         if let Some(slice) = v.get_mut(..) {
             for x in slice {
                 *x *= 2;
@@ -4927,7 +4925,7 @@ mod tests {
     // --- iter_mut ---
     #[test]
     fn test_iter_mut_i32() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         for x in v.iter_mut() {
             *x *= 2;
         }
@@ -4936,7 +4934,7 @@ mod tests {
 
     #[test]
     fn test_iter_mut_f64() {
-        let mut v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let mut v = ColFVector::from_vec(vec![1.5, -2.0, 0.0]);
         for x in v.iter_mut() {
             *x += 1.0;
         }
@@ -4946,7 +4944,7 @@ mod tests {
     #[test]
     fn test_iter_mut_complex() {
         use num::Complex;
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         for x in v.iter_mut() {
             x.re += 1.0;
             x.im *= 2.0;
@@ -4956,7 +4954,7 @@ mod tests {
 
     #[test]
     fn test_iter_mut_empty() {
-        let mut v = FVector::<i32>::new();
+        let mut v = ColFVector::<i32>::new();
         let mut count = 0;
         for _ in v.iter_mut() {
             count += 1;
@@ -4967,7 +4965,7 @@ mod tests {
     // --- as_mut_slice ---
     #[test]
     fn test_as_mut_slice_i32() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         let slice = v.as_mut_slice();
         slice[0] = 10;
         slice[2] = 30;
@@ -4976,7 +4974,7 @@ mod tests {
 
     #[test]
     fn test_as_mut_slice_f64() {
-        let mut v = FVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let mut v = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
         let slice = v.as_mut_slice();
         slice[1] = 9.9;
         assert_eq!(v.as_slice(), &[1.1, 9.9, 3.3]);
@@ -4985,7 +4983,7 @@ mod tests {
     #[test]
     fn test_as_mut_slice_complex() {
         use num::Complex;
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let slice = v.as_mut_slice();
         slice[0].re = 10.0;
         slice[1].im = 40.0;
@@ -4994,7 +4992,7 @@ mod tests {
 
     #[test]
     fn test_as_mut_slice_empty() {
-        let mut v = FVector::<i32>::new();
+        let mut v = ColFVector::<i32>::new();
         let slice = v.as_mut_slice();
         assert_eq!(slice.len(), 0);
     }
@@ -5002,7 +5000,7 @@ mod tests {
     // --- map ---
     #[test]
     fn test_map_i32() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let squared = v.map(|x| x * x);
         assert_eq!(squared.as_slice(), &[1, 4, 9]);
         // original unchanged
@@ -5011,7 +5009,7 @@ mod tests {
 
     #[test]
     fn test_map_f64() {
-        let v: FlexVector<f64> = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let v: FlexVector<f64> = ColFVector::from_vec(vec![1.5, -2.0, 0.0]);
         let abs = v.map(|x| x.abs());
         assert_eq!(abs.as_slice(), &[1.5, 2.0, 0.0]);
     }
@@ -5019,7 +5017,7 @@ mod tests {
     #[test]
     fn test_map_complex() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         let conj = v.map(|x| x.conj());
         assert_eq!(conj.as_slice(), &[Complex::new(1.0, -2.0), Complex::new(-3.0, -4.0)]);
     }
@@ -5033,7 +5031,7 @@ mod tests {
 
     #[test]
     fn test_map_with_fn_pointer() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let squared = v.map(square);
         assert_eq!(squared.as_slice(), &[1, 4, 9]);
     }
@@ -5041,21 +5039,21 @@ mod tests {
     // --- mut_map ---
     #[test]
     fn test_mut_map_i32() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         v.mut_map(|x| x * 10);
         assert_eq!(v.as_slice(), &[10, 20, 30]);
     }
 
     #[test]
     fn test_mut_map_f64() {
-        let mut v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let mut v = ColFVector::from_vec(vec![1.5, -2.0, 0.0]);
         v.mut_map(|x| x + 1.0);
         assert_eq!(v.as_slice(), &[2.5, -1.0, 1.0]);
     }
 
     #[test]
     fn test_mut_map_complex() {
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         v.mut_map(|x| Complex::new(x.re + 1.0, x.im * 2.0));
         assert_eq!(v.as_slice(), &[Complex::new(2.0, 4.0), Complex::new(-2.0, 8.0)]);
     }
@@ -5069,7 +5067,7 @@ mod tests {
 
     #[test]
     fn test_mut_map_with_fn_pointer() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         v.mut_map(double);
         assert_eq!(v.as_slice(), &[2, 4, 6]);
     }
@@ -5077,28 +5075,28 @@ mod tests {
     // --- flat_map ---
     #[test]
     fn test_flat_map_i32_basic() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let flat = v.flat_map(|x| vec![x, x * 10]);
         assert_eq!(flat.as_slice(), &[1, 10, 2, 20, 3, 30]);
     }
 
     #[test]
     fn test_flat_map_i32_empty_inner() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let flat = v.flat_map(|x| if x % 2 == 0 { vec![] } else { vec![x] });
         assert_eq!(flat.as_slice(), &[1, 3]);
     }
 
     #[test]
     fn test_flat_map_i32_option() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4]);
         let flat = v.flat_map(|x| if x % 2 == 0 { Some(x) } else { None });
         assert_eq!(flat.as_slice(), &[2, 4]);
     }
 
     #[test]
     fn test_flat_map_f64_basic() {
-        let v = FVector::from_vec(vec![1.0, 2.0]);
+        let v = ColFVector::from_vec(vec![1.0, 2.0]);
         let flat = v.flat_map(|x| vec![x, x + 0.5]);
         assert_eq!(flat.as_slice(), &[1.0, 1.5, 2.0, 2.5]);
     }
@@ -5112,7 +5110,7 @@ mod tests {
 
     #[test]
     fn test_flat_map_f64_nan_infinity() {
-        let v = FVector::from_vec(vec![f64::NAN, f64::INFINITY, 1.0]);
+        let v = ColFVector::from_vec(vec![f64::NAN, f64::INFINITY, 1.0]);
         let flat = v.flat_map(|x| vec![x]);
         assert!(flat.as_slice()[0].is_nan());
         assert_eq!(flat.as_slice()[1], f64::INFINITY);
@@ -5122,7 +5120,7 @@ mod tests {
     #[test]
     fn test_flat_map_complex_f64_basic() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let flat = v.flat_map(|z| vec![z, z.conj()]);
         assert_eq!(
             flat.as_slice(),
@@ -5138,7 +5136,7 @@ mod tests {
     #[test]
     fn test_flat_map_complex_f64_empty_inner() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(0.0, 0.0), Complex::new(1.0, 1.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(0.0, 0.0), Complex::new(1.0, 1.0)]);
         let flat = v.flat_map(|z| if z == Complex::new(0.0, 0.0) { vec![] } else { vec![z] });
         assert_eq!(flat.as_slice(), &[Complex::new(1.0, 1.0)]);
     }
@@ -5146,7 +5144,7 @@ mod tests {
     #[test]
     fn test_flat_map_complex_f64_option() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)]);
         let flat = v.flat_map(|z| if z.im == 0.0 { Some(z) } else { None });
         assert_eq!(flat.as_slice(), &[Complex::new(1.0, 0.0), Complex::new(0.0, 0.0)]);
     }
@@ -5160,7 +5158,7 @@ mod tests {
 
     #[test]
     fn test_flat_map_all_empty_inner() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let flat = v.flat_map(|_| Vec::<i32>::new());
         assert!(flat.is_empty());
     }
@@ -5169,35 +5167,35 @@ mod tests {
 
     #[test]
     fn test_filter_i32_basic() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4, 5]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4, 5]);
         let filtered = v.filter(|&x| x % 2 == 0);
         assert_eq!(filtered.as_slice(), &[2, 4]);
     }
 
     #[test]
     fn test_filter_i32_all_false() {
-        let v = FVector::from_vec(vec![1, 3, 5]);
+        let v = ColFVector::from_vec(vec![1, 3, 5]);
         let filtered = v.filter(|&x| x > 10);
         assert!(filtered.is_empty());
     }
 
     #[test]
     fn test_filter_i32_all_true() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let filtered = v.filter(|_| true);
         assert_eq!(filtered.as_slice(), &[1, 2, 3]);
     }
 
     #[test]
     fn test_filter_f64_positive() {
-        let v = FVector::from_vec(vec![-1.5, 0.0, 2.5, 3.3]);
+        let v = ColFVector::from_vec(vec![-1.5, 0.0, 2.5, 3.3]);
         let filtered = v.filter(|&x| x > 0.0);
         assert_eq!(filtered.as_slice(), &[2.5, 3.3]);
     }
 
     #[test]
     fn test_filter_f64_nan() {
-        let v = FVector::from_vec(vec![1.0, f64::NAN, 2.0]);
+        let v = ColFVector::from_vec(vec![1.0, f64::NAN, 2.0]);
         let filtered = v.filter(|&x| x.is_nan());
         assert_eq!(filtered.len(), 1);
         assert!(filtered[0].is_nan());
@@ -5206,7 +5204,7 @@ mod tests {
     #[test]
     fn test_filter_complex_f64_real_positive() {
         use num::Complex;
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(-3.0, 4.0),
             Complex::new(0.0, 0.0),
@@ -5218,7 +5216,7 @@ mod tests {
     #[test]
     fn test_filter_complex_f64_imag_nonzero() {
         use num::Complex;
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 0.0),
             Complex::new(0.0, 2.0),
             Complex::new(3.0, 0.0),
@@ -5229,7 +5227,7 @@ mod tests {
 
     #[test]
     fn test_filter_empty() {
-        let v: FlexVector<i32> = FVector::new();
+        let v: FlexVector<i32> = ColFVector::new();
         let filtered = v.filter(|&x| x > 0);
         assert!(filtered.is_empty());
     }
@@ -5238,42 +5236,42 @@ mod tests {
 
     #[test]
     fn test_reduce_i32_sum() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4]);
         let sum = v.reduce(|a, b| a + b);
         assert_eq!(sum, Some(10));
     }
 
     #[test]
     fn test_reduce_i32_product() {
-        let v = FVector::from_vec(vec![2, 3, 4]);
+        let v = ColFVector::from_vec(vec![2, 3, 4]);
         let product = v.reduce(|a, b| a * b);
         assert_eq!(product, Some(24));
     }
 
     #[test]
     fn test_reduce_i32_empty() {
-        let v: FlexVector<i32> = FVector::new();
+        let v: FlexVector<i32> = ColFVector::new();
         let result = v.reduce(|a, b| a + b);
         assert_eq!(result, None);
     }
 
     #[test]
     fn test_reduce_f64_sum() {
-        let v = FVector::from_vec(vec![1.5, 2.5, 3.0]);
+        let v = ColFVector::from_vec(vec![1.5, 2.5, 3.0]);
         let sum = v.reduce(|a, b| a + b);
         assert_eq!(sum, Some(7.0));
     }
 
     #[test]
     fn test_reduce_f64_product() {
-        let v = FVector::from_vec(vec![1.5, 2.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.5, 2.0, 3.0]);
         let product = v.reduce(|a, b| a * b);
         assert!((product.unwrap() - 9.0).abs() < 1e-12);
     }
 
     #[test]
     fn test_reduce_f64_empty() {
-        let v: FlexVector<f64> = FVector::new();
+        let v: FlexVector<f64> = ColFVector::new();
         let result = v.reduce(|a, b| a + b);
         assert_eq!(result, None);
     }
@@ -5281,7 +5279,7 @@ mod tests {
     #[test]
     fn test_reduce_complex_f64_sum() {
         use num::Complex;
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(3.0, 4.0),
             Complex::new(5.0, 6.0),
@@ -5293,7 +5291,7 @@ mod tests {
     #[test]
     fn test_reduce_complex_f64_product() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let product = v.reduce(|a, b| a * b);
         assert_eq!(product, Some(Complex::new(-5.0, 10.0))); // (1+2i)*(3+4i) = -5+10i
     }
@@ -5301,7 +5299,7 @@ mod tests {
     #[test]
     fn test_reduce_complex_f64_empty() {
         use num::Complex;
-        let v: FlexVector<Complex<f64>> = FVector::new();
+        let v: FlexVector<Complex<f64>> = ColFVector::new();
         let result = v.reduce(|a, b| a + b);
         assert_eq!(result, None);
     }
@@ -5310,42 +5308,42 @@ mod tests {
 
     #[test]
     fn test_fold_i32_sum() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4]);
         let sum = v.fold(0, |acc, x| acc + x);
         assert_eq!(sum, 10);
     }
 
     #[test]
     fn test_fold_i32_product() {
-        let v = FVector::from_vec(vec![2, 3, 4]);
+        let v = ColFVector::from_vec(vec![2, 3, 4]);
         let product = v.fold(1, |acc, x| acc * x);
         assert_eq!(product, 24);
     }
 
     #[test]
     fn test_fold_i32_empty() {
-        let v: FlexVector<i32> = FVector::new();
+        let v: FlexVector<i32> = ColFVector::new();
         let sum = v.fold(0, |acc, x| acc + x);
         assert_eq!(sum, 0);
     }
 
     #[test]
     fn test_fold_f64_sum() {
-        let v = FVector::from_vec(vec![1.5, 2.5, 3.0]);
+        let v = ColFVector::from_vec(vec![1.5, 2.5, 3.0]);
         let sum = v.fold(0.0, |acc, x| acc + x);
         assert!((sum - 7.0).abs() < 1e-12);
     }
 
     #[test]
     fn test_fold_f64_product() {
-        let v = FVector::from_vec(vec![1.5, 2.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.5, 2.0, 3.0]);
         let product = v.fold(1.0, |acc, x| acc * x);
         assert!((product - 9.0).abs() < 1e-12);
     }
 
     #[test]
     fn test_fold_f64_empty() {
-        let v: FlexVector<f64> = FVector::new();
+        let v: FlexVector<f64> = ColFVector::new();
         let sum = v.fold(0.0, |acc, x| acc + x);
         assert_eq!(sum, 0.0);
     }
@@ -5353,7 +5351,7 @@ mod tests {
     #[test]
     fn test_fold_complex_f64_sum() {
         use num::Complex;
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(3.0, 4.0),
             Complex::new(5.0, 6.0),
@@ -5365,7 +5363,7 @@ mod tests {
     #[test]
     fn test_fold_complex_f64_product() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let product = v.fold(Complex::new(1.0, 0.0), |acc, x| acc * x);
         assert_eq!(product, Complex::new(-5.0, 10.0)); // (1+0i)*(1+2i)*(3+4i) = (1+2i)*(3+4i) = -5+10i
     }
@@ -5373,7 +5371,7 @@ mod tests {
     #[test]
     fn test_fold_complex_f64_empty() {
         use num::Complex;
-        let v: FlexVector<Complex<f64>> = FVector::new();
+        let v: FlexVector<Complex<f64>> = ColFVector::new();
         let sum = v.fold(Complex::new(0.0, 0.0), |acc, x| acc + x);
         assert_eq!(sum, Complex::new(0.0, 0.0));
     }
@@ -5381,7 +5379,7 @@ mod tests {
     // --- zip ---
     #[test]
     fn test_zip_i32() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let zipped = v1.zip(v2);
         assert_eq!(zipped.as_slice(), &[(1, 4), (2, 5), (3, 6)]);
@@ -5389,8 +5387,8 @@ mod tests {
 
     #[test]
     fn test_zip_f64() {
-        let v1 = FVector::from_vec(vec![1.1, 2.2, 3.3]);
-        let v2 = FVector::from_vec(vec![4.4, 5.5, 6.6]);
+        let v1 = ColFVector::from_vec(vec![1.1, 2.2, 3.3]);
+        let v2 = ColFVector::from_vec(vec![4.4, 5.5, 6.6]);
         let zipped = v1.zip(v2);
         assert_eq!(zipped.as_slice(), &[(1.1, 4.4), (2.2, 5.5), (3.3, 6.6)]);
     }
@@ -5398,8 +5396,8 @@ mod tests {
     #[test]
     fn test_zip_complex_f64() {
         use num::Complex;
-        let v1 = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
-        let v2 = FVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = ColFVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
         let zipped = v1.zip(v2);
         assert_eq!(
             zipped.as_slice(),
@@ -5412,16 +5410,16 @@ mod tests {
 
     #[test]
     fn test_zip_different_lengths() {
-        let v1 = FVector::from_vec(vec![1, 2]);
-        let v2 = FVector::from_vec(vec![3, 4, 5]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
+        let v2 = ColFVector::from_vec(vec![3, 4, 5]);
         let zipped = v1.zip(v2);
         assert_eq!(zipped.as_slice(), &[(1, 3), (2, 4)]);
     }
 
     #[test]
     fn test_zip_empty() {
-        let v1: FlexVector<i32> = FVector::new();
-        let v2: FlexVector<i32> = FVector::new();
+        let v1: FlexVector<i32> = ColFVector::new();
+        let v2: FlexVector<i32> = ColFVector::new();
         let zipped = v1.zip(v2);
         assert!(zipped.is_empty());
     }
@@ -5429,16 +5427,16 @@ mod tests {
     // --- zip_with ---
     #[test]
     fn test_zip_with_i32() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
-        let v2 = FVector::from_vec(vec![4, 5, 6]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
+        let v2 = ColFVector::from_vec(vec![4, 5, 6]);
         let summed = v1.zip_with(v2, |a, b| a + b);
         assert_eq!(summed.as_slice(), &[5, 7, 9]);
     }
 
     #[test]
     fn test_zip_with_f64() {
-        let v1 = FVector::from_vec(vec![1.5, 2.5, 3.5]);
-        let v2 = FVector::from_vec(vec![4.5, 5.5, 6.5]);
+        let v1 = ColFVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let v2 = ColFVector::from_vec(vec![4.5, 5.5, 6.5]);
         let prod = v1.zip_with(v2, |a, b| a * b);
         assert_eq!(prod.as_slice(), &[6.75, 13.75, 22.75]);
     }
@@ -5446,16 +5444,16 @@ mod tests {
     #[test]
     fn test_zip_with_complex_f64() {
         use num::Complex;
-        let v1 = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
-        let v2 = FVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v2 = ColFVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
         let sum = v1.zip_with(v2, |a, b| a + b);
         assert_eq!(sum.as_slice(), &[Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
     }
 
     #[test]
     fn test_zip_with_different_lengths() {
-        let v1 = FVector::from_vec(vec![1, 2]);
-        let v2 = FVector::from_vec(vec![10, 20, 30]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
+        let v2 = ColFVector::from_vec(vec![10, 20, 30]);
         let zipped = v1.zip_with(v2, |a, b| a + b);
         assert_eq!(zipped.as_slice(), &[11, 22]);
     }
@@ -5472,28 +5470,28 @@ mod tests {
 
     #[test]
     fn test_step_by_i32_basic() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4, 5, 6]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4, 5, 6]);
         let stepped = v.step_by(2).unwrap();
         assert_eq!(stepped.as_slice(), &[1, 3, 5]);
     }
 
     #[test]
     fn test_step_by_i32_step_one() {
-        let v = FVector::from_vec(vec![10, 20, 30]);
+        let v = ColFVector::from_vec(vec![10, 20, 30]);
         let stepped = v.step_by(1).unwrap();
         assert_eq!(stepped.as_slice(), &[10, 20, 30]);
     }
 
     #[test]
     fn test_step_by_i32_step_equals_len() {
-        let v = FVector::from_vec(vec![7, 8, 9]);
+        let v = ColFVector::from_vec(vec![7, 8, 9]);
         let stepped = v.step_by(3).unwrap();
         assert_eq!(stepped.as_slice(), &[7]);
     }
 
     #[test]
     fn test_step_by_i32_step_greater_than_len() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let stepped = v.step_by(5).unwrap();
         assert_eq!(stepped.as_slice(), &[1]);
     }
@@ -5507,14 +5505,14 @@ mod tests {
 
     #[test]
     fn test_step_by_i32_zero_step() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let result = v.step_by(0);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_step_by_f64_basic() {
-        let v = FVector::from_vec(vec![1.0, 2.0, 3.0, 4.0]);
+        let v = ColFVector::from_vec(vec![1.0, 2.0, 3.0, 4.0]);
         let stepped = v.step_by(2).unwrap();
         assert_eq!(stepped.as_slice(), &[1.0, 3.0]);
     }
@@ -5528,7 +5526,7 @@ mod tests {
 
     #[test]
     fn test_step_by_f64_zero_step() {
-        let v = FVector::from_vec(vec![1.1, 2.2]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2]);
         let result = v.step_by(0);
         assert!(result.is_err());
     }
@@ -5536,7 +5534,7 @@ mod tests {
     #[test]
     fn test_step_by_complex_f64_basic() {
         use num::Complex;
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(3.0, 4.0),
             Complex::new(5.0, 6.0),
@@ -5557,7 +5555,7 @@ mod tests {
     #[test]
     fn test_step_by_complex_f64_zero_step() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0)]);
         let result = v.step_by(0);
         assert!(result.is_err());
     }
@@ -5566,28 +5564,28 @@ mod tests {
 
     #[test]
     fn test_create_mask_i32_greater_than() {
-        let v = FVector::from_vec(vec![1, 5, 3, 7]);
+        let v = ColFVector::from_vec(vec![1, 5, 3, 7]);
         let mask = v.create_mask(|&x| x > 3);
         assert_eq!(mask.as_slice(), &[false, true, false, true]);
     }
 
     #[test]
     fn test_create_mask_i32_even() {
-        let v = FVector::from_vec(vec![2, 3, 4, 5]);
+        let v = ColFVector::from_vec(vec![2, 3, 4, 5]);
         let mask = v.create_mask(|&x| x % 2 == 0);
         assert_eq!(mask.as_slice(), &[true, false, true, false]);
     }
 
     #[test]
     fn test_create_mask_f64_positive() {
-        let v = FVector::from_vec(vec![-1.0, 0.0, 2.5, -3.3]);
+        let v = ColFVector::from_vec(vec![-1.0, 0.0, 2.5, -3.3]);
         let mask = v.create_mask(|&x| x > 0.0);
         assert_eq!(mask.as_slice(), &[false, false, true, false]);
     }
 
     #[test]
     fn test_create_mask_f64_nan() {
-        let v = FVector::from_vec(vec![1.0, f64::NAN, 2.0]);
+        let v = ColFVector::from_vec(vec![1.0, f64::NAN, 2.0]);
         let mask = v.create_mask(|&x| x.is_nan());
         assert_eq!(mask.as_slice(), &[false, true, false]);
     }
@@ -5595,7 +5593,7 @@ mod tests {
     #[test]
     fn test_create_mask_complex_f64_real_positive() {
         use num::Complex;
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(-3.0, 4.0),
             Complex::new(0.0, 0.0),
@@ -5607,7 +5605,7 @@ mod tests {
     #[test]
     fn test_create_mask_complex_f64_imag_nonzero() {
         use num::Complex;
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 0.0),
             Complex::new(0.0, 2.0),
             Complex::new(3.0, 0.0),
@@ -5618,7 +5616,7 @@ mod tests {
 
     #[test]
     fn test_create_mask_empty() {
-        let v: FlexVector<i32> = FVector::new();
+        let v: FlexVector<i32> = ColFVector::new();
         let mask = v.create_mask(|&x| x > 0);
         assert!(mask.is_empty());
     }
@@ -5627,7 +5625,7 @@ mod tests {
 
     #[test]
     fn test_filter_by_mask_i32_basic() {
-        let v = FVector::from_vec(vec![10, 20, 30, 40]);
+        let v = ColFVector::from_vec(vec![10, 20, 30, 40]);
         let mask = vec![false, true, false, true];
         let filtered = v.filter_by_mask(&mask).unwrap();
         assert_eq!(filtered.as_slice(), &[20, 40]);
@@ -5635,7 +5633,7 @@ mod tests {
 
     #[test]
     fn test_filter_by_mask_i32_all_true() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let mask = vec![true, true, true];
         let filtered = v.filter_by_mask(&mask).unwrap();
         assert_eq!(filtered.as_slice(), &[1, 2, 3]);
@@ -5643,7 +5641,7 @@ mod tests {
 
     #[test]
     fn test_filter_by_mask_i32_all_false() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let mask = vec![false, false, false];
         let filtered = v.filter_by_mask(&mask).unwrap();
         assert!(filtered.is_empty());
@@ -5659,7 +5657,7 @@ mod tests {
 
     #[test]
     fn test_filter_by_mask_i32_mismatched_length() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let mask = vec![true, false];
         let result = v.filter_by_mask(&mask);
         assert!(result.is_err());
@@ -5667,7 +5665,7 @@ mod tests {
 
     #[test]
     fn test_filter_by_mask_f64_basic() {
-        let v = FVector::from_vec(vec![1.1, 2.2, 3.3, 4.4]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2, 3.3, 4.4]);
         let mask = vec![true, false, true, false];
         let filtered = v.filter_by_mask(&mask).unwrap();
         assert_eq!(filtered.as_slice(), &[1.1, 3.3]);
@@ -5675,7 +5673,7 @@ mod tests {
 
     #[test]
     fn test_filter_by_mask_f64_all_true() {
-        let v = FVector::from_vec(vec![1.1, 2.2]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2]);
         let mask = vec![true, true];
         let filtered = v.filter_by_mask(&mask).unwrap();
         assert_eq!(filtered.as_slice(), &[1.1, 2.2]);
@@ -5683,7 +5681,7 @@ mod tests {
 
     #[test]
     fn test_filter_by_mask_f64_all_false() {
-        let v = FVector::from_vec(vec![1.1, 2.2]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2]);
         let mask = vec![false, false];
         let filtered = v.filter_by_mask(&mask).unwrap();
         assert!(filtered.is_empty());
@@ -5699,7 +5697,7 @@ mod tests {
 
     #[test]
     fn test_filter_by_mask_f64_mismatched_length() {
-        let v = FVector::from_vec(vec![1.1, 2.2]);
+        let v = ColFVector::from_vec(vec![1.1, 2.2]);
         let mask = vec![true];
         let result = v.filter_by_mask(&mask);
         assert!(result.is_err());
@@ -5708,7 +5706,7 @@ mod tests {
     #[test]
     fn test_filter_by_mask_complex_f64_basic() {
         use num::Complex;
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(3.0, 4.0),
             Complex::new(5.0, 6.0),
@@ -5721,7 +5719,7 @@ mod tests {
     #[test]
     fn test_filter_by_mask_complex_f64_all_true() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let mask = vec![true, true];
         let filtered = v.filter_by_mask(&mask).unwrap();
         assert_eq!(filtered.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
@@ -5730,7 +5728,7 @@ mod tests {
     #[test]
     fn test_filter_by_mask_complex_f64_all_false() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let mask = vec![false, false];
         let filtered = v.filter_by_mask(&mask).unwrap();
         assert!(filtered.is_empty());
@@ -5748,7 +5746,7 @@ mod tests {
     #[test]
     fn test_filter_by_mask_complex_f64_mismatched_length() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0)]);
         let mask = vec![true, false];
         let result = v.filter_by_mask(&mask);
         assert!(result.is_err());
@@ -5758,38 +5756,38 @@ mod tests {
 
     #[test]
     fn test_broadcast_to_i32() {
-        let v = FVector::from_vec(vec![1, 2]);
+        let v = ColFVector::from_vec(vec![1, 2]);
         let b = v.broadcast_to(5).unwrap();
         assert_eq!(b.as_slice(), &[1, 2, 1, 2, 1]);
 
-        let v = FVector::from_vec(vec![7]);
+        let v = ColFVector::from_vec(vec![7]);
         let b = v.broadcast_to(4).unwrap();
         assert_eq!(b.as_slice(), &[7, 7, 7, 7]);
 
-        let v: FlexVector<i32, Column> = FVector::from_vec(vec![]);
+        let v: FlexVector<i32, Column> = ColFVector::from_vec(vec![]);
         let b = v.broadcast_to(0).unwrap();
         assert!(b.is_empty());
 
-        let v: FlexVector<i32, Column> = FVector::from_vec(vec![]);
+        let v: FlexVector<i32, Column> = ColFVector::from_vec(vec![]);
         let result = v.broadcast_to(3);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_broadcast_to_f64() {
-        let v = FVector::from_vec(vec![1.5, -2.0]);
+        let v = ColFVector::from_vec(vec![1.5, -2.0]);
         let b = v.broadcast_to(5).unwrap();
         assert_eq!(b.as_slice(), &[1.5, -2.0, 1.5, -2.0, 1.5]);
 
-        let v = FVector::from_vec(vec![3.14]);
+        let v = ColFVector::from_vec(vec![3.14]);
         let b = v.broadcast_to(3).unwrap();
         assert_eq!(b.as_slice(), &[3.14, 3.14, 3.14]);
 
-        let v: FlexVector<f64, Column> = FVector::from_vec(vec![]);
+        let v: FlexVector<f64, Column> = ColFVector::from_vec(vec![]);
         let b = v.broadcast_to(0).unwrap();
         assert!(b.is_empty());
 
-        let v: FlexVector<f64, Column> = FVector::from_vec(vec![]);
+        let v: FlexVector<f64, Column> = ColFVector::from_vec(vec![]);
         let result = v.broadcast_to(2);
         assert!(result.is_err());
     }
@@ -5797,7 +5795,7 @@ mod tests {
     #[test]
     fn test_broadcast_to_complex_f64() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         let b = v.broadcast_to(5).unwrap();
         assert_eq!(
             b.as_slice(),
@@ -5810,18 +5808,18 @@ mod tests {
             ]
         );
 
-        let v = FVector::from_vec(vec![Complex::new(0.0, 1.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(0.0, 1.0)]);
         let b = v.broadcast_to(3).unwrap();
         assert_eq!(
             b.as_slice(),
             &[Complex::new(0.0, 1.0), Complex::new(0.0, 1.0), Complex::new(0.0, 1.0)]
         );
 
-        let v: FlexVector<Complex<f64>, Column> = FVector::from_vec(vec![]);
+        let v: FlexVector<Complex<f64>, Column> = ColFVector::from_vec(vec![]);
         let b = v.broadcast_to(0).unwrap();
         assert!(b.is_empty());
 
-        let v: FlexVector<Complex<f64>, Column> = FVector::from_vec(vec![]);
+        let v: FlexVector<Complex<f64>, Column> = ColFVector::from_vec(vec![]);
         let result = v.broadcast_to(1);
         assert!(result.is_err());
     }
@@ -5945,7 +5943,7 @@ mod tests {
     // -- translate --
     #[test]
     fn test_translate_i32() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let result = v1.translate(&v2).unwrap();
         assert_eq!(result.as_slice(), &[5, 7, 9]);
@@ -5953,7 +5951,7 @@ mod tests {
 
     #[test]
     fn test_translate_f64() {
-        let v1 = FVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let v1 = ColFVector::from_vec(vec![1.5, 2.5, 3.5]);
         let v2 = FlexVector::from_vec(vec![0.5, 1.5, 2.5]);
         let result = v1.translate(&v2).unwrap();
         assert_eq!(result.as_slice(), &[2.0, 4.0, 6.0]);
@@ -5961,7 +5959,7 @@ mod tests {
 
     #[test]
     fn test_translate_complex_f64() {
-        let v1 = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
         let result = v1.translate(&v2).unwrap();
         assert_eq!(result.as_slice(), &[Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
@@ -5969,7 +5967,7 @@ mod tests {
 
     #[test]
     fn test_translate_mismatched_lengths() {
-        let v1 = FVector::from_vec(vec![1, 2]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let result = v1.translate(&v2);
         assert!(result.is_err());
@@ -5979,7 +5977,7 @@ mod tests {
 
     #[test]
     fn test_translate_into_i32() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let mut out = [0; 3];
         v1.translate_into(&v2, &mut out).unwrap();
@@ -5989,7 +5987,7 @@ mod tests {
 
     #[test]
     fn test_translate_into_f64() {
-        let v1 = FVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let v1 = ColFVector::from_vec(vec![1.5, 2.5, 3.5]);
         let v2 = FlexVector::from_vec(vec![0.5, 1.5, 2.5]);
         let mut out = [0.0; 3];
         v1.translate_into(&v2, &mut out).unwrap();
@@ -6000,7 +5998,7 @@ mod tests {
     #[test]
     fn test_translate_into_complex_f64() {
         use num::Complex;
-        let v1 = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
         let mut out = [Complex::new(0.0, 0.0); 2];
         v1.translate_into(&v2, &mut out).unwrap();
@@ -6010,7 +6008,7 @@ mod tests {
 
     #[test]
     fn test_translate_into_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let mut out = [0; 2];
         let result = v1.translate_into(&v2, &mut out);
@@ -6020,7 +6018,7 @@ mod tests {
     // -- mut_translate --
     #[test]
     fn test_mut_translate_i32() {
-        let mut v1 = FVector::from_vec(vec![1, 2, 3]);
+        let mut v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         v1.mut_translate(&v2).unwrap();
         assert_eq!(v1.as_slice(), &[5, 7, 9]);
@@ -6028,7 +6026,7 @@ mod tests {
 
     #[test]
     fn test_mut_translate_f64() {
-        let mut v1 = FVector::from_vec(vec![1.5, 2.5, 3.5]);
+        let mut v1 = ColFVector::from_vec(vec![1.5, 2.5, 3.5]);
         let v2 = FlexVector::from_vec(vec![0.5, 1.5, 2.5]);
         v1.mut_translate(&v2).unwrap();
         assert_eq!(v1.as_slice(), &[2.0, 4.0, 6.0]);
@@ -6036,7 +6034,7 @@ mod tests {
 
     #[test]
     fn test_mut_translate_complex_f64() {
-        let mut v1 = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let mut v1 = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
         v1.mut_translate(&v2).unwrap();
         assert_eq!(v1.as_slice(), &[Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
@@ -6044,7 +6042,7 @@ mod tests {
 
     #[test]
     fn test_mut_translate_mismatched_lengths() {
-        let mut v1 = FVector::from_vec(vec![1, 2]);
+        let mut v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let result = v1.mut_translate(&v2);
         assert!(result.is_err());
@@ -6053,14 +6051,14 @@ mod tests {
     // -- scale --
     #[test]
     fn test_scale_i32() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let scaled = v.scale(10);
         assert_eq!(scaled.as_slice(), &[10, 20, 30]);
     }
 
     #[test]
     fn test_scale_f64() {
-        let v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let v = ColFVector::from_vec(vec![1.5, -2.0, 0.0]);
         let scaled = v.scale(2.0);
         assert_eq!(scaled.as_slice(), &[3.0, -4.0, 0.0]);
     }
@@ -6068,7 +6066,7 @@ mod tests {
     #[test]
     fn test_scale_complex_f64() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         let scalar = Complex::new(2.0, 0.0);
         let scaled = v.scale(scalar);
         assert_eq!(scaled.as_slice(), &[Complex::new(2.0, 4.0), Complex::new(-6.0, 8.0)]);
@@ -6077,21 +6075,21 @@ mod tests {
     // -- mut_scale --
     #[test]
     fn test_mut_scale_i32() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         v.mut_scale(10);
         assert_eq!(v.as_slice(), &[10, 20, 30]);
     }
 
     #[test]
     fn test_mut_scale_f64() {
-        let mut v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let mut v = ColFVector::from_vec(vec![1.5, -2.0, 0.0]);
         v.mut_scale(2.0);
         assert_eq!(v.as_slice(), &[3.0, -4.0, 0.0]);
     }
 
     #[test]
     fn test_mut_scale_complex_f64() {
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         let scalar = Complex::new(2.0, 0.0);
         v.mut_scale(scalar);
         assert_eq!(v.as_slice(), &[Complex::new(2.0, 4.0), Complex::new(-6.0, 8.0)]);
@@ -6100,7 +6098,7 @@ mod tests {
     // -- negate --
     #[test]
     fn test_negate_i32() {
-        let v = FVector::from_vec(vec![1, -2, 3]);
+        let v = ColFVector::from_vec(vec![1, -2, 3]);
         let neg = v.negate();
         assert_eq!(neg.as_slice(), &[-1, 2, -3]);
         // original unchanged
@@ -6109,7 +6107,7 @@ mod tests {
 
     #[test]
     fn test_negate_f64() {
-        let v = FVector::from_vec(vec![1.5, -2.5, 0.0]);
+        let v = ColFVector::from_vec(vec![1.5, -2.5, 0.0]);
         let neg = v.negate();
         assert_eq!(neg.as_slice(), &[-1.5, 2.5, -0.0]);
         assert_eq!(v.as_slice(), &[1.5, -2.5, 0.0]);
@@ -6118,7 +6116,7 @@ mod tests {
     #[test]
     fn test_negate_complex_f64() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
         let neg = v.negate();
         assert_eq!(neg.as_slice(), &[Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]);
         assert_eq!(v.as_slice(), &[Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
@@ -6127,14 +6125,14 @@ mod tests {
     // -- mut_negate --
     #[test]
     fn test_mut_negate_i32() {
-        let mut v = FVector::from_vec(vec![1, -2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, -2, 3]);
         v.mut_negate();
         assert_eq!(v.as_slice(), &[-1, 2, -3]);
     }
 
     #[test]
     fn test_mut_negate_f64() {
-        let mut v = FVector::from_vec(vec![1.5, -2.5, 0.0]);
+        let mut v = ColFVector::from_vec(vec![1.5, -2.5, 0.0]);
         v.mut_negate();
         assert_eq!(v.as_slice(), &[-1.5, 2.5, -0.0]);
     }
@@ -6142,7 +6140,7 @@ mod tests {
     #[test]
     fn test_mut_negate_complex_f64() {
         use num::Complex;
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
         v.mut_negate();
         assert_eq!(v.as_slice(), &[Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]);
     }
@@ -6150,14 +6148,14 @@ mod tests {
     // -- mut_zero --
     #[test]
     fn test_mut_zero_i32() {
-        let mut v = FVector::from_vec(vec![1, -2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, -2, 3]);
         v.mut_zero();
         assert_eq!(v.as_slice(), &[0, 0, 0]);
     }
 
     #[test]
     fn test_mut_zero_f64() {
-        let mut v = FVector::from_vec(vec![1.5, -2.5, 0.0]);
+        let mut v = ColFVector::from_vec(vec![1.5, -2.5, 0.0]);
         v.mut_zero();
         assert_eq!(v.as_slice(), &[0.0, 0.0, 0.0]);
     }
@@ -6165,7 +6163,7 @@ mod tests {
     #[test]
     fn test_mut_zero_complex_f64() {
         use num::Complex;
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
         v.mut_zero();
         assert_eq!(v.as_slice(), &[Complex::new(0.0, 0.0), Complex::new(0.0, 0.0)]);
     }
@@ -6173,7 +6171,7 @@ mod tests {
     // -- dot --
     #[test]
     fn test_dot_i32() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let dot = v1.dot(&v2).unwrap();
         assert_eq!(dot, 1 * 4 + 2 * 5 + 3 * 6); // 32
@@ -6181,7 +6179,7 @@ mod tests {
 
     #[test]
     fn test_dot_f64() {
-        let v1 = FVector::from_vec(vec![1.5, 2.0, -3.0]);
+        let v1 = ColFVector::from_vec(vec![1.5, 2.0, -3.0]);
         let v2 = FlexVector::from_vec(vec![2.0, 0.5, 4.0]);
         let dot = v1.dot(&v2).unwrap();
         assert!((dot - (1.5 * 2.0 + 2.0 * 0.5 + -3.0 * 4.0)).abs() < 1e-12);
@@ -6189,7 +6187,7 @@ mod tests {
 
     #[test]
     fn test_dot_mismatched_lengths() {
-        let v1 = FVector::from_vec(vec![1, 2]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let dot = v1.dot(&v2);
         assert!(dot.is_err());
@@ -6208,7 +6206,7 @@ mod tests {
     // -- dot_to_f64 --
     #[test]
     fn test_dot_to_f64_i32() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let dot = v1.dot_to_f64(&v2).unwrap();
         assert!((dot - 32.0).abs() < 1e-12);
@@ -6216,7 +6214,7 @@ mod tests {
 
     #[test]
     fn test_dot_to_f64_f64() {
-        let v1 = FVector::from_vec(vec![1.5, 2.0, -3.0]);
+        let v1 = ColFVector::from_vec(vec![1.5, 2.0, -3.0]);
         let v2 = FlexVector::from_vec(vec![2.0, 0.5, 4.0]);
         let dot = v1.dot_to_f64(&v2).unwrap();
         assert!((dot - (1.5 * 2.0 + 2.0 * 0.5 + -3.0 * 4.0)).abs() < 1e-12);
@@ -6224,7 +6222,7 @@ mod tests {
 
     #[test]
     fn test_dot_to_f64_mismatched_lengths() {
-        let v1 = FVector::from_vec(vec![1, 2]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let dot = v1.dot(&v2);
         assert!(dot.is_err());
@@ -6235,7 +6233,7 @@ mod tests {
     // -- cross --
     #[test]
     fn test_cross_i32() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let cross = v1.cross(&v2).unwrap();
         // [2*6 - 3*5, 3*4 - 1*6, 1*5 - 2*4] = [12-15, 12-6, 5-8] = [-3, 6, -3]
@@ -6244,7 +6242,7 @@ mod tests {
 
     #[test]
     fn test_cross_f64() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
         let cross = v1.cross(&v2).unwrap();
         assert_eq!(cross.as_slice(), &[-3.0, 6.0, -3.0]);
@@ -6256,7 +6254,7 @@ mod tests {
 
     #[test]
     fn test_cross_wrong_length_1() {
-        let v1 = FVector::from_vec(vec![1, 2]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![3, 4, 5]);
         let result = v1.cross(&v2);
         assert!(result.is_err());
@@ -6264,7 +6262,7 @@ mod tests {
 
     #[test]
     fn test_cross_wrong_length_2() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![3, 4]);
         let result = v1.cross(&v2);
         assert!(result.is_err());
@@ -6272,7 +6270,7 @@ mod tests {
 
     #[test]
     fn test_cross_wrong_length_3() {
-        let v1 = FVector::from_vec(vec![1, 2]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![3, 4]);
         let result = v1.cross(&v2);
         assert!(result.is_err());
@@ -6282,7 +6280,7 @@ mod tests {
 
     #[test]
     fn test_cross_into_i32() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let mut out = [0; 3];
         v1.cross_into(&v2, &mut out).unwrap();
@@ -6291,7 +6289,7 @@ mod tests {
 
     #[test]
     fn test_cross_into_f64() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
         let mut out = [0.0; 3];
         v1.cross_into(&v2, &mut out).unwrap();
@@ -6300,19 +6298,19 @@ mod tests {
 
     #[test]
     fn test_cross_into_wrong_length() {
-        let v1 = FVector::from_vec(vec![1, 2]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![3, 4, 5]);
         let mut out = [0; 3];
         let result = v1.cross_into(&v2, &mut out);
         assert!(result.is_err());
 
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![3, 4]);
         let mut out = [0; 3];
         let result = v1.cross_into(&v2, &mut out);
         assert!(result.is_err());
 
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![3, 4, 5]);
         let mut out = [0; 2];
         let result = v1.cross_into(&v2, &mut out);
@@ -6322,14 +6320,14 @@ mod tests {
     // -- sum --
     #[test]
     fn test_sum_i32() {
-        let v = FVector::from_vec(vec![1, 2, 3, 4]);
+        let v = ColFVector::from_vec(vec![1, 2, 3, 4]);
         let s = v.sum();
         assert_eq!(s, 10);
     }
 
     #[test]
     fn test_sum_f64() {
-        let v = FVector::from_vec(vec![1.5, -2.5, 3.0]);
+        let v = ColFVector::from_vec(vec![1.5, -2.5, 3.0]);
         let s = v.sum();
         assert!((s - 2.0).abs() < 1e-12);
     }
@@ -6337,7 +6335,7 @@ mod tests {
     #[test]
     fn test_sum_complex_f64() {
         use num::Complex;
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(-3.0, 4.0),
             Complex::new(5.0, -6.0),
@@ -6349,14 +6347,14 @@ mod tests {
     // -- product --
     #[test]
     fn test_product_i32() {
-        let v = FVector::from_vec(vec![2, 3, 4]);
+        let v = ColFVector::from_vec(vec![2, 3, 4]);
         let p = v.product();
         assert_eq!(p, 24);
     }
 
     #[test]
     fn test_product_f64() {
-        let v = FVector::from_vec(vec![1.5, -2.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.5, -2.0, 3.0]);
         let p = v.product();
         assert!((p - (1.5 * -2.0 * 3.0)).abs() < 1e-12);
     }
@@ -6364,7 +6362,7 @@ mod tests {
     #[test]
     fn test_product_complex_f64() {
         use num::Complex;
-        let v = FVector::from_vec(vec![
+        let v = ColFVector::from_vec(vec![
             Complex::new(1.0, 2.0),
             Complex::new(3.0, -1.0),
             Complex::new(2.0, 0.5),
@@ -6377,31 +6375,31 @@ mod tests {
     // -- minimum --
     #[test]
     fn test_minimum_i32() {
-        let v = FVector::from_vec(vec![3, 1, 4, 2]);
+        let v = ColFVector::from_vec(vec![3, 1, 4, 2]);
         assert_eq!(v.minimum(), Some(1));
     }
 
     #[test]
     fn test_minimum_f64_basic() {
-        let v = FVector::from_vec(vec![1.5, -2.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.5, -2.0, 3.0]);
         assert_eq!(v.minimum(), Some(-2.0));
     }
 
     #[test]
     fn test_minimum_f64_all_positive() {
-        let v = FVector::from_vec(vec![2.0, 4.0, 1.0, 3.0]);
+        let v = ColFVector::from_vec(vec![2.0, 4.0, 1.0, 3.0]);
         assert_eq!(v.minimum(), Some(1.0));
     }
 
     #[test]
     fn test_minimum_f64_all_negative() {
-        let v = FVector::from_vec(vec![-1.0, -2.0, -3.0]);
+        let v = ColFVector::from_vec(vec![-1.0, -2.0, -3.0]);
         assert_eq!(v.minimum(), Some(-3.0));
     }
 
     #[test]
     fn test_minimum_f64_single_element() {
-        let v = FVector::from_vec(vec![42.0]);
+        let v = ColFVector::from_vec(vec![42.0]);
         assert_eq!(v.minimum(), Some(42.0));
     }
 
@@ -6413,7 +6411,7 @@ mod tests {
 
     #[test]
     fn test_minimum_f64_with_nan() {
-        let v = FVector::from_vec(vec![1.0, f64::NAN, 2.0]);
+        let v = ColFVector::from_vec(vec![1.0, f64::NAN, 2.0]);
         // The result is not guaranteed to be meaningful if NaN is present,
         // but it should return Some value (could be NaN or a number).
         assert!(v.minimum().is_some());
@@ -6429,7 +6427,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_min_i32() {
-        let v1 = FVector::from_vec(vec![1, 5, 3, 7]);
+        let v1 = ColFVector::from_vec(vec![1, 5, 3, 7]);
         let v2 = FlexVector::from_vec(vec![2, 4, 6, 0]);
         let min = v1.elementwise_min(&v2).unwrap();
         assert_eq!(min.as_slice(), &[1, 4, 3, 0]);
@@ -6437,7 +6435,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_min_f64() {
-        let v1 = FVector::from_vec(vec![1.5, -2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.5, -2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![2.5, -3.0, 2.0]);
         let min = v1.elementwise_min(&v2).unwrap();
         assert_eq!(min.as_slice(), &[1.5, -3.0, 2.0]);
@@ -6453,7 +6451,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_min_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1, 2]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![3, 4, 5]);
         let result = v1.elementwise_min(&v2);
         assert!(result.is_err());
@@ -6461,7 +6459,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_min_f64_with_nan() {
-        let v1 = FVector::from_vec(vec![1.0, f64::NAN, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, f64::NAN, 3.0]);
         let v2 = FlexVector::from_vec(vec![2.0, 2.0, f64::NAN]);
         let min = v1.elementwise_min(&v2).unwrap();
         assert_eq!(min[0], 1.0); // min(1.0, 2.0) = 1.0
@@ -6471,7 +6469,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_min_f64_both_nan() {
-        let v1 = FVector::from_vec(vec![f64::NAN]);
+        let v1 = ColFVector::from_vec(vec![f64::NAN]);
         let v2 = FlexVector::from_vec(vec![f64::NAN]);
         let min = v1.elementwise_min(&v2).unwrap();
         assert!(min[0].is_nan());
@@ -6481,7 +6479,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_min_into_i32() {
-        let v1 = FVector::from_vec(vec![1, 5, 3, 7]);
+        let v1 = ColFVector::from_vec(vec![1, 5, 3, 7]);
         let v2 = FlexVector::from_vec(vec![2, 4, 6, 0]);
         let mut out = [0; 4];
         v1.elementwise_min_into(&v2, &mut out).unwrap();
@@ -6490,7 +6488,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_min_into_f64() {
-        let v1 = FVector::from_vec(vec![1.5, -2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.5, -2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![2.5, -3.0, 2.0]);
         let mut out = [0.0; 3];
         v1.elementwise_min_into(&v2, &mut out).unwrap();
@@ -6499,13 +6497,13 @@ mod tests {
 
     #[test]
     fn test_elementwise_min_into_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5]);
         let mut out = [0; 3];
         let result = v1.elementwise_min_into(&v2, &mut out);
         assert!(result.is_err());
 
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let mut out = [0; 2];
         let result = v1.elementwise_min_into(&v2, &mut out);
@@ -6515,31 +6513,31 @@ mod tests {
     // -- maximum --
     #[test]
     fn test_maximum_i32() {
-        let v = FVector::from_vec(vec![3, 1, 4, 2]);
+        let v = ColFVector::from_vec(vec![3, 1, 4, 2]);
         assert_eq!(v.maximum(), Some(4));
     }
 
     #[test]
     fn test_maximum_f64_basic() {
-        let v = FVector::from_vec(vec![1.5, -2.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.5, -2.0, 3.0]);
         assert_eq!(v.maximum(), Some(3.0));
     }
 
     #[test]
     fn test_maximum_f64_all_positive() {
-        let v = FVector::from_vec(vec![2.0, 4.0, 1.0, 3.0]);
+        let v = ColFVector::from_vec(vec![2.0, 4.0, 1.0, 3.0]);
         assert_eq!(v.maximum(), Some(4.0));
     }
 
     #[test]
     fn test_maximum_f64_all_negative() {
-        let v = FVector::from_vec(vec![-1.0, -2.0, -3.0]);
+        let v = ColFVector::from_vec(vec![-1.0, -2.0, -3.0]);
         assert_eq!(v.maximum(), Some(-1.0));
     }
 
     #[test]
     fn test_maximum_f64_single_element() {
-        let v = FVector::from_vec(vec![42.0]);
+        let v = ColFVector::from_vec(vec![42.0]);
         assert_eq!(v.maximum(), Some(42.0));
     }
 
@@ -6551,7 +6549,7 @@ mod tests {
 
     #[test]
     fn test_maximum_f64_with_nan() {
-        let v = FVector::from_vec(vec![1.0, f64::NAN, 2.0]);
+        let v = ColFVector::from_vec(vec![1.0, f64::NAN, 2.0]);
         // The result is not guaranteed to be meaningful if NaN is present,
         // but it should return Some value (could be NaN or a number).
         assert!(v.maximum().is_some());
@@ -6561,7 +6559,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_max_i32() {
-        let v1 = FVector::from_vec(vec![1, 5, 3, 7]);
+        let v1 = ColFVector::from_vec(vec![1, 5, 3, 7]);
         let v2 = FlexVector::from_vec(vec![2, 4, 6, 0]);
         let max = v1.elementwise_max(&v2).unwrap();
         assert_eq!(max.as_slice(), &[2, 5, 6, 7]);
@@ -6569,7 +6567,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_max_f64() {
-        let v1 = FVector::from_vec(vec![1.5, -2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.5, -2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![2.5, -3.0, 2.0]);
         let max = v1.elementwise_max(&v2).unwrap();
         assert_eq!(max.as_slice(), &[2.5, -2.0, 3.0]);
@@ -6585,7 +6583,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_max_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5]);
         let result = v1.elementwise_max(&v2);
         assert!(result.is_err());
@@ -6593,7 +6591,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_max_f64_with_nan() {
-        let v1 = FVector::from_vec(vec![1.0, f64::NAN, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, f64::NAN, 3.0]);
         let v2 = FlexVector::from_vec(vec![2.0, 2.0, f64::NAN]);
         let max = v1.elementwise_max(&v2).unwrap();
         assert_eq!(max[0], 2.0); // max(1.0, 2.0) = 2.0
@@ -6603,7 +6601,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_max_f64_both_nan() {
-        let v1 = FVector::from_vec(vec![f64::NAN]);
+        let v1 = ColFVector::from_vec(vec![f64::NAN]);
         let v2 = FlexVector::from_vec(vec![f64::NAN]);
         let max = v1.elementwise_max(&v2).unwrap();
         assert!(max[0].is_nan());
@@ -6613,7 +6611,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_max_into_i32() {
-        let v1 = FVector::from_vec(vec![1, 5, 3, 7]);
+        let v1 = ColFVector::from_vec(vec![1, 5, 3, 7]);
         let v2 = FlexVector::from_vec(vec![2, 4, 6, 0]);
         let mut out = [0; 4];
         v1.elementwise_max_into(&v2, &mut out).unwrap();
@@ -6622,7 +6620,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_max_into_f64() {
-        let v1 = FVector::from_vec(vec![1.5, -2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.5, -2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![2.5, -3.0, 2.0]);
         let mut out = [0.0; 3];
         v1.elementwise_max_into(&v2, &mut out).unwrap();
@@ -6631,13 +6629,13 @@ mod tests {
 
     #[test]
     fn test_elementwise_max_into_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5]);
         let mut out = [0; 3];
         let result = v1.elementwise_max_into(&v2, &mut out);
         assert!(result.is_err());
 
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let mut out = [0; 2];
         let result = v1.elementwise_max_into(&v2, &mut out);
@@ -6648,21 +6646,21 @@ mod tests {
 
     #[test]
     fn test_elementwise_clamp_i32_basic() {
-        let v = FVector::from_vec(vec![-5, 0, 5, 10, 15]);
+        let v = ColFVector::from_vec(vec![-5, 0, 5, 10, 15]);
         let clamped = v.elementwise_clamp(0, 10);
         assert_eq!(clamped.as_slice(), &[0, 0, 5, 10, 10]);
     }
 
     #[test]
     fn test_elementwise_clamp_i32_all_below() {
-        let v = FVector::from_vec(vec![-3, -2, -1]);
+        let v = ColFVector::from_vec(vec![-3, -2, -1]);
         let clamped = v.elementwise_clamp(0, 5);
         assert_eq!(clamped.as_slice(), &[0, 0, 0]);
     }
 
     #[test]
     fn test_elementwise_clamp_i32_all_above() {
-        let v = FVector::from_vec(vec![11, 12, 13]);
+        let v = ColFVector::from_vec(vec![11, 12, 13]);
         let clamped = v.elementwise_clamp(0, 10);
         assert_eq!(clamped.as_slice(), &[10, 10, 10]);
     }
@@ -6676,28 +6674,28 @@ mod tests {
 
     #[test]
     fn test_elementwise_clamp_f64_basic() {
-        let v = FVector::from_vec(vec![-2.5, 0.0, 3.5, 7.2, 12.0]);
+        let v = ColFVector::from_vec(vec![-2.5, 0.0, 3.5, 7.2, 12.0]);
         let clamped = v.elementwise_clamp(0.0, 10.0);
         assert_eq!(clamped.as_slice(), &[0.0, 0.0, 3.5, 7.2, 10.0]);
     }
 
     #[test]
     fn test_elementwise_clamp_f64_all_below() {
-        let v = FVector::from_vec(vec![-1.1, -2.2]);
+        let v = ColFVector::from_vec(vec![-1.1, -2.2]);
         let clamped = v.elementwise_clamp(0.0, 5.0);
         assert_eq!(clamped.as_slice(), &[0.0, 0.0]);
     }
 
     #[test]
     fn test_elementwise_clamp_f64_all_above() {
-        let v = FVector::from_vec(vec![11.1, 12.2]);
+        let v = ColFVector::from_vec(vec![11.1, 12.2]);
         let clamped = v.elementwise_clamp(0.0, 10.0);
         assert_eq!(clamped.as_slice(), &[10.0, 10.0]);
     }
 
     #[test]
     fn test_elementwise_clamp_f64_with_nan() {
-        let v = FVector::from_vec(vec![1.0, f64::NAN, 5.0]);
+        let v = ColFVector::from_vec(vec![1.0, f64::NAN, 5.0]);
         let clamped = v.elementwise_clamp(0.0, 4.0);
         assert_eq!(clamped[0], 1.0);
         assert!(clamped[1].is_nan());
@@ -6715,7 +6713,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_clamp_into_i32_basic() {
-        let v = FVector::from_vec(vec![-5, 0, 5, 10, 15]);
+        let v = ColFVector::from_vec(vec![-5, 0, 5, 10, 15]);
         let mut out = [0; 5];
         v.elementwise_clamp_into(0, 10, &mut out).unwrap();
         assert_eq!(out, [0, 0, 5, 10, 10]);
@@ -6723,7 +6721,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_clamp_into_i32_all_below() {
-        let v = FVector::from_vec(vec![-3, -2, -1]);
+        let v = ColFVector::from_vec(vec![-3, -2, -1]);
         let mut out = [0; 3];
         v.elementwise_clamp_into(0, 5, &mut out).unwrap();
         assert_eq!(out, [0, 0, 0]);
@@ -6731,7 +6729,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_clamp_into_i32_all_above() {
-        let v = FVector::from_vec(vec![11, 12, 13]);
+        let v = ColFVector::from_vec(vec![11, 12, 13]);
         let mut out = [0; 3];
         v.elementwise_clamp_into(0, 10, &mut out).unwrap();
         assert_eq!(out, [10, 10, 10]);
@@ -6747,7 +6745,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_clamp_into_f64_basic() {
-        let v = FVector::from_vec(vec![-2.5, 0.0, 3.5, 7.2, 12.0]);
+        let v = ColFVector::from_vec(vec![-2.5, 0.0, 3.5, 7.2, 12.0]);
         let mut out = [0.0; 5];
         v.elementwise_clamp_into(0.0, 10.0, &mut out).unwrap();
         assert_eq!(out, [0.0, 0.0, 3.5, 7.2, 10.0]);
@@ -6755,7 +6753,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_clamp_into_f64_all_below() {
-        let v = FVector::from_vec(vec![-1.1, -2.2]);
+        let v = ColFVector::from_vec(vec![-1.1, -2.2]);
         let mut out = [0.0; 2];
         v.elementwise_clamp_into(0.0, 5.0, &mut out).unwrap();
         assert_eq!(out, [0.0, 0.0]);
@@ -6763,7 +6761,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_clamp_into_f64_all_above() {
-        let v = FVector::from_vec(vec![11.1, 12.2]);
+        let v = ColFVector::from_vec(vec![11.1, 12.2]);
         let mut out = [0.0; 2];
         v.elementwise_clamp_into(0.0, 10.0, &mut out).unwrap();
         assert_eq!(out, [10.0, 10.0]);
@@ -6771,7 +6769,7 @@ mod tests {
 
     #[test]
     fn test_elementwise_clamp_into_f64_with_nan() {
-        let v = FVector::from_vec(vec![1.0, f64::NAN, 5.0]);
+        let v = ColFVector::from_vec(vec![1.0, f64::NAN, 5.0]);
         let mut out = [0.0; 3];
         v.elementwise_clamp_into(0.0, 4.0, &mut out).unwrap();
         assert_eq!(out[0], 1.0);
@@ -6790,14 +6788,14 @@ mod tests {
     // -- l1_norm --
     #[test]
     fn test_l1_norm_i32() {
-        let v = FVector::from_vec(vec![1, -2, 3]);
+        let v = ColFVector::from_vec(vec![1, -2, 3]);
         let norm = v.l1_norm();
         assert_eq!(norm, 6);
     }
 
     #[test]
     fn test_l1_norm_f64() {
-        let v = FVector::from_vec(vec![1.5, -2.5, 3.0]);
+        let v = ColFVector::from_vec(vec![1.5, -2.5, 3.0]);
         let norm = v.l1_norm();
         assert!((norm - 7.0).abs() < 1e-12);
     }
@@ -6807,14 +6805,14 @@ mod tests {
     // -- linf_norm --
     #[test]
     fn test_linf_norm_i32() {
-        let v = FVector::from_vec(vec![1, -5, 3, 2]);
+        let v = ColFVector::from_vec(vec![1, -5, 3, 2]);
         let norm = v.linf_norm();
         assert_eq!(norm, 5);
     }
 
     #[test]
     fn test_linf_norm_f64() {
-        let v = FVector::from_vec(vec![1.5, -2.5, 3.0, -7.2]);
+        let v = ColFVector::from_vec(vec![1.5, -2.5, 3.0, -7.2]);
         let norm = v.linf_norm();
         assert!((norm - 7.2).abs() < 1e-12);
     }
@@ -6828,7 +6826,7 @@ mod tests {
     // -- normalize --
     #[test]
     fn test_normalize_f64() {
-        let v = FVector::from_vec(vec![3.0, 4.0]);
+        let v = ColFVector::from_vec(vec![3.0, 4.0]);
         let normalized = v.normalize().unwrap();
         // The norm is 5.0, so the normalized vector should be [0.6, 0.8]
         assert!((normalized.as_slice()[0] - 0.6).abs() < 1e-12);
@@ -6837,14 +6835,14 @@ mod tests {
 
     #[test]
     fn test_normalize_f64_zero_vector() {
-        let v = FVector::from_vec(vec![0.0, 0.0]);
+        let v = ColFVector::from_vec(vec![0.0, 0.0]);
         let result = v.normalize();
         assert!(result.is_err());
     }
 
     #[test]
     fn test_normalize_f64_negative_values() {
-        let v = FVector::from_vec(vec![-3.0, -4.0]);
+        let v = ColFVector::from_vec(vec![-3.0, -4.0]);
         let normalized = v.normalize().unwrap();
         // The norm is 5.0, so the normalized vector should be [-0.6, -0.8]
         assert!((normalized.as_slice()[0] + 0.6).abs() < 1e-12);
@@ -6865,7 +6863,7 @@ mod tests {
 
     #[test]
     fn test_normalize_into_f64_zero_vector() {
-        let v = FVector::from_vec(vec![0.0, 0.0]);
+        let v = ColFVector::from_vec(vec![0.0, 0.0]);
         let mut out = [0.0; 2];
         let result = v.normalize_into(&mut out);
         assert!(result.is_err());
@@ -6873,7 +6871,7 @@ mod tests {
 
     #[test]
     fn test_normalize_into_f64_negative_values() {
-        let v = FVector::from_vec(vec![-3.0, -4.0]);
+        let v = ColFVector::from_vec(vec![-3.0, -4.0]);
         let mut out = [0.0; 2];
         let _ = v.normalize_into(&mut out).unwrap();
         // The norm is 5.0, so the normalized vector should be [-0.6, -0.8]
@@ -6884,7 +6882,7 @@ mod tests {
     // -- mut_normalize --
     #[test]
     fn test_mut_normalize_f64() {
-        let mut v = FVector::from_vec(vec![3.0, 4.0]);
+        let mut v = ColFVector::from_vec(vec![3.0, 4.0]);
         v.mut_normalize().unwrap();
         // The norm is 5.0, so the normalized vector should be [0.6, 0.8]
         assert!((v.as_slice()[0] - 0.6).abs() < 1e-12);
@@ -6893,14 +6891,14 @@ mod tests {
 
     #[test]
     fn test_mut_normalize_f64_zero_vector() {
-        let mut v = FVector::from_vec(vec![0.0, 0.0]);
+        let mut v = ColFVector::from_vec(vec![0.0, 0.0]);
         let result = v.mut_normalize();
         assert!(result.is_err());
     }
 
     #[test]
     fn test_mut_normalize_f64_negative_values() {
-        let mut v = FVector::from_vec(vec![-3.0, -4.0]);
+        let mut v = ColFVector::from_vec(vec![-3.0, -4.0]);
         v.mut_normalize().unwrap();
         // The norm is 5.0, so the normalized vector should be [-0.6, -0.8]
         assert!((v.as_slice()[0] + 0.6).abs() < 1e-12);
@@ -6910,7 +6908,7 @@ mod tests {
     // -- normalize_to --
     #[test]
     fn test_normalize_to_f64() {
-        let v = FVector::from_vec(vec![3.0, 4.0]);
+        let v = ColFVector::from_vec(vec![3.0, 4.0]);
         let normalized = v.normalize_to(10.0).unwrap();
         // The original norm is 5.0, so the normalized vector should be [6.0, 8.0]
         assert!((normalized.as_slice()[0] - 6.0).abs() < 1e-12);
@@ -6919,14 +6917,14 @@ mod tests {
 
     #[test]
     fn test_normalize_to_f64_zero_vector() {
-        let v = FVector::from_vec(vec![0.0, 0.0]);
+        let v = ColFVector::from_vec(vec![0.0, 0.0]);
         let result = v.normalize_to(1.0);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_normalize_to_f64_negative_values() {
-        let v = FVector::from_vec(vec![-3.0, -4.0]);
+        let v = ColFVector::from_vec(vec![-3.0, -4.0]);
         let normalized = v.normalize_to(5.0).unwrap();
         // The original norm is 5.0, so the normalized vector should be [-3.0, -4.0]
         assert!((normalized.as_slice()[0] + 3.0).abs() < 1e-12);
@@ -6972,7 +6970,7 @@ mod tests {
     // -- mut_normalize_to --
     #[test]
     fn test_mut_normalize_to_f64() {
-        let mut v = FVector::from_vec(vec![3.0, 4.0]);
+        let mut v = ColFVector::from_vec(vec![3.0, 4.0]);
         v.mut_normalize_to(10.0).unwrap();
         // The original norm is 5.0, so the normalized vector should be [6.0, 8.0]
         assert!((v.as_slice()[0] - 6.0).abs() < 1e-12);
@@ -6981,14 +6979,14 @@ mod tests {
 
     #[test]
     fn test_mut_normalize_to_f64_zero_vector() {
-        let mut v = FVector::from_vec(vec![0.0, 0.0]);
+        let mut v = ColFVector::from_vec(vec![0.0, 0.0]);
         let result = v.mut_normalize_to(1.0);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_mut_normalize_to_f64_negative_values() {
-        let mut v = FVector::from_vec(vec![-3.0, -4.0]);
+        let mut v = ColFVector::from_vec(vec![-3.0, -4.0]);
         v.mut_normalize_to(5.0).unwrap();
         // The original norm is 5.0, so the normalized vector should be [-3.0, -4.0]
         assert!((v.as_slice()[0] + 3.0).abs() < 1e-12);
@@ -6998,7 +6996,7 @@ mod tests {
     // -- lerp --
     #[test]
     fn test_lerp_f64_weight_zero() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
         let result = v1.lerp(&v2, 0.0).unwrap();
         // Should be equal to v1
@@ -7009,7 +7007,7 @@ mod tests {
 
     #[test]
     fn test_lerp_f64_weight_one() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
         let result = v1.lerp(&v2, 1.0).unwrap();
         // Should be equal to v2
@@ -7020,7 +7018,7 @@ mod tests {
 
     #[test]
     fn test_lerp_f64_weight_half() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
         let result = v1.lerp(&v2, 0.5).unwrap();
         // Should be the midpoint
@@ -7031,7 +7029,7 @@ mod tests {
 
     #[test]
     fn test_lerp_f64_weight_out_of_bounds() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
         let result_low = v1.lerp(&v2, -0.1);
         let result_high = v1.lerp(&v2, 1.1);
@@ -7122,7 +7120,7 @@ mod tests {
     // -- mut_lerp --
     #[test]
     fn test_mut_lerp_f64_weight_zero() {
-        let mut v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let mut v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
         v1.mut_lerp(&v2, 0.0).unwrap();
         // Should be equal to original v1
@@ -7133,7 +7131,7 @@ mod tests {
 
     #[test]
     fn test_mut_lerp_f64_weight_one() {
-        let mut v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let mut v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
         v1.mut_lerp(&v2, 1.0).unwrap();
         // Should be equal to v2
@@ -7144,7 +7142,7 @@ mod tests {
 
     #[test]
     fn test_mut_lerp_f64_weight_half() {
-        let mut v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let mut v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
         v1.mut_lerp(&v2, 0.5).unwrap();
         // Should be the midpoint
@@ -7155,7 +7153,7 @@ mod tests {
 
     #[test]
     fn test_mut_lerp_f64_weight_out_of_bounds() {
-        let mut v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let mut v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
         let result_low = v1.mut_lerp(&v2, -0.1);
         let result_high = v1.mut_lerp(&v2, 1.1);
@@ -7166,7 +7164,7 @@ mod tests {
     // -- midpoint --
     #[test]
     fn test_midpoint_f64() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 5.0, 6.0]);
         let midpoint = v1.midpoint(&v2).unwrap();
         // Should be the average of each element
@@ -7177,7 +7175,7 @@ mod tests {
 
     #[test]
     fn test_midpoint_f64_negative_values() {
-        let v1 = FVector::from_vec(vec![-1.0, -2.0, -3.0]);
+        let v1 = ColFVector::from_vec(vec![-1.0, -2.0, -3.0]);
         let v2 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
         let midpoint = v1.midpoint(&v2).unwrap();
         // Should be [0.0, 0.0, 0.0]
@@ -7188,7 +7186,7 @@ mod tests {
 
     #[test]
     fn test_midpoint_f64_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0]);
         let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
         let result = v1.midpoint(&v2);
         assert!(result.is_err());
@@ -7248,7 +7246,7 @@ mod tests {
     // -- distance --
     #[test]
     fn test_distance_f64_basic() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
         let dist = v1.distance(&v2).unwrap();
         // sqrt((1-4)^2 + (2-6)^2 + (3-8)^2) = sqrt(9 + 16 + 25) = sqrt(50)
@@ -7257,7 +7255,7 @@ mod tests {
 
     #[test]
     fn test_distance_f64_zero() {
-        let v1 = FVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let v1 = ColFVector::from_vec(vec![0.0, 0.0, 0.0]);
         let v2 = FlexVector::from_vec(vec![0.0, 0.0, 0.0]);
         let dist = v1.distance(&v2).unwrap();
         assert_eq!(dist, 0.0);
@@ -7265,7 +7263,7 @@ mod tests {
 
     #[test]
     fn test_distance_f64_negative_values() {
-        let v1 = FVector::from_vec(vec![-1.0, -2.0, -3.0]);
+        let v1 = ColFVector::from_vec(vec![-1.0, -2.0, -3.0]);
         let v2 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
         let dist = v1.distance(&v2).unwrap();
         // sqrt(((-1)-1)^2 + ((-2)-2)^2 + ((-3)-3)^2) = sqrt(4 + 16 + 36) = sqrt(56)
@@ -7274,7 +7272,7 @@ mod tests {
 
     #[test]
     fn test_distance_f64_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0]);
         let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
         let result = v1.distance(&v2);
         assert!(result.is_err());
@@ -7283,7 +7281,7 @@ mod tests {
     // -- manhattan_distance --
     #[test]
     fn test_manhattan_distance_f64_basic() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
         let dist = v1.manhattan_distance(&v2).unwrap();
         // |1-4| + |2-6| + |3-8| = 3 + 4 + 5 = 12
@@ -7292,7 +7290,7 @@ mod tests {
 
     #[test]
     fn test_manhattan_distance_f64_zero() {
-        let v1 = FVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let v1 = ColFVector::from_vec(vec![0.0, 0.0, 0.0]);
         let v2 = FlexVector::from_vec(vec![0.0, 0.0, 0.0]);
         let dist = v1.manhattan_distance(&v2).unwrap();
         assert_eq!(dist, 0.0);
@@ -7300,7 +7298,7 @@ mod tests {
 
     #[test]
     fn test_manhattan_distance_f64_negative_values() {
-        let v1 = FVector::from_vec(vec![-1.0, -2.0, -3.0]);
+        let v1 = ColFVector::from_vec(vec![-1.0, -2.0, -3.0]);
         let v2 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
         let dist = v1.manhattan_distance(&v2).unwrap();
         // |(-1)-1| + |(-2)-2| + |(-3)-3| = 2 + 4 + 6 = 12
@@ -7309,7 +7307,7 @@ mod tests {
 
     #[test]
     fn test_manhattan_distance_f64_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0]);
         let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
         let result = v1.manhattan_distance(&v2);
         assert!(result.is_err());
@@ -7318,7 +7316,7 @@ mod tests {
     // -- chebyshev_distance --
     #[test]
     fn test_chebyshev_distance_f64_basic() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
         let dist = v1.chebyshev_distance(&v2).unwrap();
         // max(|1-4|, |2-6|, |3-8|) = max(3, 4, 5) = 5
@@ -7327,7 +7325,7 @@ mod tests {
 
     #[test]
     fn test_chebyshev_distance_f64_zero() {
-        let v1 = FVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let v1 = ColFVector::from_vec(vec![0.0, 0.0, 0.0]);
         let v2 = FlexVector::from_vec(vec![0.0, 0.0, 0.0]);
         let dist = v1.chebyshev_distance(&v2).unwrap();
         assert_eq!(dist, 0.0);
@@ -7335,7 +7333,7 @@ mod tests {
 
     #[test]
     fn test_chebyshev_distance_f64_negative_values() {
-        let v1 = FVector::from_vec(vec![-1.0, -2.0, -3.0]);
+        let v1 = ColFVector::from_vec(vec![-1.0, -2.0, -3.0]);
         let v2 = FlexVector::from_vec(vec![1.0, 2.0, 3.0]);
         let dist = v1.chebyshev_distance(&v2).unwrap();
         // max(|-1-1|, |-2-2|, |-3-3|) = max(2, 4, 6) = 6
@@ -7344,7 +7342,7 @@ mod tests {
 
     #[test]
     fn test_chebyshev_distance_f64_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0]);
         let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
         let result = v1.chebyshev_distance(&v2);
         assert!(result.is_err());
@@ -7353,7 +7351,7 @@ mod tests {
     // -- minkowski_distance --
     #[test]
     fn test_minkowski_distance_f64_basic() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
         let dist = v1.minkowski_distance(&v2, 3.0).unwrap();
         // ((|1-4|^3 + |2-6|^3 + |3-8|^3))^(1/3) = (27 + 64 + 125)^(1/3) = (216)^(1/3) = 6
@@ -7362,7 +7360,7 @@ mod tests {
 
     #[test]
     fn test_minkowski_distance_f64_p1() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
         let dist = v1.minkowski_distance(&v2, 1.0).unwrap();
         // Should match manhattan distance: 3 + 4 + 5 = 12
@@ -7371,7 +7369,7 @@ mod tests {
 
     #[test]
     fn test_minkowski_distance_f64_p2() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
         let dist = v1.minkowski_distance(&v2, 2.0).unwrap();
         // Should match euclidean distance: sqrt(9 + 16 + 25) = sqrt(50)
@@ -7388,7 +7386,7 @@ mod tests {
 
     #[test]
     fn test_minkowski_distance_f64_identical() {
-        let v1 = FVector::from_vec(vec![1.23, 4.56, 7.89]);
+        let v1 = ColFVector::from_vec(vec![1.23, 4.56, 7.89]);
         let v2 = FlexVector::from_vec(vec![1.23, 4.56, 7.89]);
         let dist = v1.minkowski_distance(&v2, 2.0).unwrap();
         assert_eq!(dist, 0.0);
@@ -7396,7 +7394,7 @@ mod tests {
 
     #[test]
     fn test_minkowski_distance_f64_partial() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 6.0]);
         let result = v1.minkowski_distance(&v2, 2.0);
         assert!(result.is_err());
@@ -7404,7 +7402,7 @@ mod tests {
 
     #[test]
     fn test_minkowski_distance_f64_invalid_p() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![4.0, 6.0, 8.0]);
         let result = v1.minkowski_distance(&v2, 0.5);
         assert!(result.is_err());
@@ -7413,7 +7411,7 @@ mod tests {
     // -- norm --
     #[test]
     fn test_norm_f64_basic() {
-        let v = FVector::from_vec(vec![3.0, 4.0]);
+        let v = ColFVector::from_vec(vec![3.0, 4.0]);
         let norm = v.norm();
         // sqrt(3^2 + 4^2) = 5
         assert!((norm - 5.0).abs() < 1e-12);
@@ -7421,21 +7419,21 @@ mod tests {
 
     #[test]
     fn test_norm_f64_zero() {
-        let v = FVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let v = ColFVector::from_vec(vec![0.0, 0.0, 0.0]);
         let norm = v.norm();
         assert_eq!(norm, 0.0);
     }
 
     #[test]
     fn test_norm_f64_single_element() {
-        let v = FVector::from_vec(vec![7.0]);
+        let v = ColFVector::from_vec(vec![7.0]);
         let norm = v.norm();
         assert_eq!(norm, 7.0);
     }
 
     #[test]
     fn test_norm_f64_negative_values() {
-        let v = FVector::from_vec(vec![-3.0, -4.0]);
+        let v = ColFVector::from_vec(vec![-3.0, -4.0]);
         let norm = v.norm();
         // sqrt((-3)^2 + (-4)^2) = 5
         assert!((norm - 5.0).abs() < 1e-12);
@@ -7444,7 +7442,7 @@ mod tests {
     // -- magnitude --
     #[test]
     fn test_magnitude_f64_basic() {
-        let v = FVector::from_vec(vec![3.0, 4.0]);
+        let v = ColFVector::from_vec(vec![3.0, 4.0]);
         let mag = v.magnitude();
         // sqrt(3^2 + 4^2) = 5
         assert!((mag - 5.0).abs() < 1e-12);
@@ -7452,21 +7450,21 @@ mod tests {
 
     #[test]
     fn test_magnitude_f64_zero() {
-        let v = FVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let v = ColFVector::from_vec(vec![0.0, 0.0, 0.0]);
         let mag = v.magnitude();
         assert_eq!(mag, 0.0);
     }
 
     #[test]
     fn test_magnitude_f64_single_element() {
-        let v = FVector::from_vec(vec![7.0]);
+        let v = ColFVector::from_vec(vec![7.0]);
         let mag = v.magnitude();
         assert_eq!(mag, 7.0);
     }
 
     #[test]
     fn test_magnitude_f64_negative_values() {
-        let v = FVector::from_vec(vec![-3.0, -4.0]);
+        let v = ColFVector::from_vec(vec![-3.0, -4.0]);
         let mag = v.magnitude();
         // sqrt((-3)^2 + (-4)^2) = 5
         assert!((mag - 5.0).abs() < 1e-12);
@@ -7475,7 +7473,7 @@ mod tests {
     // -- lp_norm --
     #[test]
     fn test_lp_norm_f64_p1() {
-        let v = FVector::from_vec(vec![1.0, -2.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.0, -2.0, 3.0]);
         let norm = v.lp_norm(1.0).unwrap();
         // L1 norm: |1| + |−2| + |3| = 1 + 2 + 3 = 6
         assert!((norm - 6.0).abs() < 1e-12);
@@ -7483,7 +7481,7 @@ mod tests {
 
     #[test]
     fn test_lp_norm_f64_p2() {
-        let v = FVector::from_vec(vec![3.0, 4.0]);
+        let v = ColFVector::from_vec(vec![3.0, 4.0]);
         let norm = v.lp_norm(2.0).unwrap();
         // L2 norm: sqrt(3^2 + 4^2) = 5
         assert!((norm - 5.0).abs() < 1e-12);
@@ -7491,7 +7489,7 @@ mod tests {
 
     #[test]
     fn test_lp_norm_f64_p3() {
-        let v = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let norm = v.lp_norm(3.0).unwrap();
         // (|1|^3 + |2|^3 + |3|^3)^(1/3) = (1 + 8 + 27)^(1/3) = 36^(1/3)
         assert!((norm - 36f64.powf(1.0 / 3.0)).abs() < 1e-12);
@@ -7499,14 +7497,14 @@ mod tests {
 
     #[test]
     fn test_lp_norm_f64_zero() {
-        let v = FVector::from_vec(vec![0.0, 0.0, 0.0]);
+        let v = ColFVector::from_vec(vec![0.0, 0.0, 0.0]);
         let norm = v.lp_norm(2.0).unwrap();
         assert_eq!(norm, 0.0);
     }
 
     #[test]
     fn test_lp_norm_f64_invalid_p() {
-        let v = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let result = v.lp_norm(0.5);
         assert!(result.is_err());
     }
@@ -7514,7 +7512,7 @@ mod tests {
     // -- angle_with --
     #[test]
     fn test_angle_with_f64_orthogonal() {
-        let v1 = FVector::from_vec(vec![1.0, 0.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 0.0]);
         let v2 = FlexVector::from_vec(vec![0.0, 1.0]);
         let angle = v1.angle_with(&v2).unwrap();
         // Orthogonal vectors: angle should be pi/2
@@ -7523,7 +7521,7 @@ mod tests {
 
     #[test]
     fn test_angle_with_f64_parallel() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0]);
         let v2 = FlexVector::from_vec(vec![2.0, 4.0]);
         let angle = v1.angle_with(&v2).unwrap();
         // Parallel vectors: angle should be 0 (allow for floating-point error)
@@ -7532,7 +7530,7 @@ mod tests {
 
     #[test]
     fn test_angle_with_f64_opposite() {
-        let v1 = FVector::from_vec(vec![1.0, 0.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 0.0]);
         let v2 = FlexVector::from_vec(vec![-1.0, 0.0]);
         let angle = v1.angle_with(&v2).unwrap();
         // Opposite vectors: angle should be pi
@@ -7541,7 +7539,7 @@ mod tests {
 
     #[test]
     fn test_angle_with_f64_identical() {
-        let v1 = FVector::from_vec(vec![3.0, 4.0]);
+        let v1 = ColFVector::from_vec(vec![3.0, 4.0]);
         let v2 = FlexVector::from_vec(vec![3.0, 4.0]);
         let angle = v1.angle_with(&v2).unwrap();
         // Identical vectors: angle should be 0
@@ -7550,7 +7548,7 @@ mod tests {
 
     #[test]
     fn test_angle_with_f64_arbitrary() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0]);
         let v2 = FlexVector::from_vec(vec![2.0, 1.0]);
         let angle = v1.angle_with(&v2).unwrap();
         // Check that the angle is between 0 and pi
@@ -7559,7 +7557,7 @@ mod tests {
 
     #[test]
     fn test_angle_with_f64_zero_vector() {
-        let v1 = FVector::from_vec(vec![0.0, 0.0]);
+        let v1 = ColFVector::from_vec(vec![0.0, 0.0]);
         let v2 = FlexVector::from_vec(vec![1.0, 2.0]);
         let result = v1.angle_with(&v2);
         assert!(result.is_err());
@@ -7567,7 +7565,7 @@ mod tests {
 
     #[test]
     fn test_angle_with_f64_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0]);
         let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
         let result = v1.angle_with(&v2);
         assert!(result.is_err());
@@ -7576,7 +7574,7 @@ mod tests {
     // -- project_onto --
     #[test]
     fn test_project_onto_f64_basic() {
-        let v1 = FVector::from_vec(vec![3.0, 4.0]);
+        let v1 = ColFVector::from_vec(vec![3.0, 4.0]);
         let v2 = FlexVector::from_vec(vec![1.0, 0.0]);
         let proj = v1.project_onto(&v2).unwrap();
         // Projection of [3,4] onto [1,0] is [3,0]
@@ -7586,7 +7584,7 @@ mod tests {
 
     #[test]
     fn test_project_onto_f64_parallel() {
-        let v1 = FVector::from_vec(vec![2.0, 4.0]);
+        let v1 = ColFVector::from_vec(vec![2.0, 4.0]);
         let v2 = FlexVector::from_vec(vec![1.0, 2.0]);
         let proj = v1.project_onto(&v2).unwrap();
         // v1 is parallel to v2, so projection should be v1 itself
@@ -7596,7 +7594,7 @@ mod tests {
 
     #[test]
     fn test_project_onto_f64_orthogonal() {
-        let v1 = FVector::from_vec(vec![0.0, 1.0]);
+        let v1 = ColFVector::from_vec(vec![0.0, 1.0]);
         let v2 = FlexVector::from_vec(vec![1.0, 0.0]);
         let proj = v1.project_onto(&v2).unwrap();
         // Orthogonal vectors: projection should be [0,0]
@@ -7606,7 +7604,7 @@ mod tests {
 
     #[test]
     fn test_project_onto_f64_identical() {
-        let v1 = FVector::from_vec(vec![5.0, 5.0]);
+        let v1 = ColFVector::from_vec(vec![5.0, 5.0]);
         let v2 = FlexVector::from_vec(vec![5.0, 5.0]);
         let proj = v1.project_onto(&v2).unwrap();
         // Should be v1 itself
@@ -7616,7 +7614,7 @@ mod tests {
 
     #[test]
     fn test_project_onto_f64_zero_vector() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0]);
         let v2 = FlexVector::from_vec(vec![0.0, 0.0]);
         let result = v1.project_onto(&v2);
         assert!(result.is_err());
@@ -7624,7 +7622,7 @@ mod tests {
 
     #[test]
     fn test_project_onto_f64_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0]);
         let v2 = FlexVector::from_vec(vec![3.0, 4.0, 5.0]);
         let result = v1.project_onto(&v2);
         assert!(result.is_err());
@@ -7711,7 +7709,7 @@ mod tests {
     // --- cosine_similarity ---
     #[test]
     fn test_cosine_similarity_f64_parallel() {
-        let v1 = FVector::from_vec(vec![1.0, 2.0, 3.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.0, 3.0]);
         let v2 = FlexVector::from_vec(vec![2.0, 4.0, 6.0]);
         let cos_sim = v1.cosine_similarity(&v2).unwrap();
         assert!((cos_sim - 1.0).abs() < 1e-10);
@@ -7719,7 +7717,7 @@ mod tests {
 
     #[test]
     fn test_cosine_similarity_f64_orthogonal() {
-        let v1 = FVector::from_vec(vec![1.0, 0.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 0.0]);
         let v2 = FlexVector::from_vec(vec![0.0, 1.0]);
         let cos_sim = v1.cosine_similarity(&v2).unwrap();
         assert!((cos_sim - 0.0).abs() < 1e-10);
@@ -7727,7 +7725,7 @@ mod tests {
 
     #[test]
     fn test_cosine_similarity_f64_opposite() {
-        let v1 = FVector::from_vec(vec![1.0, 0.0]);
+        let v1 = ColFVector::from_vec(vec![1.0, 0.0]);
         let v2 = FlexVector::from_vec(vec![-1.0, 0.0]);
         let cos_sim = v1.cosine_similarity(&v2).unwrap();
         assert!((cos_sim + 1.0).abs() < 1e-10);
@@ -7735,7 +7733,7 @@ mod tests {
 
     #[test]
     fn test_cosine_similarity_f64_zero_vector() {
-        let v1 = FVector::from_vec(vec![0.0, 0.0]);
+        let v1 = ColFVector::from_vec(vec![0.0, 0.0]);
         let v2 = FlexVector::from_vec(vec![1.0, 2.0]);
         let cos_sim = v1.cosine_similarity(&v2);
         assert!(cos_sim.is_err());
@@ -7750,7 +7748,7 @@ mod tests {
     // -- normalize --
     #[test]
     fn test_normalize_complex_f64_basic() {
-        let v = FVector::from_vec(vec![Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(3.0, 4.0)]);
         let normalized = v.normalize().unwrap();
         // The norm is 5.0, so the normalized vector should be [0.6 + 0.8i]
         assert!((normalized.as_slice()[0].re - 0.6).abs() < 1e-12);
@@ -7759,7 +7757,7 @@ mod tests {
 
     #[test]
     fn test_normalize_complex_f64_multiple_elements() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let norm = ((1.0 * 1.0 + 2.0 * 2.0) + (3.0 * 3.0 + 4.0 * 4.0)).sqrt();
         let normalized = v.normalize().unwrap();
         assert!((normalized.as_slice()[0].re - 1.0 / norm).abs() < 1e-12);
@@ -7770,7 +7768,7 @@ mod tests {
 
     #[test]
     fn test_normalize_complex_f64_zero_vector() {
-        let v = FVector::from_vec(vec![Complex::new(0.0, 0.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(0.0, 0.0)]);
         let result = v.normalize();
         assert!(result.is_err());
     }
@@ -8908,28 +8906,28 @@ mod tests {
 
     #[test]
     fn test_neg() {
-        let v = FVector::from_vec(vec![1, -2, 3]);
+        let v = ColFVector::from_vec(vec![1, -2, 3]);
         let neg_v = -v;
         assert_eq!(neg_v.as_slice(), &[-1, 2, -3]);
     }
 
     #[test]
     fn test_neg_f64() {
-        let v = FVector::from_vec(vec![1.5, -2.5, 0.0]);
+        let v = ColFVector::from_vec(vec![1.5, -2.5, 0.0]);
         let neg_v = -v;
         assert_eq!(neg_v.as_slice(), &[-1.5, 2.5, -0.0]);
     }
 
     #[test]
     fn test_neg_complex() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, -2.0), Complex::new(-3.0, 4.0)]);
         let neg_v = -v;
         assert_eq!(neg_v.as_slice(), &[Complex::new(-1.0, 2.0), Complex::new(3.0, -4.0)]);
     }
 
     #[test]
     fn test_neg_nan() {
-        let v = FVector::from_vec(vec![f64::NAN, -f64::NAN]);
+        let v = ColFVector::from_vec(vec![f64::NAN, -f64::NAN]);
         let neg_v = -v;
         // Negating NaN is still NaN, but sign bit may flip
         assert!(neg_v.as_slice()[0].is_nan());
@@ -8941,14 +8939,14 @@ mod tests {
 
     #[test]
     fn test_neg_infinity() {
-        let v = FVector::from_vec(vec![f64::INFINITY, f64::NEG_INFINITY]);
+        let v = ColFVector::from_vec(vec![f64::INFINITY, f64::NEG_INFINITY]);
         let neg_v = -v;
         assert_eq!(neg_v.as_slice(), &[-f64::INFINITY, f64::INFINITY]);
     }
 
     #[test]
     fn test_add() {
-        let v1 = FVector::from_vec(vec![1, 2, 3]);
+        let v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         let sum = v1 + v2;
         assert_eq!(sum.as_slice(), &[5, 7, 9]);
@@ -8956,7 +8954,7 @@ mod tests {
 
     #[test]
     fn test_add_f64() {
-        let v1 = FVector::from_vec(vec![1.0, 2.5]);
+        let v1 = ColFVector::from_vec(vec![1.0, 2.5]);
         let v2 = FlexVector::from_vec(vec![3.0, 4.5]);
         let sum = v1 + v2;
         assert_eq!(sum.as_slice(), &[4.0, 7.0]);
@@ -8964,7 +8962,7 @@ mod tests {
 
     #[test]
     fn test_add_complex() {
-        let v1 = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
         let sum = v1 + v2;
         assert_eq!(sum.as_slice(), &[Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
@@ -8972,7 +8970,7 @@ mod tests {
 
     #[test]
     fn test_add_nan_infinity() {
-        let v1 = FVector::from_vec(vec![f64::NAN, f64::INFINITY, 1.0]);
+        let v1 = ColFVector::from_vec(vec![f64::NAN, f64::INFINITY, 1.0]);
         let v2 = FlexVector::from_vec(vec![1.0, 2.0, f64::INFINITY]);
         let sum = v1 + v2;
         assert!(sum.as_slice()[0].is_nan());
@@ -8983,14 +8981,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Vector length mismatch")]
     fn test_add_panic_on_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1, 2]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![1, 2, 3]);
         let _ = v1 + v2;
     }
 
     #[test]
     fn test_sub() {
-        let v1 = FVector::from_vec(vec![10, 20, 30]);
+        let v1 = ColFVector::from_vec(vec![10, 20, 30]);
         let v2 = FlexVector::from_vec(vec![1, 2, 3]);
         let diff = v1 - v2;
         assert_eq!(diff.as_slice(), &[9, 18, 27]);
@@ -8998,7 +8996,7 @@ mod tests {
 
     #[test]
     fn test_sub_f64() {
-        let v1 = FVector::from_vec(vec![5.5, 2.0]);
+        let v1 = ColFVector::from_vec(vec![5.5, 2.0]);
         let v2 = FlexVector::from_vec(vec![1.5, 1.0]);
         let diff = v1 - v2;
         assert_eq!(diff.as_slice(), &[4.0, 1.0]);
@@ -9006,7 +9004,7 @@ mod tests {
 
     #[test]
     fn test_sub_complex() {
-        let v1 = FVector::from_vec(vec![Complex::new(5.0, 7.0), Complex::new(3.0, 4.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(5.0, 7.0), Complex::new(3.0, 4.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(2.0, 1.0)]);
         let diff = v1 - v2;
         assert_eq!(diff.as_slice(), &[Complex::new(4.0, 5.0), Complex::new(1.0, 3.0)]);
@@ -9014,7 +9012,7 @@ mod tests {
 
     #[test]
     fn test_sub_nan_infinity() {
-        let v1 = FVector::from_vec(vec![f64::NAN, f64::INFINITY, 5.0]);
+        let v1 = ColFVector::from_vec(vec![f64::NAN, f64::INFINITY, 5.0]);
         let v2 = FlexVector::from_vec(vec![2.0, f64::INFINITY, f64::NAN]);
         let diff = v1 - v2;
         assert!(diff.as_slice()[0].is_nan());
@@ -9025,14 +9023,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Vector length mismatch")]
     fn test_sub_panic_on_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1, 2]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![1, 2, 3]);
         let _ = v1 - v2;
     }
 
     #[test]
     fn test_mul() {
-        let v1 = FVector::from_vec(vec![2, 3, 4]);
+        let v1 = ColFVector::from_vec(vec![2, 3, 4]);
         let v2 = FlexVector::from_vec(vec![5, 6, 7]);
         let prod = v1 * v2;
         assert_eq!(prod.as_slice(), &[10, 18, 28]);
@@ -9040,7 +9038,7 @@ mod tests {
 
     #[test]
     fn test_mul_f64() {
-        let v1 = FVector::from_vec(vec![1.5, 2.0]);
+        let v1 = ColFVector::from_vec(vec![1.5, 2.0]);
         let v2 = FlexVector::from_vec(vec![2.0, 3.0]);
         let prod = v1 * v2;
         assert_eq!(prod.as_slice(), &[3.0, 6.0]);
@@ -9048,7 +9046,7 @@ mod tests {
 
     #[test]
     fn test_mul_complex() {
-        let v1 = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
         let prod = v1 * v2;
         assert_eq!(
@@ -9062,7 +9060,7 @@ mod tests {
 
     #[test]
     fn test_mul_nan_infinity() {
-        let v1 = FVector::from_vec(vec![f64::NAN, f64::INFINITY, 2.0]);
+        let v1 = ColFVector::from_vec(vec![f64::NAN, f64::INFINITY, 2.0]);
         let v2 = FlexVector::from_vec(vec![3.0, 2.0, f64::INFINITY]);
         let prod = v1 * v2;
         assert!(prod.as_slice()[0].is_nan());
@@ -9073,14 +9071,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Vector length mismatch")]
     fn test_mul_panic_on_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1, 2]);
+        let v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![1, 2, 3]);
         let _ = v1 * v2;
     }
 
     #[test]
     fn test_elem_div_f32() {
-        let v1 = FVector::from_vec(vec![2.0f32, 4.0, 8.0]);
+        let v1 = ColFVector::from_vec(vec![2.0f32, 4.0, 8.0]);
         let v2 = FlexVector::from_vec(vec![1.0f32, 2.0, 4.0]);
         let result = v1 / v2;
         assert_eq!(result.as_slice(), &[2.0, 2.0, 2.0]);
@@ -9088,7 +9086,7 @@ mod tests {
 
     #[test]
     fn test_elem_div_f64() {
-        let v1 = FVector::from_vec(vec![2.0f64, 4.0, 8.0]);
+        let v1 = ColFVector::from_vec(vec![2.0f64, 4.0, 8.0]);
         let v2 = FlexVector::from_vec(vec![1.0f64, 2.0, 4.0]);
         let result = v1 / v2;
         assert_eq!(result.as_slice(), &[2.0, 2.0, 2.0]);
@@ -9096,7 +9094,7 @@ mod tests {
 
     #[test]
     fn test_elem_div_complex_f32() {
-        let v1 = FVector::from_vec(vec![Complex::new(2.0f32, 2.0), Complex::new(4.0, 0.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(2.0f32, 2.0), Complex::new(4.0, 0.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(1.0f32, 1.0), Complex::new(2.0, 0.0)]);
         let result = v1 / v2;
         assert!((result[0] - Complex::new(2.0, 0.0)).norm() < 1e-6);
@@ -9105,7 +9103,7 @@ mod tests {
 
     #[test]
     fn test_elem_div_complex_f64() {
-        let v1 = FVector::from_vec(vec![Complex::new(2.0f64, 2.0), Complex::new(4.0, 0.0)]);
+        let v1 = ColFVector::from_vec(vec![Complex::new(2.0f64, 2.0), Complex::new(4.0, 0.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(1.0f64, 1.0), Complex::new(2.0, 0.0)]);
         let result = v1 / v2;
         assert!((result[0] - Complex::new(2.0, 0.0)).norm() < 1e-12);
@@ -9115,14 +9113,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Vector length mismatch")]
     fn test_elem_div_panic_on_mismatched_length() {
-        let v1 = FVector::from_vec(vec![1.0f64, 2.0]);
+        let v1 = ColFVector::from_vec(vec![1.0f64, 2.0]);
         let v2 = FlexVector::from_vec(vec![1.0f64, 2.0, 3.0]);
         let _ = v1 / v2;
     }
 
     #[test]
     fn test_add_assign() {
-        let mut v1 = FVector::from_vec(vec![1, 2, 3]);
+        let mut v1 = ColFVector::from_vec(vec![1, 2, 3]);
         let v2 = FlexVector::from_vec(vec![4, 5, 6]);
         v1 += v2;
         assert_eq!(v1.as_slice(), &[5, 7, 9]);
@@ -9130,7 +9128,7 @@ mod tests {
 
     #[test]
     fn test_add_assign_f64() {
-        let mut v1 = FVector::from_vec(vec![1.0, 2.5]);
+        let mut v1 = ColFVector::from_vec(vec![1.0, 2.5]);
         let v2 = FlexVector::from_vec(vec![3.0, 4.5]);
         v1 += v2;
         assert_eq!(v1.as_slice(), &[4.0, 7.0]);
@@ -9138,7 +9136,7 @@ mod tests {
 
     #[test]
     fn test_add_assign_complex() {
-        let mut v1 = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let mut v1 = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
         v1 += v2;
         assert_eq!(v1.as_slice(), &[Complex::new(6.0, 8.0), Complex::new(10.0, 12.0)]);
@@ -9147,14 +9145,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Vector length mismatch")]
     fn test_add_assign_panic_on_mismatched_length() {
-        let mut v1 = FVector::from_vec(vec![1, 2]);
+        let mut v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![1, 2, 3]);
         v1 += v2;
     }
 
     #[test]
     fn test_sub_assign() {
-        let mut v1 = FVector::from_vec(vec![10, 20, 30]);
+        let mut v1 = ColFVector::from_vec(vec![10, 20, 30]);
         let v2 = FlexVector::from_vec(vec![1, 2, 3]);
         v1 -= v2;
         assert_eq!(v1.as_slice(), &[9, 18, 27]);
@@ -9162,7 +9160,7 @@ mod tests {
 
     #[test]
     fn test_sub_assign_f64() {
-        let mut v1 = FVector::from_vec(vec![5.5, 2.0]);
+        let mut v1 = ColFVector::from_vec(vec![5.5, 2.0]);
         let v2 = FlexVector::from_vec(vec![1.5, 1.0]);
         v1 -= v2;
         assert_eq!(v1.as_slice(), &[4.0, 1.0]);
@@ -9170,7 +9168,7 @@ mod tests {
 
     #[test]
     fn test_sub_assign_complex() {
-        let mut v1 = FVector::from_vec(vec![Complex::new(5.0, 7.0), Complex::new(3.0, 4.0)]);
+        let mut v1 = ColFVector::from_vec(vec![Complex::new(5.0, 7.0), Complex::new(3.0, 4.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(2.0, 1.0)]);
         v1 -= v2;
         assert_eq!(v1.as_slice(), &[Complex::new(4.0, 5.0), Complex::new(1.0, 3.0)]);
@@ -9179,14 +9177,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Vector length mismatch")]
     fn test_sub_assign_panic_on_mismatched_length() {
-        let mut v1 = FVector::from_vec(vec![1, 2]);
+        let mut v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![1, 2, 3]);
         v1 -= v2;
     }
 
     #[test]
     fn test_mul_assign() {
-        let mut v1 = FVector::from_vec(vec![2, 3, 4]);
+        let mut v1 = ColFVector::from_vec(vec![2, 3, 4]);
         let v2 = FlexVector::from_vec(vec![5, 6, 7]);
         v1 *= v2;
         assert_eq!(v1.as_slice(), &[10, 18, 28]);
@@ -9194,7 +9192,7 @@ mod tests {
 
     #[test]
     fn test_mul_assign_f64() {
-        let mut v1 = FVector::from_vec(vec![1.5, 2.0]);
+        let mut v1 = ColFVector::from_vec(vec![1.5, 2.0]);
         let v2 = FlexVector::from_vec(vec![2.0, 3.0]);
         v1 *= v2;
         assert_eq!(v1.as_slice(), &[3.0, 6.0]);
@@ -9202,7 +9200,7 @@ mod tests {
 
     #[test]
     fn test_mul_assign_complex() {
-        let mut v1 = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
+        let mut v1 = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(5.0, 6.0), Complex::new(7.0, 8.0)]);
         v1 *= v2;
         assert_eq!(v1.as_slice(), &[Complex::new(-7.0, 16.0), Complex::new(-11.0, 52.0)]);
@@ -9211,14 +9209,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Vector length mismatch")]
     fn test_mul_assign_panic_on_mismatched_length() {
-        let mut v1 = FVector::from_vec(vec![1, 2]);
+        let mut v1 = ColFVector::from_vec(vec![1, 2]);
         let v2 = FlexVector::from_vec(vec![1, 2, 3]);
         v1 *= v2;
     }
 
     #[test]
     fn test_elem_div_assign_f32() {
-        let mut v1 = FVector::from_vec(vec![2.0f32, 4.0, 8.0]);
+        let mut v1 = ColFVector::from_vec(vec![2.0f32, 4.0, 8.0]);
         let v2 = FlexVector::from_vec(vec![1.0f32, 2.0, 4.0]);
         v1 /= v2;
         assert_eq!(v1.as_slice(), &[2.0, 2.0, 2.0]);
@@ -9226,7 +9224,7 @@ mod tests {
 
     #[test]
     fn test_elem_div_assign_f64() {
-        let mut v1 = FVector::from_vec(vec![2.0f64, 4.0, 8.0]);
+        let mut v1 = ColFVector::from_vec(vec![2.0f64, 4.0, 8.0]);
         let v2 = FlexVector::from_vec(vec![1.0f64, 2.0, 4.0]);
         v1 /= v2;
         assert_eq!(v1.as_slice(), &[2.0, 2.0, 2.0]);
@@ -9234,7 +9232,7 @@ mod tests {
 
     #[test]
     fn test_elem_div_assign_complex_f32() {
-        let mut v1 = FVector::from_vec(vec![Complex::new(2.0f32, 2.0), Complex::new(4.0, 0.0)]);
+        let mut v1 = ColFVector::from_vec(vec![Complex::new(2.0f32, 2.0), Complex::new(4.0, 0.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(1.0f32, 1.0), Complex::new(2.0, 0.0)]);
         v1 /= v2;
         assert!((v1[0] - Complex::new(2.0, 0.0)).norm() < 1e-6);
@@ -9243,7 +9241,7 @@ mod tests {
 
     #[test]
     fn test_elem_div_assign_complex_f64() {
-        let mut v1 = FVector::from_vec(vec![Complex::new(2.0f64, 2.0), Complex::new(4.0, 0.0)]);
+        let mut v1 = ColFVector::from_vec(vec![Complex::new(2.0f64, 2.0), Complex::new(4.0, 0.0)]);
         let v2 = FlexVector::from_vec(vec![Complex::new(1.0f64, 1.0), Complex::new(2.0, 0.0)]);
         v1 /= v2;
         assert!((v1[0] - Complex::new(2.0, 0.0)).norm() < 1e-12);
@@ -9253,105 +9251,105 @@ mod tests {
     #[test]
     #[should_panic(expected = "Vector length mismatch")]
     fn test_elem_div_assign_panic_on_mismatched_length() {
-        let mut v1 = FVector::from_vec(vec![1.0f64, 2.0]);
+        let mut v1 = ColFVector::from_vec(vec![1.0f64, 2.0]);
         let v2 = FlexVector::from_vec(vec![1.0f64, 2.0, 3.0]);
         v1 /= v2;
     }
 
     #[test]
     fn test_scalar_add() {
-        let v = FVector::from_vec(vec![1, 2, 3]);
+        let v = ColFVector::from_vec(vec![1, 2, 3]);
         let sum = v.clone() + 10;
         assert_eq!(sum.as_slice(), &[11, 12, 13]);
     }
 
     #[test]
     fn test_scalar_add_f64() {
-        let v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let v = ColFVector::from_vec(vec![1.5, -2.0, 0.0]);
         let sum = v.clone() + 2.0;
         assert_eq!(sum.as_slice(), &[3.5, 0.0, 2.0]);
     }
 
     #[test]
     fn test_scalar_add_complex_f64() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         let sum = v.clone() + Complex::new(2.0, 1.0);
         assert_eq!(sum.as_slice(), &[Complex::new(3.0, 3.0), Complex::new(-1.0, 5.0)]);
     }
 
     #[test]
     fn test_scalar_add_assign() {
-        let mut v = FVector::from_vec(vec![1, 2, 3]);
+        let mut v = ColFVector::from_vec(vec![1, 2, 3]);
         v += 10;
         assert_eq!(v.as_slice(), &[11, 12, 13]);
     }
 
     #[test]
     fn test_scalar_add_assign_f64() {
-        let mut v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let mut v = ColFVector::from_vec(vec![1.5, -2.0, 0.0]);
         v += 2.0;
         assert_eq!(v.as_slice(), &[3.5, 0.0, 2.0]);
     }
 
     #[test]
     fn test_scalar_add_assign_complex_f64() {
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         v += Complex::new(2.0, 1.0);
         assert_eq!(v.as_slice(), &[Complex::new(3.0, 3.0), Complex::new(-1.0, 5.0)]);
     }
 
     #[test]
     fn test_scalar_sub() {
-        let v = FVector::from_vec(vec![10, 20, 30]);
+        let v = ColFVector::from_vec(vec![10, 20, 30]);
         let diff = v.clone() - 5;
         assert_eq!(diff.as_slice(), &[5, 15, 25]);
     }
 
     #[test]
     fn test_scalar_sub_f64() {
-        let v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let v = ColFVector::from_vec(vec![1.5, -2.0, 0.0]);
         let diff = v.clone() - 2.0;
         assert_eq!(diff.as_slice(), &[-0.5, -4.0, -2.0]);
     }
 
     #[test]
     fn test_scalar_sub_complex_f64() {
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         let diff = v.clone() - Complex::new(2.0, 1.0);
         assert_eq!(diff.as_slice(), &[Complex::new(-1.0, 1.0), Complex::new(-5.0, 3.0)]);
     }
 
     #[test]
     fn test_scalar_sub_assign() {
-        let mut v = FVector::from_vec(vec![10, 20, 30]);
+        let mut v = ColFVector::from_vec(vec![10, 20, 30]);
         v -= 5;
         assert_eq!(v.as_slice(), &[5, 15, 25]);
     }
 
     #[test]
     fn test_scalar_sub_assign_f64() {
-        let mut v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let mut v = ColFVector::from_vec(vec![1.5, -2.0, 0.0]);
         v -= 2.0;
         assert_eq!(v.as_slice(), &[-0.5, -4.0, -2.0]);
     }
 
     #[test]
     fn test_scalar_sub_assign_complex_f64() {
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         v -= Complex::new(2.0, 1.0);
         assert_eq!(v.as_slice(), &[Complex::new(-1.0, 1.0), Complex::new(-5.0, 3.0)]);
     }
 
     #[test]
     fn test_scalar_mul() {
-        let v = FVector::from_vec(vec![2, -3, 4]);
+        let v = ColFVector::from_vec(vec![2, -3, 4]);
         let prod = v.clone() * 3;
         assert_eq!(prod.as_slice(), &[6, -9, 12]);
     }
 
     #[test]
     fn test_scalar_mul_f64() {
-        let v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let v = ColFVector::from_vec(vec![1.5, -2.0, 0.0]);
         let prod = v.clone() * 2.0;
         assert_eq!(prod.as_slice(), &[3.0, -4.0, 0.0]);
     }
@@ -9359,7 +9357,7 @@ mod tests {
     #[test]
     fn test_scalar_mul_complex() {
         use num::Complex;
-        let v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         let scalar = Complex::new(2.0, 0.0);
         let prod = v.clone() * scalar;
         assert_eq!(prod.as_slice(), &[Complex::new(2.0, 4.0), Complex::new(-6.0, 8.0)]);
@@ -9367,14 +9365,14 @@ mod tests {
 
     #[test]
     fn test_scalar_mul_assign() {
-        let mut v = FVector::from_vec(vec![2, -3, 4]);
+        let mut v = ColFVector::from_vec(vec![2, -3, 4]);
         v *= 3;
         assert_eq!(v.as_slice(), &[6, -9, 12]);
     }
 
     #[test]
     fn test_scalar_mul_assign_f64() {
-        let mut v = FVector::from_vec(vec![1.5, -2.0, 0.0]);
+        let mut v = ColFVector::from_vec(vec![1.5, -2.0, 0.0]);
         v *= 2.0;
         assert_eq!(v.as_slice(), &[3.0, -4.0, 0.0]);
     }
@@ -9382,7 +9380,7 @@ mod tests {
     #[test]
     fn test_scalar_mul_assign_complex() {
         use num::Complex;
-        let mut v = FVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
+        let mut v = ColFVector::from_vec(vec![Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
         let scalar = Complex::new(2.0, 0.0);
         v *= scalar;
         assert_eq!(v.as_slice(), &[Complex::new(2.0, 4.0), Complex::new(-6.0, 8.0)]);
@@ -9434,7 +9432,7 @@ mod tests {
     fn test_scalar_div_assign_complex_by_complex() {
         use num::Complex;
         let mut v: FlexVector<Complex<f64>> =
-            FVector::from_vec(vec![Complex::new(2.0, 4.0), Complex::new(-6.0, 8.0)]);
+            ColFVector::from_vec(vec![Complex::new(2.0, 4.0), Complex::new(-6.0, 8.0)]);
         let divisor = Complex::new(2.0, 0.0);
         v /= divisor;
         assert_eq!(v.as_slice(), &[Complex::new(1.0, 2.0), Complex::new(-3.0, 4.0)]);
@@ -9442,7 +9440,7 @@ mod tests {
 
     #[test]
     fn test_scalar_div_nan_infinity() {
-        let v = FVector::from_vec(vec![f64::NAN, f64::INFINITY, 4.0]);
+        let v = ColFVector::from_vec(vec![f64::NAN, f64::INFINITY, 4.0]);
         let result: FlexVector<f64> = v.clone() / 2.0;
         assert!(result.as_slice()[0].is_nan());
         assert_eq!(result.as_slice()[1], f64::INFINITY);
@@ -9451,7 +9449,7 @@ mod tests {
 
     #[test]
     fn test_scalar_div_assign_nan_infinity() {
-        let mut v: FlexVector<f64> = FVector::from_vec(vec![f64::NAN, f64::INFINITY, 4.0]);
+        let mut v: FlexVector<f64> = ColFVector::from_vec(vec![f64::NAN, f64::INFINITY, 4.0]);
         v /= 2.0;
         assert!(v.as_slice()[0].is_nan());
         assert_eq!(v.as_slice()[1], f64::INFINITY);
@@ -9462,7 +9460,7 @@ mod tests {
 
     #[test]
     fn test_add_overflow_i32() {
-        let v1 = FVector::from_vec(vec![i32::MAX]);
+        let v1 = ColFVector::from_vec(vec![i32::MAX]);
         let v2 = FlexVector::from_vec(vec![1]);
         if cfg!(debug_assertions) {
             // In debug mode, should panic on overflow
@@ -9479,7 +9477,7 @@ mod tests {
 
     #[test]
     fn test_mul_overflow_i32() {
-        let v1 = FVector::from_vec(vec![i32::MAX]);
+        let v1 = ColFVector::from_vec(vec![i32::MAX]);
         let v2 = FlexVector::from_vec(vec![2]);
         if cfg!(debug_assertions) {
             // In debug mode, should panic on overflow
@@ -9496,7 +9494,7 @@ mod tests {
 
     #[test]
     fn test_divide_by_zero_f64() {
-        let v: FlexVector<f64> = FVector::from_vec(vec![1.0, -2.0, 0.0]);
+        let v: FlexVector<f64> = ColFVector::from_vec(vec![1.0, -2.0, 0.0]);
         let result = v.clone() / 0.0;
         assert_eq!(result.as_slice()[0], f64::INFINITY);
         assert_eq!(result.as_slice()[1], f64::NEG_INFINITY);
@@ -9505,7 +9503,7 @@ mod tests {
 
     #[test]
     fn test_neg_zero_f64() {
-        let v = FVector::from_vec(vec![0.0, -0.0]);
+        let v = ColFVector::from_vec(vec![0.0, -0.0]);
         let neg_v = -v;
         assert_eq!(neg_v.as_slice()[0], -0.0);
         assert_eq!(neg_v.as_slice()[1], 0.0);
@@ -9514,7 +9512,7 @@ mod tests {
     #[test]
     fn test_complex_div_by_zero() {
         use num::Complex;
-        let v: FlexVector<Complex<f64>> = FVector::from_vec(vec![Complex::new(1.0, 1.0)]);
+        let v: FlexVector<Complex<f64>> = ColFVector::from_vec(vec![Complex::new(1.0, 1.0)]);
         let result = v.clone() / Complex::new(0.0, 0.0);
         assert!(result.as_slice()[0].re.is_nan());
         assert!(result.as_slice()[0].im.is_nan());
